@@ -1,0 +1,345 @@
+import { Card } from '../../components/Card'
+import { getLeaderboardComment, getRecentActivityCopy } from '../../logic/leaderboard/comments'
+
+function formatSubmissionTimestamp(value) {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function buildLeaderboardChips(row) {
+  const chips = [`#${row.rank}`, `Today: ${row.todayTotal}`]
+
+  if (row.isCurrentUser) {
+    chips.push('You')
+  }
+
+  if (row.pending) {
+    chips.push('Pending')
+  }
+
+  return chips
+}
+
+export function HeroStatus({ profile, session, circleId }) {
+  return (
+    <Card
+      title={profile?.name ? `${profile.name} is on the board.` : 'Board ready'}
+      body="Phase 1 shell is live. Logging stays isolated from future heavy systems."
+    >
+      <div className="stack">
+        <div className="stat-strip">
+          <span>{session?.user?.email ?? 'Signed in'}</span>
+          <span>{profile?.board_status ?? 'active'}</span>
+          <span>{circleId || 'No circle configured'}</span>
+        </div>
+        <p className="muted">Fast path first. No Arena load. No 1% load.</p>
+      </div>
+    </Card>
+  )
+}
+
+export function ProfileReadinessCard({ profile, isLoading, error }) {
+  if (isLoading) {
+    return (
+      <Card title="Profile loading" body="Getting your board identity ready.">
+        <p className="muted">If you are new here, a minimal profile is being created now.</p>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card title="Profile hit a snag" body="Auth worked, but the profile layer needs attention.">
+        <p className="muted">{error.message}</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card title="Profile ready" body="You are authenticated and the board can identify you.">
+      <div className="stat-strip">
+        <span>{profile?.name ?? 'Unnamed warrior'}</span>
+        <span>{profile?.id ?? 'No profile id'}</span>
+      </div>
+    </Card>
+  )
+}
+
+export function LogActivityCard({
+  quickValues,
+  manualValue,
+  manualError,
+  onManualValueChange,
+  onQuickLog,
+  onManualSubmit,
+  isSaving,
+}) {
+  return (
+    <Card title="Log Activity" body="Press-ups first. Fast tap feedback. No waiting on the rest of the app.">
+      <div className="quick-actions">
+        {quickValues.map((quickValue) => (
+          <button
+            key={quickValue}
+            className="chip"
+            type="button"
+            disabled={isSaving}
+            onClick={() => onQuickLog(quickValue)}
+          >
+            +{quickValue}
+          </button>
+        ))}
+      </div>
+      <form className="stack section-gap" onSubmit={onManualSubmit}>
+        <label className="stack">
+          <span>Manual press-up log</span>
+          <input
+            className="input"
+            type="number"
+            min="1"
+            step="1"
+            inputMode="numeric"
+            value={manualValue}
+            onChange={(event) => onManualValueChange(event.target.value)}
+            placeholder="Enter reps"
+            disabled={isSaving}
+          />
+        </label>
+        <button className="button" type="submit" disabled={isSaving}>
+          {isSaving ? 'Saving...' : 'Log Press-Ups'}
+        </button>
+      </form>
+      {manualError ? <p className="muted">{manualError}</p> : null}
+    </Card>
+  )
+}
+
+export function LeaderboardPlaceholder() {
+  return (
+    <Card title="Leaderboard" body="Weekly, monthly, and yearly board views will mount here without re-rendering the full shell.">
+      <div className="placeholder-tabs">
+        <span className="pill pill--active">Press Ups</span>
+        <span className="pill">KM</span>
+        <span className="pill pill--active">Weekly</span>
+        <span className="pill">Monthly</span>
+        <span className="pill">Yearly</span>
+      </div>
+      <p className="muted">Query-driven totals are not wired yet.</p>
+    </Card>
+  )
+}
+
+export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUserRow, isLoading, error, compact = false }) {
+  const periods = [
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'monthly', label: 'Monthly' },
+    { key: 'yearly', label: 'Yearly' },
+  ]
+
+  return (
+    <Card title="Leaderboard" body="Press-up totals for the current board period.">
+      <div className="placeholder-tabs">
+        <span className="pill pill--active">Press Ups</span>
+        {periods.map((item) => (
+          <button
+            key={item.key}
+            className={item.key === period ? 'pill-button pill-button--active' : 'pill-button'}
+            type="button"
+            onClick={() => onPeriodChange(item.key)}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+      {currentUserRow ? (
+        <div className="leaderboard-summary">
+          <strong>Your rank: #{currentUserRow.rank}</strong>
+          <span>{currentUserRow.total} reps this {period.replace('ly', '')}</span>
+          <span>{currentUserRow.todayTotal} today</span>
+        </div>
+      ) : (
+        <div className="stack">
+          <strong>No one is on the board yet.</strong>
+          <p className="muted">Log first. Make them chase.</p>
+        </div>
+      )}
+      {error && rows.length === 0 ? <p className="muted">{error.message}</p> : null}
+      {isLoading ? <p className="muted">Loading leaderboard...</p> : null}
+      {!isLoading && rows.length === 0 ? null : null}
+      {rows.length > 0 ? (
+        <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
+          {rows.map((row) => (
+            <li
+              key={row.userId}
+              className={row.isCurrentUser ? 'leaderboard-row leaderboard-row--current' : 'leaderboard-row'}
+            >
+              <div className="leaderboard-rank">#{row.rank}</div>
+              <div className="leaderboard-copy">
+                <strong>{row.actorName}</strong>
+                <span>{getLeaderboardComment(row)}</span>
+                <div className="row-chip-list">
+                  {buildLeaderboardChips(row).map((chip) => (
+                    <span key={`${row.userId}-${chip}`} className="row-chip">
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="leaderboard-total">{row.total}</div>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </Card>
+  )
+}
+
+export function ChaseCard({ chase, isLoading, period, compact = false }) {
+  if (isLoading) {
+    return (
+      <Card title="The Chase" body="Finding the pressure points on the board.">
+        <p className="muted">Loading chase...</p>
+      </Card>
+    )
+  }
+
+  if (chase.state === 'off-board') {
+    return (
+      <Card title="The Chase" body={`Press-up chase for the current ${period.replace('ly', '')} board.`}>
+        <div className="stack">
+          <strong>You&apos;re not on the board yet.</strong>
+          <p className="muted">Log first. Let the board react.</p>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card title="The Chase" body={`Press-up chase for the current ${period.replace('ly', '')} board.`}>
+      <div className={compact ? 'stack chase-stack chase-stack--compact' : 'stack chase-stack'}>
+        {chase.currentUserRow?.rank === 1 ? (
+          <div className="chase-block">
+            <strong>You&apos;re holding the crown.</strong>
+            <span>Defend the gap.</span>
+          </div>
+        ) : null}
+
+        {chase.rowAbove ? (
+          <div className="chase-block">
+            <strong>You&apos;re hunting {chase.rowAbove.actorName}.</strong>
+            <span>{chase.gapToCatch} reps ahead.</span>
+            <span>{chase.suggestedAction}</span>
+          </div>
+        ) : null}
+
+        {chase.rowBelow ? (
+          <div className="chase-block">
+            <strong>{chase.rowBelow.actorName} is hunting you.</strong>
+            <span>{chase.gapToDefend} reps behind.</span>
+            <span>Defend the gap.</span>
+          </div>
+        ) : null}
+
+        {!chase.rowAbove && !chase.rowBelow ? (
+          <div className="chase-block">
+            <strong>You&apos;re alone on the board.</strong>
+            <span>Keep logging. Make someone chase.</span>
+          </div>
+        ) : null}
+      </div>
+    </Card>
+  )
+}
+
+export function ChasePlaceholder() {
+  return (
+    <Card title="The Chase" body="Ahead and behind rival logic will use precomputed board ranks instead of row-level recalculation.">
+      <p className="muted">You&apos;re hunting somebody. Somebody is hunting you.</p>
+    </Card>
+  )
+}
+
+export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
+  if (error && rows.length === 0) {
+    return (
+      <Card title="Recent Activity" body="The board is live, but recent activity hit a snag.">
+        <p className="muted">{error.message}</p>
+      </Card>
+    )
+  }
+
+  return (
+    <Card title="Recent Activity" body="Latest five press-up rows. Pending entries land here immediately.">
+      {error && rows.length > 0 ? <p className="muted">{error.message}</p> : null}
+      {isLoading ? <p className="muted">Loading recent activity...</p> : null}
+      {!isLoading && rows.length === 0 ? (
+        <div className="stack">
+          <strong>No movement yet.</strong>
+          <p className="muted">Put the first reps on the board.</p>
+        </div>
+      ) : null}
+      {rows.length > 0 ? (
+        <ul className="activity-feed">
+          {rows.map((row) => {
+            const canRemove = row.userId === currentUserId && !row.pending
+
+            return (
+              <li key={row.id} className={row.pending ? 'activity-item activity-item--pending' : 'activity-item'}>
+                <div className="activity-copy">
+                  <strong>{getRecentActivityCopy(row, currentUserId)}</strong>
+                  <span>{row.pending ? 'Board updating...' : formatSubmissionTimestamp(row.createdAt)}</span>
+                </div>
+                <div className="activity-meta">
+                  <span className="activity-value">{row.value}</span>
+                  {canRemove ? (
+                    <button className="activity-remove" type="button" onClick={() => onRequestRemove(row)}>
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      ) : null}
+    </Card>
+  )
+}
+
+export function RemoveEntryModal({ submission, onConfirm, onCancel, isDeleting }) {
+  if (!submission) {
+    return null
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onCancel}>
+      <div
+        className="modal-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="remove-entry-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="stack">
+          <div>
+            <h2 id="remove-entry-title" className="modal-title">Remove entry</h2>
+            <p className="muted">This removes the exact saved press-up entry from the board.</p>
+          </div>
+          <div className="modal-summary">
+            <span>{submission.value} press-ups</span>
+            <span>{formatSubmissionTimestamp(submission.createdAt)}</span>
+          </div>
+          <div className="modal-actions">
+            <button className="button button--ghost" type="button" onClick={onCancel} disabled={isDeleting}>
+              Keep it
+            </button>
+            <button className="button" type="button" onClick={onConfirm} disabled={isDeleting}>
+              {isDeleting ? 'Removing...' : 'Remove entry'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
