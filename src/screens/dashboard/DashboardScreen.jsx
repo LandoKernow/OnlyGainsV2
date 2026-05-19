@@ -68,6 +68,7 @@ function AuthenticatedDashboard() {
     userId: session.user.id,
     limit: 5,
   })
+  const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
 
   function submitPressups(value) {
     if (!circleId) {
@@ -124,6 +125,16 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
+        <div className="beta-note">
+          <p>Only Gains 2.0 is in private testing.</p>
+          <p>Log reps. Climb the board. Break what needs breaking.</p>
+        </div>
+        {isNewThisWeek ? (
+          <div className="dashboard-onboarding-note">
+            <strong>Start here.</strong>
+            <p>Log your first set and the board reacts.</p>
+          </div>
+        ) : null}
         <LogActivityCard
           quickValues={quickValues}
           manualValue={manualValue}

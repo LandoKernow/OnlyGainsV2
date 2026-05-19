@@ -33,7 +33,7 @@ export function HeroStatus({ profile }) {
           <span>{profile?.board_status ?? 'Active'}</span>
           <span>Live board</span>
         </div>
-        <p className="muted">Press-ups first. No Arena, no 1% systems in Phase 1.</p>
+        <p className="muted">Press-ups first. Keep the board moving with every set.</p>
       </div>
     </Card>
   )
@@ -50,8 +50,8 @@ export function ProfileReadinessCard({ profile, isLoading, error }) {
 
   if (error) {
     return (
-      <Card title="Profile hit a snag" body="Auth worked, but the profile layer needs attention.">
-        <p className="muted">{error.message}</p>
+      <Card title="Profile hit a snag" body="Auth worked, but the profile could not load.">
+        <p className="muted">Could not load profile. Try again.</p>
       </Card>
     )
   }
@@ -76,7 +76,7 @@ export function LogActivityCard({
   isSaving,
 }) {
   return (
-    <Card title="Log Activity" body="Press-ups first. Fast tap feedback. No waiting on the rest of the app.">
+    <Card title="Log Activity" body="Tap reps fast and watch the board move.">
       <div className="quick-actions">
         {quickValues.map((quickValue) => (
           <button
@@ -159,11 +159,11 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
         </div>
       ) : (
         <div className="stack">
-          <strong>No one is on the board yet.</strong>
+          <strong>No one has moved yet.</strong>
           <p className="muted">Log first. Make them chase.</p>
         </div>
       )}
-      {error && rows.length === 0 ? <p className="muted">{error.message}</p> : null}
+      {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh and go again.</p> : null}
       {isLoading ? <p className="muted">Loading leaderboard...</p> : null}
       {!isLoading && rows.length === 0 ? null : null}
       {rows.length > 0 ? (
@@ -266,15 +266,15 @@ export function ChasePlaceholder() {
 export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
   if (error && rows.length === 0) {
     return (
-      <Card title="Recent Activity" body="The board is live, but recent activity hit a snag.">
-        <p className="muted">{error.message}</p>
+      <Card title="Recent Activity" body="Could not load recent activity.">
+        <p className="muted">Try again in a moment.</p>
       </Card>
     )
   }
 
   return (
     <Card title="Recent Activity" body="Latest five press-up rows. Pending entries land here immediately.">
-      {error && rows.length > 0 ? <p className="muted">{error.message}</p> : null}
+      {error && rows.length > 0 ? <p className="muted">Could not refresh activity. Try again.</p> : null}
       {isLoading ? <p className="muted">Loading recent activity...</p> : null}
       {!isLoading && rows.length === 0 ? (
         <div className="stack">

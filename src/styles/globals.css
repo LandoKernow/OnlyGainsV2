@@ -501,6 +501,44 @@ button {
   margin: 0;
 }
 
+.beta-note,
+.dashboard-onboarding-note {
+  border: 1px solid rgba(213, 106, 44, 0.2);
+  background: rgba(213, 106, 44, 0.08);
+  border-radius: 1rem;
+  padding: 0.8rem 0.95rem;
+}
+
+.beta-note {
+  color: #f7f1eb;
+}
+
+.beta-note p,
+.dashboard-onboarding-note p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.beta-note p:first-child,
+.dashboard-onboarding-note strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.dashboard-onboarding-note {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.dashboard-onboarding-note strong {
+  font-size: 0.98rem;
+}
+
+.build-info p {
+  margin: 0;
+}
+
 .modal-sheet {
   width: min(40rem, 100%);
   margin: 0 auto;

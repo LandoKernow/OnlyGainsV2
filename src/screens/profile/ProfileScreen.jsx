@@ -17,7 +17,9 @@ function ProfileSummary() {
       <Card title="Profile" body="Profile basics for your board identity.">
         <div className="stack">
           <p className="muted">User: {session?.user?.email}</p>
-          <p className="muted">Profile: {profileQuery.data?.name ?? 'Loading...'}</p>
+          <p className="muted">Name: {profileQuery.data?.name ?? 'Loading...'}</p>
+          {profileQuery.data?.avatar ? <p className="muted">Avatar: {profileQuery.data.avatar}</p> : null}
+          {profileQuery.data?.accent_color ? <p className="muted">Accent: {profileQuery.data.accent_color}</p> : null}
           <button className="button button--ghost" type="button" onClick={() => signOut()}>
             Sign out
           </button>
