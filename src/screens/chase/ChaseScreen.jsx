@@ -4,21 +4,29 @@ import { useAuth } from '../../features/auth/AuthProvider'
 import { ChaseCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useChase } from '../../hooks/useChase'
-import { usePressupLeaderboard } from '../../hooks/usePressupLeaderboard'
+import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
+ 
 
 function ChaseContent() {
   const [period, setPeriod] = useState('weekly')
+  const [activityType, setActivityType] = useState('pressups')
   const { session } = useAuth()
   const { circleId } = useBoardMeta()
-  const leaderboardQuery = usePressupLeaderboard({
+  const leaderboardQuery = useActivityLeaderboard({
     circleId,
     period,
     currentUserId: session.user.id,
+    activityType,
   })
   const chase = useChase(leaderboardQuery.rows, session.user.id)
 
   return (
     <div className="stack-lg">
+      <div style={{display: 'flex', gap: '0.5rem'}}>
+        <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
+        <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
+      </div>
+
       <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={period} />
       <PressupLeaderboardCard
         period={period}
@@ -28,6 +36,7 @@ function ChaseContent() {
         isLoading={leaderboardQuery.isLoading}
         error={leaderboardQuery.error}
         compact
+        activityType={activityType}
       />
     </div>
   )

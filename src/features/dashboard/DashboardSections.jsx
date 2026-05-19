@@ -74,39 +74,44 @@ export function LogActivityCard({
   onQuickLog,
   onManualSubmit,
   isSaving,
+  activityType = 'pressups',
 }) {
+  const isKm = activityType === 'km'
+
   return (
-    <Card title="Log Activity" body="Tap reps fast and watch the board move.">
-      <div className="quick-actions">
-        {quickValues.map((quickValue) => (
-          <button
-            key={quickValue}
-            className="chip"
-            type="button"
-            disabled={isSaving}
-            onClick={() => onQuickLog(quickValue)}
-          >
-            +{quickValue}
-          </button>
-        ))}
-      </div>
+    <Card title="Log Activity" body={isKm ? 'Log distance quickly and keep the board honest.' : 'Tap reps fast and watch the board move.'}>
+      {!isKm ? (
+        <div className="quick-actions">
+          {quickValues.map((quickValue) => (
+            <button
+              key={quickValue}
+              className="chip"
+              type="button"
+              disabled={isSaving}
+              onClick={() => onQuickLog(quickValue)}
+            >
+              +{quickValue}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <form className="stack section-gap" onSubmit={onManualSubmit}>
         <label className="stack">
-          <span>Manual press-up log</span>
+          <span>{isKm ? 'Manual KM log' : 'Manual press-up log'}</span>
           <input
             className="input"
             type="number"
-            min="1"
-            step="1"
-            inputMode="numeric"
+            min={isKm ? '0.1' : '1'}
+            step={isKm ? '0.1' : '1'}
+            inputMode="decimal"
             value={manualValue}
             onChange={(event) => onManualValueChange(event.target.value)}
-            placeholder="Enter reps"
+            placeholder={isKm ? 'Enter km' : 'Enter reps'}
             disabled={isSaving}
           />
         </label>
         <button className="button" type="submit" disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Log Press-Ups'}
+          {isSaving ? 'Saving...' : isKm ? 'Log KM' : 'Log Press-Ups'}
         </button>
       </form>
       {manualError ? <p className="muted">{manualError}</p> : null}
@@ -129,17 +134,28 @@ export function LeaderboardPlaceholder() {
   )
 }
 
-export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUserRow, isLoading, error, compact = false }) {
+export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUserRow, isLoading, error, compact = false, activityType = 'pressups' }) {
   const periods = [
     { key: 'weekly', label: 'Weekly' },
     { key: 'monthly', label: 'Monthly' },
     { key: 'yearly', label: 'Yearly' },
   ]
 
+  const isKm = activityType === 'km'
+
+  function formatValue(value) {
+    if (isKm) {
+      return `${Number(value).toFixed(1)} km`
+    }
+
+    return `${Math.round(Number(value) || 0)} reps`
+  }
+
   return (
-    <Card title="Leaderboard" body="Press-up totals for the current board period.">
+    <Card title="Leaderboard" body={isKm ? 'KM totals for the current board period.' : 'Press-up totals for the current board period.'}>
       <div className="placeholder-tabs">
-        <span className="pill pill--active">Press Ups</span>
+        <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
+        <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
         {periods.map((item) => (
           <button
             key={item.key}
@@ -154,8 +170,8 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
       {currentUserRow ? (
         <div className="leaderboard-summary">
           <strong>Your rank: #{currentUserRow.rank}</strong>
-          <span>{currentUserRow.total} reps this {period.replace('ly', '')}</span>
-          <span>{currentUserRow.todayTotal} today</span>
+          <span>{formatValue(currentUserRow.total)} this {period.replace('ly', '')}</span>
+          <span>{isKm ? `${Number(currentUserRow.todayTotal).toFixed(1)} today` : `${currentUserRow.todayTotal} today`}</span>
         </div>
       ) : (
         <div className="stack">
@@ -185,7 +201,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                   ))}
                 </div>
               </div>
-              <div className="leaderboard-total">{row.total}</div>
+              <div className="leaderboard-total">{isKm ? `${Number(row.total).toFixed(1)} km` : row.total}</div>
             </li>
           ))}
         </ol>

@@ -44,7 +44,6 @@ export async function fetchRecentSubmissions({ circleId, limit }) {
     .from('submissions')
     .select('id, circle_id, user_id, activity_type, value, unit, source, activity_date, created_at, note')
     .eq('circle_id', circleId)
-    .eq('activity_type', 'pressups')
     .order('created_at', { ascending: false })
     .limit(limit)
 
@@ -72,7 +71,7 @@ export async function fetchRecentSubmissions({ circleId, limit }) {
   return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
 }
 
-export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {
+export async function fetchLeaderboardSubmissions({ circleId, year, activityType = 'pressups' }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
@@ -81,7 +80,7 @@ export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {
     .from('submissions')
     .select('id, circle_id, user_id, activity_type, value, unit, source, activity_date, created_at, note, year')
     .eq('circle_id', circleId)
-    .eq('activity_type', 'pressups')
+    .eq('activity_type', activityType)
     .eq('year', year)
     .order('created_at', { ascending: false })
 
@@ -106,6 +105,10 @@ export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {
   }
 
   return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
+}
+
+export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {
+  return fetchLeaderboardSubmissions({ circleId, year, activityType: 'pressups' })
 }
 
 export async function deleteSubmissionById(id, userId) {

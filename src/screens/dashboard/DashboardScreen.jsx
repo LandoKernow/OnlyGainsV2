@@ -13,29 +13,44 @@ import {
 import { useChase } from '../../hooks/useChase'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useDeleteSubmission } from '../../hooks/useDeleteSubmission'
-import { usePressupLeaderboard } from '../../hooks/usePressupLeaderboard'
-import { usePressupLogger } from '../../hooks/usePressupLogger'
+import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
+import { useActivityLogger } from '../../hooks/useActivityLogger'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 
 const quickValues = [10, 20, 50]
 
-function parseManualPressupValue(value) {
+function parseManualValue(value, activityType) {
   const trimmed = value.trim()
 
   if (trimmed === '') {
-    return { error: 'Enter a press-up count.' }
+    return { error: activityType === 'km' ? 'Enter a distance in km.' : 'Enter a press-up count.' }
   }
 
-  if (!/^\d+$/.test(trimmed)) {
-    return { error: 'Press-ups must be a whole number.' }
+  if (activityType === 'pressups') {
+    if (!/^\d+$/.test(trimmed)) {
+      return { error: 'Press-ups must be a whole number.' }
+    }
+
+    const parsed = Number(trimmed)
+
+    if (parsed <= 0) {
+      return { error: 'Press-ups must be greater than 0.' }
+    }
+
+    return { value: parsed }
   }
 
+  // km parsing: allow decimals
   const parsed = Number(trimmed)
 
+  if (Number.isNaN(parsed)) {
+    return { error: 'Enter a valid number for km.' }
+  }
+
   if (parsed <= 0) {
-    return { error: 'Press-ups must be greater than 0.' }
+    return { error: 'KM must be greater than 0.' }
   }
 
   return { value: parsed }
@@ -48,19 +63,22 @@ function AuthenticatedDashboard() {
   const recentActivityQuery = useRecentSubmissions(circleId, 5)
   const [leaderboardPeriod, setLeaderboardPeriod] = useState('weekly')
   const [manualValue, setManualValue] = useState('')
+  const [activityType, setActivityType] = useState('pressups')
   const [manualError, setManualError] = useState('')
   const [entryToRemove, setEntryToRemove] = useState(null)
   const { showToast } = useToast()
-  const logger = usePressupLogger({
+  const logger = useActivityLogger({
     circleId,
     userId: session.user.id,
     actorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'You',
+    activityType: activityType === 'km' ? 'km' : 'pressups',
     limit: 5,
   })
-  const leaderboardQuery = usePressupLeaderboard({
+  const leaderboardQuery = useActivityLeaderboard({
     circleId,
     period: leaderboardPeriod,
     currentUserId: session.user.id,
+    activityType: activityType === 'km' ? 'km' : 'pressups',
   })
   const chase = useChase(leaderboardQuery.rows, session.user.id)
   const deleteSubmission = useDeleteSubmission({
@@ -70,7 +88,7 @@ function AuthenticatedDashboard() {
   })
   const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
 
-  function submitPressups(value) {
+  function submitActivity(value) {
     if (!circleId) {
       showToast({ tone: 'error', message: 'Could not save. Try again.' })
       return
@@ -85,7 +103,7 @@ function AuthenticatedDashboard() {
     }
 
     setManualError('')
-    submitPressups(value)
+    submitActivity(value)
   }
 
   function handleManualSubmit(event) {
@@ -103,7 +121,7 @@ function AuthenticatedDashboard() {
     }
 
     setManualError('')
-    submitPressups(result.value)
+    submitActivity(result.value)
     setManualValue('')
   }
 
@@ -136,6 +154,11 @@ function AuthenticatedDashboard() {
             <p>Log your first set and the board reacts.</p>
           </div>
         ) : null}
+        <div className="activity-toggle" style={{display: 'flex', gap: '0.4rem', alignItems: 'center'}}>
+          <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
+          <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
+        </div>
+
         <LogActivityCard
           quickValues={quickValues}
           manualValue={manualValue}
@@ -144,6 +167,7 @@ function AuthenticatedDashboard() {
           onQuickLog={handleQuickLog}
           onManualSubmit={handleManualSubmit}
           isSaving={logger.isPending}
+          activityType={activityType}
         />
         <PressupLeaderboardCard
           period={leaderboardPeriod}
@@ -152,6 +176,7 @@ function AuthenticatedDashboard() {
           currentUserRow={leaderboardQuery.currentUserRow}
           isLoading={leaderboardQuery.isLoading}
           error={leaderboardQuery.error}
+          activityType={activityType}
           compact
         />
         <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact />

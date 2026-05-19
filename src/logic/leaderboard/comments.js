@@ -11,6 +11,7 @@ export function getLeaderboardComment(row) {
     return 'Holding the crown'
   }
 
+  // Simpler, unit-agnostic commenting
   if (row.todayTotal >= 100) {
     return row.isCurrentUser ? 'War mode' : 'Bringing the heat'
   }
@@ -32,10 +33,18 @@ export function getLeaderboardComment(row) {
 
 export function getRecentActivityCopy(row, currentUserId) {
   if (row.pending) {
-    return `Saving ${row.value} press-ups...`
+    return row.activityType === 'km' ? `Saving ${row.value} km...` : `Saving ${row.value} press-ups...`
   }
 
   const actor = row.userId === currentUserId ? 'You' : getSafeName(row.actorName)
+
+  if (row.activityType === 'km') {
+    if (row.value >= 50) {
+      return `${actor} logged ${row.value} km.`
+    }
+
+    return `${actor} logged ${Number(row.value).toFixed(1)} km.`
+  }
 
   if (row.value >= 100) {
     return `${actor} brought heat with ${row.value} press-ups.`
