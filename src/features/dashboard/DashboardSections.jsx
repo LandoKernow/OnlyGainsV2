@@ -1,4 +1,5 @@
 import { Card } from '../../components/Card'
+import { formatActivityValue, formatKm } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy } from '../../logic/leaderboard/comments'
 
 function formatSubmissionTimestamp(value) {
@@ -101,8 +102,8 @@ export function LogActivityCard({
           <input
             className="input"
             type="number"
-            min={isKm ? '0.1' : '1'}
-            step={isKm ? '0.1' : '1'}
+            min={isKm ? '0.01' : '1'}
+            step={isKm ? '0.01' : '1'}
             inputMode="decimal"
             value={manualValue}
             onChange={(event) => onManualValueChange(event.target.value)}
@@ -144,11 +145,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
   const isKm = activityType === 'km'
 
   function formatValue(value) {
-    if (isKm) {
-      return `${Number(value).toFixed(1)} km`
-    }
-
-    return `${Math.round(Number(value) || 0)} reps`
+    return formatActivityValue(value, activityType)
   }
 
   return (
@@ -171,7 +168,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
         <div className="leaderboard-summary">
           <strong>Your rank: #{currentUserRow.rank}</strong>
           <span>{formatValue(currentUserRow.total)} this {period.replace('ly', '')}</span>
-          <span>{isKm ? `${Number(currentUserRow.todayTotal).toFixed(1)} today` : `${currentUserRow.todayTotal} today`}</span>
+          <span>{isKm ? `${formatKm(currentUserRow.todayTotal)} today` : `${currentUserRow.todayTotal} today`}</span>
         </div>
       ) : (
         <div className="stack">
@@ -201,7 +198,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                   ))}
                 </div>
               </div>
-              <div className="leaderboard-total">{isKm ? `${Number(row.total).toFixed(1)} km` : row.total}</div>
+              <div className="leaderboard-total">{formatValue(row.total)}</div>
             </li>
           ))}
         </ol>
@@ -219,12 +216,12 @@ export function ChaseCard({ chase, isLoading, period, compact = false, activityT
       return null
     }
 
-    return isKm ? `${Number(value).toFixed(1)} km` : `${value} reps`
+    return isKm ? formatKm(value) : `${value} reps`
   }
 
   function formatSuggestedAction() {
     if (isKm) {
-      return chase.gapToCatch ? `${Number(chase.gapToCatch).toFixed(1)} km takes the spot.` : 'Build the gap.'
+      return chase.gapToCatch ? `${formatKm(chase.gapToCatch)} takes the spot.` : 'Build the gap.'
     }
 
     return chase.suggestedAction
@@ -308,7 +305,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
   }
 
   return (
-    <Card title="Recent Activity" body="Latest five press-up rows. Pending entries land here immediately.">
+    <Card title="Recent Activity" body="Latest five submissions. Pending entries land here immediately.">
       {error && rows.length > 0 ? <p className="muted">Could not refresh activity. Try again.</p> : null}
       {isLoading ? <p className="muted">Loading recent activity...</p> : null}
       {!isLoading && rows.length === 0 ? (
@@ -329,7 +326,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
                   <span>{row.pending ? 'Board updating...' : formatSubmissionTimestamp(row.createdAt)}</span>
                 </div>
                 <div className="activity-meta">
-                  <span className="activity-value">{row.value}</span>
+                  <span className="activity-value">{formatActivityValue(row.value, row.activityType)}</span>
                   {canRemove ? (
                     <button className="activity-remove" type="button" onClick={() => onRequestRemove(row)}>
                       Remove

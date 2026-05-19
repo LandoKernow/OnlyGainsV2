@@ -1,3 +1,5 @@
+import { formatKm } from '../../utils/activity'
+
 function getSafeName(name) {
   return name || 'Someone'
 }
@@ -33,17 +35,13 @@ export function getLeaderboardComment(row) {
 
 export function getRecentActivityCopy(row, currentUserId) {
   if (row.pending) {
-    return row.activityType === 'km' ? `Saving ${row.value} km...` : `Saving ${row.value} press-ups...`
+    return row.activityType === 'km' ? `Saving ${formatKm(row.value)}...` : `Saving ${row.value} press-ups...`
   }
 
   const actor = row.userId === currentUserId ? 'You' : getSafeName(row.actorName)
 
   if (row.activityType === 'km') {
-    if (row.value >= 50) {
-      return `${actor} logged ${row.value} km.`
-    }
-
-    return `${actor} logged ${Number(row.value).toFixed(1)} km.`
+    return `${actor} logged ${formatKm(row.value)}.`
   }
 
   if (row.value >= 100) {
