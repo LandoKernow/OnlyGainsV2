@@ -27,7 +27,7 @@ function ChaseContent() {
         <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
       </div>
 
-      <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={period} />
+      <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={period} activityType={activityType} />
       <PressupLeaderboardCard
         period={period}
         onPeriodChange={setPeriod}

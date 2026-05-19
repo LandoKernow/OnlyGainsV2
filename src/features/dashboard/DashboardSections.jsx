@@ -210,7 +210,26 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
   )
 }
 
-export function ChaseCard({ chase, isLoading, period, compact = false }) {
+export function ChaseCard({ chase, isLoading, period, compact = false, activityType = 'pressups' }) {
+  const isKm = activityType === 'km'
+  const unitLabel = isKm ? 'KM' : 'Press-up'
+
+  function formatGap(value) {
+    if (value == null) {
+      return null
+    }
+
+    return isKm ? `${Number(value).toFixed(1)} km` : `${value} reps`
+  }
+
+  function formatSuggestedAction() {
+    if (isKm) {
+      return chase.gapToCatch ? `${Number(chase.gapToCatch).toFixed(1)} km takes the spot.` : 'Build the gap.'
+    }
+
+    return chase.suggestedAction
+  }
+
   if (isLoading) {
     return (
       <Card title="The Chase" body="Finding the pressure points on the board.">
@@ -221,7 +240,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
 
   if (chase.state === 'off-board') {
     return (
-      <Card title="The Chase" body={`Press-up chase for the current ${period.replace('ly', '')} board.`}>
+      <Card title="The Chase" body={`${unitLabel} chase for the current ${period.replace('ly', '')} board.`}>
         <div className="stack">
           <strong>You&apos;re not on the board yet.</strong>
           <p className="muted">Log first. Let the board react.</p>
@@ -231,7 +250,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
   }
 
   return (
-    <Card title="The Chase" body={`Press-up chase for the current ${period.replace('ly', '')} board.`}>
+    <Card title="The Chase" body={`${unitLabel} chase for the current ${period.replace('ly', '')} board.`}>
       <div className={compact ? 'stack chase-stack chase-stack--compact' : 'stack chase-stack'}>
         {chase.currentUserRow?.rank === 1 ? (
           <div className="chase-block">
@@ -245,8 +264,8 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
           <div className="chase-block">
             <span className="chase-pill">TARGET</span>
             <strong>You're hunting {chase.rowAbove.actorName}.</strong>
-            <span>{chase.gapToCatch} reps ahead.</span>
-            <span>{chase.suggestedAction}</span>
+            <span>{formatGap(chase.gapToCatch)} ahead.</span>
+            <span>{formatSuggestedAction()}</span>
           </div>
         ) : null}
 
@@ -254,7 +273,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
           <div className="chase-block">
             <span className="chase-pill">DEFEND</span>
             <strong>{chase.rowBelow.actorName} is hunting you.</strong>
-            <span>{chase.gapToDefend} reps behind.</span>
+            <span>{formatGap(chase.gapToDefend)} behind.</span>
             <span>Defend the gap.</span>
           </div>
         ) : null}

@@ -113,7 +113,7 @@ function AuthenticatedDashboard() {
       return
     }
 
-    const result = parseManualPressupValue(manualValue)
+    const result = parseManualValue(manualValue, activityType)
 
     if (result.error) {
       setManualError(result.error)
@@ -179,7 +179,7 @@ function AuthenticatedDashboard() {
           activityType={activityType}
           compact
         />
-        <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact />
+        <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
         <RecentActivityCard
           rows={recentActivityQuery.data ?? []}
           isLoading={recentActivityQuery.isLoading}
