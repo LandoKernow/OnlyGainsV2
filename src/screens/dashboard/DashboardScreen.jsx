@@ -124,12 +124,6 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
-        <HeroStatus profile={profileQuery.data} session={session} circleId={circleId} />
-        <ProfileReadinessCard
-          profile={profileQuery.data}
-          isLoading={profileQuery.isLoading}
-          error={profileQuery.error}
-        />
         <LogActivityCard
           quickValues={quickValues}
           manualValue={manualValue}
@@ -155,6 +149,12 @@ function AuthenticatedDashboard() {
           error={recentActivityQuery.error}
           currentUserId={session.user.id}
           onRequestRemove={setEntryToRemove}
+        />
+        <HeroStatus profile={profileQuery.data} />
+        <ProfileReadinessCard
+          profile={profileQuery.data}
+          isLoading={profileQuery.isLoading}
+          error={profileQuery.error}
         />
       </div>
       <RemoveEntryModal

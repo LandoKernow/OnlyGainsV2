@@ -22,19 +22,18 @@ function buildLeaderboardChips(row) {
   return chips
 }
 
-export function HeroStatus({ profile, session, circleId }) {
+export function HeroStatus({ profile }) {
   return (
     <Card
-      title={profile?.name ? `${profile.name} is on the board.` : 'Board ready'}
-      body="Phase 1 shell is live. Logging stays isolated from future heavy systems."
+      title={profile?.name ? `${profile.name}, board live` : 'Board ready'}
+      body="Fast press-up path only. Keep the board moving."
     >
       <div className="stack">
         <div className="stat-strip">
-          <span>{session?.user?.email ?? 'Signed in'}</span>
-          <span>{profile?.board_status ?? 'active'}</span>
-          <span>{circleId || 'No circle configured'}</span>
+          <span>{profile?.board_status ?? 'Active'}</span>
+          <span>Live board</span>
         </div>
-        <p className="muted">Fast path first. No Arena load. No 1% load.</p>
+        <p className="muted">Press-ups first. No Arena, no 1% systems in Phase 1.</p>
       </div>
     </Card>
   )
@@ -58,10 +57,10 @@ export function ProfileReadinessCard({ profile, isLoading, error }) {
   }
 
   return (
-    <Card title="Profile ready" body="You are authenticated and the board can identify you.">
+    <Card title="Profile ready" body="Your board profile is set and ready to log press-ups.">
       <div className="stat-strip">
         <span>{profile?.name ?? 'Unnamed warrior'}</span>
-        <span>{profile?.id ?? 'No profile id'}</span>
+        <span>{profile?.board_status ?? 'Active'}</span>
       </div>
     </Card>
   )
@@ -220,14 +219,16 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
       <div className={compact ? 'stack chase-stack chase-stack--compact' : 'stack chase-stack'}>
         {chase.currentUserRow?.rank === 1 ? (
           <div className="chase-block">
+            <span className="chase-pill">DEFEND</span>
             <strong>You&apos;re holding the crown.</strong>
-            <span>Defend the gap.</span>
+            <span>Protect your lead.</span>
           </div>
         ) : null}
 
         {chase.rowAbove ? (
           <div className="chase-block">
-            <strong>You&apos;re hunting {chase.rowAbove.actorName}.</strong>
+            <span className="chase-pill">TARGET</span>
+            <strong>You're hunting {chase.rowAbove.actorName}.</strong>
             <span>{chase.gapToCatch} reps ahead.</span>
             <span>{chase.suggestedAction}</span>
           </div>
@@ -235,6 +236,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
 
         {chase.rowBelow ? (
           <div className="chase-block">
+            <span className="chase-pill">DEFEND</span>
             <strong>{chase.rowBelow.actorName} is hunting you.</strong>
             <span>{chase.gapToDefend} reps behind.</span>
             <span>Defend the gap.</span>
@@ -243,6 +245,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false }) {
 
         {!chase.rowAbove && !chase.rowBelow ? (
           <div className="chase-block">
+            <span className="chase-pill">KEEP</span>
             <strong>You&apos;re alone on the board.</strong>
             <span>Keep logging. Make someone chase.</span>
           </div>

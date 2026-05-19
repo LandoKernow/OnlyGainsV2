@@ -1,15 +1,59 @@
+import { useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
-import { Card } from '../../components/Card'
+import { useAuth } from '../../features/auth/AuthProvider'
+import { useBoardMeta } from '../../hooks/useBoardMeta'
+import { useDeleteSubmission } from '../../hooks/useDeleteSubmission'
+import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
+import { RecentActivityCard, RemoveEntryModal } from '../../features/dashboard/DashboardSections'
 
 export default function ActivityScreen() {
+  const { session } = useAuth()
+  const { circleId } = useBoardMeta()
+  const [entryToRemove, setEntryToRemove] = useState(null)
+  const recentActivityQuery = useRecentSubmissions(circleId, 5)
+  const deleteSubmission = useDeleteSubmission({
+    circleId,
+    userId: session.user.id,
+    limit: 5,
+  })
+
+  function handleConfirmRemove() {
+    if (!entryToRemove) {
+      return
+    }
+
+    deleteSubmission.mutate(
+      { submissionId: entryToRemove.id },
+      {
+        onSettled: () => {
+          setEntryToRemove(null)
+        },
+      },
+    )
+  }
+
   return (
     <div className="screen">
       <AuthGate>
         <div className="stack-lg">
-          <Card title="Activity route" body="Logging lives on the Dashboard hot path first.">
-            <p className="muted">This route stays lightweight until the board loop is fully proven.</p>
-          </Card>
+          <RecentActivityCard
+            rows={recentActivityQuery.data ?? []}
+            isLoading={recentActivityQuery.isLoading}
+            error={recentActivityQuery.error}
+            currentUserId={session.user.id}
+            onRequestRemove={setEntryToRemove}
+          />
         </div>
+        <RemoveEntryModal
+          submission={entryToRemove}
+          onConfirm={handleConfirmRemove}
+          onCancel={() => {
+            if (!deleteSubmission.isPending) {
+              setEntryToRemove(null)
+            }
+          }}
+          isDeleting={deleteSubmission.isPending}
+        />
       </AuthGate>
     </div>
   )
