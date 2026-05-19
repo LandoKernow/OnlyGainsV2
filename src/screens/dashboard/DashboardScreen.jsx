@@ -126,8 +126,9 @@ function AuthenticatedDashboard() {
     <>
       <div className="stack-lg">
         <div className="beta-note">
-          <p>Only Gains 2.0 is in private testing.</p>
-          <p>Log reps. Climb the board. Break what needs breaking.</p>
+          <strong>Board Beta is live.</strong>
+          <p>Log press-ups. Climb ranks. Chase the warrior above you.</p>
+          <p>Arena, The 1% and Profiles return soon — rebuilt properly.</p>
         </div>
         {isNewThisWeek ? (
           <div className="dashboard-onboarding-note">

@@ -124,7 +124,7 @@ export function LeaderboardPlaceholder() {
         <span className="pill">Monthly</span>
         <span className="pill">Yearly</span>
       </div>
-      <p className="muted">Query-driven totals are not wired yet.</p>
+      <p className="muted">Leaderboard totals will appear once the board warms up.</p>
     </Card>
   )
 }
