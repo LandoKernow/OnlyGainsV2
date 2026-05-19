@@ -15,6 +15,14 @@
   --shadow: 0 18px 40px rgba(0, 0, 0, 0.26);
 }
 
+/* Safe-area insets for mobile devices (iOS notch / Android gesture areas) */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -47,7 +55,8 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  padding: 1rem 1rem 6rem;
+  /* add extra bottom padding to account for mobile safe area and floating nav */
+  padding: 1rem 1rem calc(6rem + var(--safe-bottom));
   background:
     radial-gradient(circle at top right, rgba(213, 106, 44, 0.08), transparent 24%),
     transparent;
@@ -84,6 +93,8 @@ button {
   border-radius: 999px;
   padding: 0.55rem 0.85rem;
   font-size: 0.85rem;
+  max-width: min(80%, 28rem);
+  overflow-wrap: anywhere;
 }
 
 .pill-button {
@@ -182,7 +193,8 @@ button {
 .bottom-nav {
   position: fixed;
   left: 50%;
-  bottom: 1rem;
+  /* lift above mobile safe area */
+  bottom: calc(1rem + var(--safe-bottom));
   transform: translateX(-50%);
   width: min(48rem, calc(100% - 1rem));
   display: grid;
@@ -194,6 +206,7 @@ button {
   background: rgba(10, 10, 12, 0.96);
   backdrop-filter: blur(12px);
   box-shadow: var(--shadow);
+  z-index: 40;
 }
 
 .bottom-nav__item {
@@ -399,13 +412,13 @@ button {
 .toast-stack {
   position: fixed;
   left: 50%;
-  bottom: 5.85rem;
+  bottom: calc(5.85rem + var(--safe-bottom));
   transform: translateX(-50%);
   width: min(32rem, calc(100% - 1rem));
   display: grid;
   gap: 0.65rem;
   pointer-events: none;
-  z-index: 20;
+  z-index: 45;
 }
 
 .toast {
@@ -444,7 +457,7 @@ button {
   background: rgba(0, 0, 0, 0.54);
   display: grid;
   align-items: end;
-  padding: 1rem 1rem 6.5rem;
+  padding: 1rem 1rem calc(6.5rem + var(--safe-bottom));
   z-index: 30;
 }
 
@@ -484,6 +497,26 @@ button {
 .pill--active {
   background: var(--accent-soft);
   color: #fff4ed;
+}
+
+/* Tighten small-screen row layouts */
+@media (max-width: 420px) {
+  .leaderboard-row {
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .row-chip {
+    padding: 0.18rem 0.45rem;
+    font-size: 0.7rem;
+  }
+
+  .bottom-nav {
+    width: calc(100% - 1rem);
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 @media (min-width: 768px) {

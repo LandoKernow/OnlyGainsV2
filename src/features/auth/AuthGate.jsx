@@ -17,9 +17,13 @@ export function AuthGate({ children }) {
   }
 
   if (status === 'setup-error') {
+    const guidance = import.meta.env.DEV
+      ? (authError || 'Check your .env file and restart the app. Copy .env.example to .env when developing locally.')
+      : (authError || 'Missing build-time environment variables. When deployed, set VITE_*: use Cloudflare Workers/Wrangler or CI secrets per the README.')
+
     return (
       <Card title="Setup incomplete" body="Supabase environment values are missing or invalid.">
-        <p className="muted">{authError || 'Check your .env file and restart the app.'}</p>
+        <p className="muted">{guidance}</p>
       </Card>
     )
   }
@@ -57,6 +61,9 @@ export function AuthGate({ children }) {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="name@example.com"
             autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            inputMode="email"
             required
           />
         </label>

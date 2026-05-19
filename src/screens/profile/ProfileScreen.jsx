@@ -11,7 +11,7 @@ function ProfileSummary() {
   const { circleId, timezone } = useBoardMeta()
   const profileQuery = useCurrentProfile()
   const modeLabel = import.meta.env.DEV ? 'dev' : 'deployed'
-  const buildLabel = `${appEnv.appName} · ${appEnv.appEnv} · ${modeLabel}`
+  const buildLabel = `${appEnv.appName} - ${appEnv.appEnv} - ${modeLabel}`
 
   return (
     <Card title="Profile shell" body="Board identity is in. Deeper Warrior Profile work stays out until Phase 5.">
@@ -22,6 +22,7 @@ function ProfileSummary() {
         <p className="muted">Board timezone: {timezone}</p>
         <p className="muted">Build: {buildLabel}</p>
         <p className="muted">Origin: {window.location.origin}</p>
+        <p className="muted">Auth return target: {`${window.location.origin}/dashboard`}</p>
         {profileQuery.error ? <p className="muted">{profileQuery.error.message}</p> : null}
         <button className="button button--ghost" type="button" onClick={() => signOut()}>
           Sign out

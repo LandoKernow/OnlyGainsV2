@@ -1,5 +1,5 @@
 # Only Gains 2.0
-Test
+
 Clean rebuild for Phase 1 of the Only Gains board experience.
 
 ## Current Phase 1 scope
@@ -56,32 +56,26 @@ VITE_SUPABASE_URL=https://your-project.supabase.co/rest/v1/
 
 ## Build and deploy
 
-This app is prepared for static deployment to Cloudflare Pages.
+This project is deployed to Cloudflare Workers using Wrangler or a CI that publishes a Worker build artifact. The live staging URL for V2 is:
 
-### Cloudflare Pages settings
+- https://onlygainsv2.gautie.workers.dev
 
-- Framework preset: `Vite`
-- Build command: `npm run build`
-- Build output directory: `dist`
-- Node version: use a modern Node 20+ runtime if configurable
+Recommended deploy flows
 
-### SPA routing
+- Local publish (manual testing):
 
-The project includes [public/_redirects](</C:/Users/gauti/OneDrive/Documents/Only Gains 2.0/public/_redirects>) so direct loads of routes like `/dashboard`, `/leaderboard`, and `/chase` resolve back to `index.html` on Cloudflare Pages.
+	1. Build the app: `npm run build`
+	2. Publish with Wrangler (configured to upload `dist` or the Worker bundle): `npx wrangler publish`
 
-### Recommended staging
+- CI / GitHub-triggered deploy (preferred):
 
-Use one of:
+	- Configure GitHub Actions or your CI to run `npm ci && npm run build` and publish with `wrangler publish` or push the artifact to Cloudflare via the Wrangler GitHub Action. This provides repeatable, auditable deploys and is the recommended path for staging and production.
 
-- Cloudflare Pages preview URL
-- `v2.onlygains.club` if you have that hostname available
+Notes on routing and Workers
 
-Recommended rollout:
+- When deployed as a Cloudflare Worker you do not rely on `public/_redirects` (Cloudflare Pages). Ensure your Worker routes send SPA requests to the built `index.html` (or serve the static assets) so routes like `/dashboard` and `/leaderboard` resolve properly.
 
-1. Deploy to a private Cloudflare Pages preview first.
-2. Confirm mobile auth redirect returns to V2, not V1.
-3. Test the core loop on a real phone.
-4. Move to a named staging hostname only after preview validation.
+- If you use a Cloudflare Worker that sits behind a custom hostname, make sure that hostname is allowed in your Supabase redirect URLs (see below).
 
 ## Supabase auth redirect URL checklist
 
