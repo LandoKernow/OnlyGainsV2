@@ -82,7 +82,7 @@ button {
 
 .app-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   margin: 0 auto 1rem;
@@ -90,17 +90,18 @@ button {
 }
 
 .app-header h1 {
-  margin: 0.25rem 0 0;
-  font-size: clamp(1.5rem, 5vw, 2rem);
+  margin: 0.4rem 0 0;
+  font-size: clamp(1.65rem, 4.5vw, 2.2rem);
   line-height: 1.05;
+  letter-spacing: -0.02em;
 }
 
 .eyebrow {
   margin: 0;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
 }
 
 .session-pill,
@@ -109,10 +110,12 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
   border-radius: 999px;
-  padding: 0.55rem 0.85rem;
-  font-size: 0.85rem;
-  max-width: min(80%, 28rem);
-  overflow-wrap: anywhere;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  max-width: min(50vw, 18rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pill-button {

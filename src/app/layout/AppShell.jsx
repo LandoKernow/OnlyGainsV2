@@ -11,17 +11,18 @@ const navItems = [
 
 export function AppShell({ children }) {
   const { session, status, authError } = useAuth()
+  const userLabel = session?.user?.email ? session.user.email.split('@')[0] : null
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Only Gains 2.0</p>
-          <h1>Discipline becomes public.</h1>
+          <p className="eyebrow">ONLY GAINS</p>
+          <h1>Show up. Log it. Get better.</h1>
         </div>
-        <div className="session-pill" aria-live="polite">
+        <div className="session-pill" title={session?.user?.email} aria-live="polite">
           {status === 'loading' && 'Session loading'}
-          {status === 'authenticated' && session?.user?.email}
+          {status === 'authenticated' && userLabel}
           {status === 'unauthenticated' && 'Signed out'}
           {status === 'setup-error' && (authError || 'Setup error')}
         </div>

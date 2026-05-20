@@ -21,12 +21,14 @@ function buildLeaderboardChips(row) {
 }
 
 export function HeroStatus({ profile }) {
+  const statusLabel = profile?.board_status ? String(profile.board_status) : 'active'
+
   return (
     <Card title={`${profile?.name || 'Warrior'}`} body="Board live.">
       <div className="stack">
         <div className="stat-strip">
-          <span>{profile?.board_status ?? 'Active'}</span>
-          <span>Status ok</span>
+          <span>Status: {statusLabel}</span>
+          <span>You’re in the fight.</span>
         </div>
       </div>
     </Card>
