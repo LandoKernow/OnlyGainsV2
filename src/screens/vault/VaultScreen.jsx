@@ -3,32 +3,36 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
 
-function VaultRecordCard({ title, record, holder, year, unitHint }) {
+function VaultRecordCard({ title, record, holder, year, hasRecord }) {
   return (
-    <article className="vault-card">
-      <div className="vault-card__heading">
-        <strong>{title}</strong>
-      </div>
+    <article className="vault-card vault-record-card">
+      <strong>{title}</strong>
       <div className="vault-card__value">{record}</div>
-      <div className="vault-card__meta">
-        <span>{holder}</span>
-        <span>{year}</span>
-      </div>
-      {unitHint ? <p className="muted vault-card__hint">{unitHint}</p> : null}
+      {hasRecord ? (
+        <>
+          <div className="vault-card__holder">{holder}</div>
+          <div className="vault-card__status">CURRENT HOLDER · {year}</div>
+        </>
+      ) : (
+        <div className="vault-card__empty">No holder yet. Log enough to leave a mark.</div>
+      )}
     </article>
   )
 }
 
-function VaultLockedCard({ title }) {
+function VaultFutureSection() {
+  const futureTitles = ['Fastest 5K', 'Fastest 10K', 'Half marathon', 'Marathon']
+
   return (
-    <article className="vault-card vault-card--locked">
-      <div className="vault-card__heading">
-        <strong>{title}</strong>
-        <span className="vault-card__badge">Locked</span>
+    <Card title="COMING NEXT" body="Profile PBs will power these soon.">
+      <div className="vault-future">
+        {futureTitles.map((title) => (
+          <span key={title} className="vault-future-chip">
+            {title}
+          </span>
+        ))}
       </div>
-      <div className="vault-card__value">Unlock with profile PBs</div>
-      <p className="muted vault-card__hint">Profile PBs will power these soon.</p>
-    </article>
+    </Card>
   )
 }
 
@@ -42,7 +46,7 @@ export default function VaultScreen() {
   const kmWeek = records.kmWeek
 
   return (
-    <div className="screen">
+    <div className="screen screen--vault">
       <div className="stack-lg">
         <Card title="THE VAULT" body="Records are remembered.">
           <div className="stack">
@@ -50,46 +54,48 @@ export default function VaultScreen() {
           </div>
         </Card>
 
-        <Card title={`Vault ${currentYear}`} body="Current year Vault.">
-          {isLoading ? <p className="muted">Loading legacy totals…</p> : null}
-          {error ? <p className="muted">Unable to load Vault records.</p> : null}
-          {!isLoading && !error ? (
-            <div className="vault-grid">
-              <VaultRecordCard
-                title="Most press-ups / day"
-                record={pressupsDay ? formatActivityValue(pressupsDay.value, 'pressups') : 'No record yet'}
-                holder={pressupsDay ? pressupsDay.actorName : 'No holder yet'}
-                year={pressupsDay ? currentYear : '—'}
-                unitHint="Highest single-day total this year."
-              />
-              <VaultRecordCard
-                title="Most press-ups / week"
-                record={pressupsWeek ? formatActivityValue(pressupsWeek.value, 'pressups') : 'No record yet'}
-                holder={pressupsWeek ? pressupsWeek.actorName : 'No holder yet'}
-                year={pressupsWeek ? currentYear : '—'}
-                unitHint="Highest single-week total this year."
-              />
-              <VaultRecordCard
-                title="Most KM / day"
-                record={kmDay ? formatActivityValue(kmDay.value, 'km') : 'No record yet'}
-                holder={kmDay ? kmDay.actorName : 'No holder yet'}
-                year={kmDay ? currentYear : '—'}
-                unitHint="Highest single-day KM total this year."
-              />
-              <VaultRecordCard
-                title="Most KM / week"
-                record={kmWeek ? formatActivityValue(kmWeek.value, 'km') : 'No record yet'}
-                holder={kmWeek ? kmWeek.actorName : 'No holder yet'}
-                year={kmWeek ? currentYear : '—'}
-                unitHint="Highest single-week KM total this year."
-              />
-              <VaultLockedCard title="Fastest 5K" />
-              <VaultLockedCard title="Fastest 10K" />
-              <VaultLockedCard title="Half marathon" />
-              <VaultLockedCard title="Marathon" />
-            </div>
-          ) : null}
-        </Card>
+        <div className="vault-intro">
+          <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
+          <p className="vault-intro__copy">Current year Vault.</p>
+        </div>
+
+        {!isLoading && !error ? (
+          <div className="vault-records">
+            <VaultRecordCard
+              title="Most press-ups / day"
+              record={pressupsDay ? formatActivityValue(pressupsDay.value, 'pressups') : 'No record yet'}
+              holder={pressupsDay ? pressupsDay.actorName : ''}
+              year={currentYear}
+              hasRecord={Boolean(pressupsDay)}
+            />
+            <VaultRecordCard
+              title="Most press-ups / week"
+              record={pressupsWeek ? formatActivityValue(pressupsWeek.value, 'pressups') : 'No record yet'}
+              holder={pressupsWeek ? pressupsWeek.actorName : ''}
+              year={currentYear}
+              hasRecord={Boolean(pressupsWeek)}
+            />
+            <VaultRecordCard
+              title="Most KM / day"
+              record={kmDay ? formatActivityValue(kmDay.value, 'km') : 'No record yet'}
+              holder={kmDay ? kmDay.actorName : ''}
+              year={currentYear}
+              hasRecord={Boolean(kmDay)}
+            />
+            <VaultRecordCard
+              title="Most KM / week"
+              record={kmWeek ? formatActivityValue(kmWeek.value, 'km') : 'No record yet'}
+              holder={kmWeek ? kmWeek.actorName : ''}
+              year={currentYear}
+              hasRecord={Boolean(kmWeek)}
+            />
+          </div>
+        ) : null}
+
+        {isLoading ? <p className="muted">Loading legacy totals…</p> : null}
+        {error ? <p className="muted">Unable to load Vault records.</p> : null}
+
+        <VaultFutureSection />
       </div>
     </div>
   )

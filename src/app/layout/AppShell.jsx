@@ -5,7 +5,7 @@ const navItems = [
   { to: '/dashboard', label: 'Board' },
   { to: '/leaderboard', label: 'Ranks' },
   { to: '/chase', label: 'Chase' },
-  { to: '/activity', label: 'Logs' },
+  { to: '/vault', label: 'Vault' },
   { to: '/profile', label: 'Profile' },
 ]
 
