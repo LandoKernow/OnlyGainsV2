@@ -4,19 +4,87 @@ import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useToast } from '../../components/ToastProvider'
+import { useBoardMeta } from '../../hooks/useBoardMeta'
+import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
+import { useChase } from '../../hooks/useChase'
+import { getRowStatus } from '../../utils/status'
+import { formatActivityValue } from '../../utils/activity'
+
+function getBoardStatusLabel(status) {
+  switch (status) {
+    case 'CROWN':
+      return 'Holding crown'
+    case 'HOLDING':
+      return 'Holding lead'
+    case 'WAR':
+      return 'Locked in war'
+    case 'HOT':
+      return 'Heat on'
+    case 'TOP3':
+      return 'In the mix'
+    case 'HUNTED':
+      return 'Hunted'
+    case 'DANGEROUS':
+      return 'Dangerous'
+    case 'ACTIVE':
+      return 'Active'
+    default:
+      return 'Visible discipline'
+  }
+}
 
 function ProfileSummary() {
   const { session, signOut } = useAuth()
+  const { circleId } = useBoardMeta()
   const profileQuery = useCurrentProfile()
+  const leaderboardQuery = useActivityLeaderboard({
+    circleId,
+    currentUserId: session?.user?.id,
+    period: 'weekly',
+    activityType: 'pressups',
+  })
+  const chase = useChase(leaderboardQuery.rows, session?.user?.id)
+  const profileName = profileQuery.data?.name || session?.user?.email?.split('@')[0] || 'Warrior'
+  const currentRow = leaderboardQuery.currentUserRow
+  const statusLabel = currentRow ? getBoardStatusLabel(getRowStatus(currentRow, leaderboardQuery.rows)) : null
+  const rivalRow = chase.rowAbove || chase.rowBelow
 
   return (
     <>
-      <Card title="Who you're becoming" body="Pressure profile.">
+      <Card title="Who you're becoming" body={statusLabel || 'Pressure profile.'}>
         <div className="stack">
           <div className="stat-strip">
-            <strong>{profileQuery.data?.name || 'Warrior'}</strong>
-            <span>{session?.user?.email}</span>
+            <strong>{profileName}</strong>
+            <span>{currentRow ? `#${currentRow.rank} this week` : 'No weekly rank yet'}</span>
           </div>
+
+          {leaderboardQuery.isLoading || profileQuery.isLoading ? (
+            <p className="muted">Loading board identity…</p>
+          ) : currentRow ? (
+            <div className="stack section-gap">
+              <div className="stat-strip">
+                <span>{formatActivityValue(currentRow.total, 'pressups')} this week</span>
+                <span>{statusLabel}</span>
+              </div>
+              <div className="stack">
+                {rivalRow ? (
+                  <p>
+                    {chase.rowAbove ? 'Chasing' : 'Defending against'}{' '}
+                    <strong>{rivalRow.actorName || 'the next rival'}</strong>
+                  </p>
+                ) : (
+                  <p className="muted">Stay present. Log reps to build your board identity.</p>
+                )}
+                {chase.suggestedAction ? <p className="muted">{chase.suggestedAction}</p> : null}
+              </div>
+            </div>
+          ) : (
+            <div className="stack">
+              <strong>Not yet on the board.</strong>
+              <span>Log press-up activity to earn a weekly rank and identity snapshot.</span>
+            </div>
+          )}
+
           <p className="muted">Records incoming. Arena returning.</p>
           <button className="button button--ghost" type="button" onClick={() => signOut()}>
             Sign out

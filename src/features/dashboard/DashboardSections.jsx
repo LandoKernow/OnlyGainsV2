@@ -62,6 +62,50 @@ function getPressureContext(row, allRows = []) {
   return null
 }
 
+function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }) {
+  if (!row) {
+    return null
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onClick={onClose}>
+      <div
+        className="modal-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="preview-row-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="stack">
+          <div>
+            <h2 id="preview-row-title" className="modal-title">
+              {row.actorName || 'Board member'}
+            </h2>
+            <p className="muted">Weekly board preview built from existing rank data.</p>
+          </div>
+          <div className="modal-summary">
+            <span>#{row.rank}</span>
+            <span>{formatActivityValue(row.total, activityType)}</span>
+            {getMomentumChip(row) ? <span>{getMomentumChip(row)}</span> : null}
+          </div>
+          <div className="stack">
+            {getPressureContext(row, allRows) ? (
+              <p>{getPressureContext(row, allRows)}</p>
+            ) : (
+              <p className="muted">No immediate pressure data for this row.</p>
+            )}
+          </div>
+          <div className="modal-actions">
+            <button className="button button--ghost" type="button" onClick={onClose}>
+              Close preview
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function HeroStatus({ profile }) {
   const statusLabel = profile?.board_status ? String(profile.board_status) : 'active'
 
@@ -253,6 +297,7 @@ export function WeeklyLeaderMessageCard({
 }
 
 export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUserRow, isLoading, error, compact = false, activityType = 'pressups' }) {
+  const [previewRow, setPreviewRow] = useState(null)
   const periods = [
     { key: 'weekly', label: 'Weekly' },
     { key: 'monthly', label: 'Monthly' },
@@ -264,6 +309,20 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
 
   function formatValue(value) {
     return formatActivityValue(value, activityType)
+  }
+
+  function handlePreviewRow(row) {
+    if (row.pending) {
+      return
+    }
+    setPreviewRow(row)
+  }
+
+  function handleRowKeyDown(event, row) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      handlePreviewRow(row)
+    }
   }
 
   return (
@@ -297,31 +356,48 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
       {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
       {rows.length > 0 ? (
-        <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
-          {rows.map((row) => {
-            const pressureContext = getPressureContext(row, rows)
-            return (
-              <li
-                key={row.userId}
-                className={row.isCurrentUser ? 'leaderboard-row leaderboard-row--current' : 'leaderboard-row'}
-              >
-                <div className="leaderboard-rank">#{row.rank}</div>
-                <div className="leaderboard-copy">
-                  <strong>{row.actorName}</strong>
-                  {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
-                  <div className="row-chip-list">
-                    {buildLeaderboardChips(row, rows).map((chip) => (
-                      <span key={`${row.userId}-${chip}`} className="row-chip">
-                        {chip}
-                      </span>
-                    ))}
+        <>
+          <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
+            {rows.map((row) => {
+              const pressureContext = getPressureContext(row, rows)
+              const rowClassName = row.isCurrentUser
+                ? 'leaderboard-row leaderboard-row--current leaderboard-row--clickable'
+                : 'leaderboard-row leaderboard-row--clickable'
+
+              return (
+                <li
+                  key={row.userId}
+                  className={rowClassName}
+                  onClick={() => handlePreviewRow(row)}
+                  onKeyDown={(event) => handleRowKeyDown(event, row)}
+                  role="button"
+                  tabIndex={row.pending ? -1 : 0}
+                  aria-label={`Preview ${row.actorName}`}
+                >
+                  <div className="leaderboard-rank">#{row.rank}</div>
+                  <div className="leaderboard-copy">
+                    <strong>{row.actorName}</strong>
+                    {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
+                    <div className="row-chip-list">
+                      {buildLeaderboardChips(row, rows).map((chip) => (
+                        <span key={`${row.userId}-${chip}`} className="row-chip">
+                          {chip}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <div className="leaderboard-total">{formatValue(row.total)}</div>
-              </li>
-            )
-          })}
-        </ol>
+                  <div className="leaderboard-total">{formatValue(row.total)}</div>
+                </li>
+              )
+            })}
+          </ol>
+          <LeaderboardRowPreviewModal
+            row={previewRow}
+            activityType={activityType}
+            allRows={rows}
+            onClose={() => setPreviewRow(null)}
+          />
+        </>
       ) : null}
     </Card>
   )

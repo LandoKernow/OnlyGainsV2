@@ -345,6 +345,21 @@ button {
   background: rgba(213, 106, 44, 0.09);
 }
 
+.leaderboard-row--clickable {
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.leaderboard-row--clickable:hover {
+  transform: translateY(-1px);
+  border-color: rgba(213, 106, 44, 0.55);
+}
+
+.leaderboard-row--clickable:focus-visible {
+  outline: 2px solid rgba(213, 106, 44, 0.55);
+  outline-offset: 2px;
+}
+
 .leaderboard-rank,
 .leaderboard-total {
   font-weight: 700;
