@@ -342,6 +342,66 @@ button {
   margin: 0;
 }
 
+.vault-intro {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.vault-intro__eyebrow {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.vault-intro__copy {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.vault-records {
+  display: grid;
+  gap: 1rem;
+}
+
+.vault-record-card {
+  display: grid;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02), var(--shadow);
+  padding: 1.1rem;
+}
+
+.vault-card__holder {
+  font-weight: 700;
+}
+
+.vault-card__status {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.vault-card__empty {
+  color: var(--text-muted);
+}
+
+.vault-future {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.vault-future-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.83rem;
+}
+
 .leaderboard-summary {
   display: flex;
   flex-wrap: wrap;
@@ -443,6 +503,38 @@ button {
   padding: 0.2rem 0.45rem;
   color: var(--text-muted);
   font-size: 0.72rem;
+}
+
+.leader-message {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid rgba(213, 106, 44, 0.9);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  font-style: normal;
+}
+
+.pressure-card-stack {
+  gap: 0.85rem;
+}
+
+.pressure-card-stack > div {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pressure-card-stack strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.pressure-card-stack span {
+  color: var(--text-muted);
+  font-size: 0.88rem;
 }
 
 .chase-stack {

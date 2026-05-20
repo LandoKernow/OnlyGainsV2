@@ -211,6 +211,7 @@ export function LeaderboardPlaceholder() {
 
 export function WeeklyLeaderMessageCard({
   messageRow,
+  leaderName,
   isLeader,
   isLoading,
   saveMessage,
@@ -253,7 +254,10 @@ export function WeeklyLeaderMessageCard({
       ) : (
         <div className="stack">
           {hasMessage ? (
-            <blockquote className="leader-message">{messageRow.message}</blockquote>
+            <>
+              <span className="muted">{leaderName}</span>
+              <blockquote className="leader-message">{messageRow.message}</blockquote>
+            </>
           ) : (
             <div className="stack">
               <strong>{isLeader ? 'The board is waiting.' : 'No message set yet.'}</strong>
@@ -422,6 +426,40 @@ export function ChaseCard({ chase, isLoading, period, compact = false, activityT
         <strong>{copy.primary}</strong>
         {copy.secondary ? <span>{copy.secondary}</span> : null}
         {copy.action ? <span>{copy.action}</span> : null}
+      </div>
+    </Card>
+  )
+}
+
+export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
+  if (isLoading) {
+    return (
+      <Card title="Pressure" body="Sizing the board gap.">
+        <p className="muted">One moment...</p>
+      </Card>
+    )
+  }
+
+  const hunterLabel = chase?.gapToCatch
+    ? `${formatActivityValue(chase.gapToCatch, activityType)} to overtake #${chase.rowAbove?.rank}`
+    : 'No one ahead yet.'
+  const huntedLabel = chase?.gapToDefend
+    ? `${formatActivityValue(chase.gapToDefend, activityType)} to hold #${chase.currentUserRow?.rank}`
+    : 'No one close enough yet.'
+  const hunterTitle = chase?.gapToCatch ? 'Hunt mode' : 'Crown mode'
+  const huntedTitle = chase?.gapToDefend ? 'Hunted' : 'Position stable'
+
+  return (
+    <Card title="Pressure" body="Who you are hunting and who is hunting you.">
+      <div className="stack pressure-card-stack">
+        <div>
+          <strong>{hunterTitle}</strong>
+          <span>{hunterLabel}</span>
+        </div>
+        <div>
+          <strong>{huntedTitle}</strong>
+          <span>{huntedLabel}</span>
+        </div>
       </div>
     </Card>
   )

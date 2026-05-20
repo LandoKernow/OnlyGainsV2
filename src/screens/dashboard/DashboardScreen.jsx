@@ -5,6 +5,7 @@ import {
   ChaseCard,
   HeroStatus,
   LogActivityCard,
+  PressureCard,
   PressupLeaderboardCard,
   ProfileReadinessCard,
   RecentActivityCard,
@@ -82,6 +83,9 @@ function AuthenticatedDashboard() {
     currentUserId: session.user.id,
     isCurrentWeeklyLeader: isPressupWeeklyLeader,
   })
+  const leaderMessageOwnerName = weeklyLeaderMessageQuery.messageRow?.userId
+    ? leaderboardQuery.rows.find((row) => row.userId === weeklyLeaderMessageQuery.messageRow.userId)?.actorName || 'Weekly leader'
+    : 'Weekly leader'
   const chase = useChase(leaderboardQuery.rows, session.user.id)
   const deleteSubmission = useDeleteSubmission({
     circleId,
@@ -180,11 +184,19 @@ function AuthenticatedDashboard() {
 
   return (
     <>
+      <div className="activity-toggle" style={{display: 'flex', gap: '0.4rem', alignItems: 'center'}}>
+        <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
+        <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
+      </div>
+
       <div className="stack-lg">
-        <div className="activity-toggle" style={{display: 'flex', gap: '0.4rem', alignItems: 'center'}}>
-          <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
-          <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
-        </div>
+        <WeeklyLeaderMessageCard
+          messageRow={weeklyLeaderMessageQuery.messageRow}
+          leaderName={leaderMessageOwnerName}
+          isLeader={isPressupWeeklyLeader}
+          isLoading={weeklyLeaderMessageQuery.isLoading}
+          saveMessage={weeklyLeaderMessageQuery.save}
+        />
 
         <HeroStatus profile={profileQuery.data} />
 
@@ -201,19 +213,10 @@ function AuthenticatedDashboard() {
 
         <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
 
-        <WeeklyLeaderMessageCard
-          messageRow={weeklyLeaderMessageQuery.messageRow}
-          isLeader={isPressupWeeklyLeader}
-          isLoading={weeklyLeaderMessageQuery.isLoading}
-          saveMessage={weeklyLeaderMessageQuery.save}
-        />
-
-        <RecentActivityCard
-          rows={recentActivityQuery.data ?? []}
-          isLoading={recentActivityQuery.isLoading}
-          error={recentActivityQuery.error}
-          currentUserId={session.user.id}
-          onRequestRemove={setEntryToRemove}
+        <PressureCard
+          chase={chase}
+          isLoading={leaderboardQuery.isLoading}
+          activityType={activityType}
         />
 
         <PressupLeaderboardCard
@@ -225,6 +228,14 @@ function AuthenticatedDashboard() {
           error={leaderboardQuery.error}
           activityType={activityType}
           compact
+        />
+
+        <RecentActivityCard
+          rows={recentActivityQuery.data ?? []}
+          isLoading={recentActivityQuery.isLoading}
+          error={recentActivityQuery.error}
+          currentUserId={session.user.id}
+          onRequestRemove={setEntryToRemove}
         />
       </div>
       <RemoveEntryModal
