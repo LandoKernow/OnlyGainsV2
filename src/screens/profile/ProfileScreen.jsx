@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { Card } from '../../components/Card'
 import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
@@ -105,6 +106,19 @@ function ProfileSummary() {
   )
 }
 
+function VaultProfileCard() {
+  return (
+    <Card title="Vault records" body="Records incoming. Leave a mark.">
+      <div className="stack">
+        <p className="muted">See this year’s elite totals and the names that own them.</p>
+        <Link className="button" to="/vault">
+          Enter the Vault
+        </Link>
+      </div>
+    </Card>
+  )
+}
+
 function FeedbackActions() {
   const { showToast } = useToast()
 
@@ -146,6 +160,7 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <VaultProfileCard />
           <ProfileBasicsCard />
         </div>
       </AuthGate>

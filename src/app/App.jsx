@@ -9,6 +9,7 @@ const LeaderboardScreen = lazy(() => import('../screens/leaderboard/LeaderboardS
 const ChaseScreen = lazy(() => import('../screens/chase/ChaseScreen'))
 const ActivityScreen = lazy(() => import('../screens/activity/ActivityScreen'))
 const ProfileScreen = lazy(() => import('../screens/profile/ProfileScreen'))
+const VaultScreen = lazy(() => import('../screens/vault/VaultScreen'))
 const ResetPasswordScreen = lazy(() => import('../screens/reset/ResetPasswordScreen'))
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
             <Route path="/chase" element={<ChaseScreen />} />
             <Route path="/activity" element={<ActivityScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
+            <Route path="/vault" element={<VaultScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
         </Suspense>
