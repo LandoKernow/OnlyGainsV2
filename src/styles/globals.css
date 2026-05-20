@@ -179,6 +179,22 @@ button {
   color: #f7f1eb;
 }
 
+.auth-gate {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  margin: 1.5rem auto 0;
+  padding: 0 1rem;
+  max-width: min(88vw, 34rem);
+}
+
+.auth-brand-logo {
+  width: min(220px, 75vw);
+  max-width: 240px;
+  height: auto;
+  display: block;
+}
+
 .input {
   width: 100%;
   min-height: 2.9rem;

@@ -174,8 +174,10 @@ export function AuthGate({ children }) {
       : 'Sign in with your email and password.'
 
   return (
-    <Card title={title} body={body}>
-      <form className="stack" onSubmit={handleSubmit}>
+    <div className="auth-gate">
+      <img className="auth-brand-logo" src="/logo-auth.png" alt="Only Gains logo" />
+      <Card title={title} body={body}>
+        <form className="stack" onSubmit={handleSubmit}>
         <label className="stack">
           <span>Email</span>
           <input
@@ -294,5 +296,6 @@ export function AuthGate({ children }) {
         ) : null}
       </div>
     </Card>
+    </div>
   )
 }
