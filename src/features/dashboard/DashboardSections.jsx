@@ -2,18 +2,32 @@ import { useEffect, useState } from 'react'
 import { Card } from '../../components/Card'
 import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
+import { getMomentumChip, getPressureGap } from '../../utils/status'
 
 function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)
 }
 
-function buildLeaderboardChips(row) {
-  const chips = [`#${row.rank}`, `Today: ${row.todayTotal}`]
+function buildLeaderboardChips(row, allRows = []) {
+  const chips = []
 
+  // Momentum indicator
+  const momentum = getMomentumChip(row)
+  if (momentum) {
+    chips.push(momentum)
+  }
+
+  // Today's activity
+  if (row.todayTotal > 0) {
+    chips.push(`Today: ${row.todayTotal}`)
+  }
+
+  // Current user indicator
   if (row.isCurrentUser) {
     chips.push('You')
   }
 
+  // Pending indicator
   if (row.pending) {
     chips.push('Pending')
   }
@@ -21,15 +35,42 @@ function buildLeaderboardChips(row) {
   return chips
 }
 
+function getPressureContext(row, allRows = []) {
+  if (row.rank === 1) {
+    return 'CROWN'
+  }
+
+  const rankAbove = allRows.find((r) => r.rank === row.rank - 1)
+  const rankBelow = allRows.find((r) => r.rank === row.rank + 1)
+
+  if (rankAbove && rankBelow) {
+    const gapAhead = (rankAbove.total || 0) - (row.total || 0)
+    const gapBehind = (row.total || 0) - (rankBelow.total || 0)
+    return gapAhead <= gapBehind ? `${gapAhead} from #${row.rank - 1}` : `${gapBehind} ahead of #${row.rank + 1}`
+  }
+
+  if (rankAbove) {
+    const gapAhead = (rankAbove.total || 0) - (row.total || 0)
+    return `${gapAhead} from #${row.rank - 1}`
+  }
+
+  if (rankBelow) {
+    const gapBehind = (row.total || 0) - (rankBelow.total || 0)
+    return `${gapBehind} ahead of #${row.rank + 1}`
+  }
+
+  return null
+}
+
 export function HeroStatus({ profile }) {
   const statusLabel = profile?.board_status ? String(profile.board_status) : 'active'
 
   return (
-    <Card title={`${profile?.name || 'Warrior'}`} body="Board live.">
+    <Card title={`${profile?.name || 'Warrior'}`} body="Visible discipline.">
       <div className="stack">
         <div className="stat-strip">
           <span>Status: {statusLabel}</span>
-          <span>You’re in the fight.</span>
+          <span>Show up. Log it. Get better.</span>
         </div>
       </div>
     </Card>
@@ -219,13 +260,14 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
   ]
 
   const isKm = activityType === 'km'
+  const cardBody = isKm ? 'KM standings.' : 'Who\'s winning.'
 
   function formatValue(value) {
     return formatActivityValue(value, activityType)
   }
 
   return (
-    <Card title="Ranks" body={isKm ? 'KM totals.' : 'Press-up totals.'}>
+    <Card title="Ranks" body={cardBody}>
       <div className="placeholder-tabs">
         <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
         <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
@@ -243,7 +285,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
       {currentUserRow ? (
         <div className="leaderboard-summary">
           <strong>Your rank: #{currentUserRow.rank}</strong>
-          <span>{formatValue(currentUserRow.total)} this {period.replace('ly', '')}</span>
+          <span>{formatValue(currentUserRow.total)}</span>
           <span>{isKm ? `${formatKm(currentUserRow.todayTotal)} today` : `${currentUserRow.todayTotal} today`}</span>
         </div>
       ) : (
@@ -256,26 +298,29 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
       {isLoading ? <p className="muted">Loading...</p> : null}
       {rows.length > 0 ? (
         <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
-          {rows.map((row) => (
-            <li
-              key={row.userId}
-              className={row.isCurrentUser ? 'leaderboard-row leaderboard-row--current' : 'leaderboard-row'}
-            >
-              <div className="leaderboard-rank">#{row.rank}</div>
-              <div className="leaderboard-copy">
-                <strong>{row.actorName}</strong>
-                {getLeaderboardComment(row) ? <span>{getLeaderboardComment(row)}</span> : null}
-                <div className="row-chip-list">
-                  {buildLeaderboardChips(row).map((chip) => (
-                    <span key={`${row.userId}-${chip}`} className="row-chip">
-                      {chip}
-                    </span>
-                  ))}
+          {rows.map((row) => {
+            const pressureContext = getPressureContext(row, rows)
+            return (
+              <li
+                key={row.userId}
+                className={row.isCurrentUser ? 'leaderboard-row leaderboard-row--current' : 'leaderboard-row'}
+              >
+                <div className="leaderboard-rank">#{row.rank}</div>
+                <div className="leaderboard-copy">
+                  <strong>{row.actorName}</strong>
+                  {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
+                  <div className="row-chip-list">
+                    {buildLeaderboardChips(row, rows).map((chip) => (
+                      <span key={`${row.userId}-${chip}`} className="row-chip">
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <div className="leaderboard-total">{formatValue(row.total)}</div>
-            </li>
-          ))}
+                <div className="leaderboard-total">{formatValue(row.total)}</div>
+              </li>
+            )
+          })}
         </ol>
       ) : null}
     </Card>
@@ -324,7 +369,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
   }
 
   return (
-    <Card title="Board live" body="Recent movement.">
+    <Card title="Board live" body="Is the board moving?">
       {error && rows.length > 0 ? <p className="muted">Could not refresh. Try again.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
       {!isLoading && rows.length === 0 ? (

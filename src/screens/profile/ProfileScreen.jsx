@@ -11,10 +11,13 @@ function ProfileSummary() {
 
   return (
     <>
-      <Card title="Profile" body="Board identity.">
+      <Card title="Who you're becoming" body="Pressure profile.">
         <div className="stack">
-          <p className="muted">Email: {session?.user?.email}</p>
-          <p className="muted">Name: {profileQuery.data?.name ?? '—'}</p>
+          <div className="stat-strip">
+            <strong>{profileQuery.data?.name || 'Warrior'}</strong>
+            <span>{session?.user?.email}</span>
+          </div>
+          <p className="muted">Records incoming. Arena returning.</p>
           <button className="button button--ghost" type="button" onClick={() => signOut()}>
             Sign out
           </button>

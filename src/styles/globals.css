@@ -371,6 +371,11 @@ button {
   font-size: 0.82rem;
 }
 
+.pressure-gap {
+  color: var(--accent);
+  font-size: 0.78rem;
+}
+
 .row-chip-list {
   display: flex;
   flex-wrap: wrap;

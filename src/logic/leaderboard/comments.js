@@ -32,17 +32,33 @@ export function getRecentActivityCopy(row, currentUserId) {
   }
 
   const actor = row.userId === currentUserId ? 'You' : getSafeName(row.actorName)
+  const isPressup = row.activityType !== 'km'
 
   if (row.activityType === 'km') {
+    if (row.value >= 10) {
+      return `${actor} banked ${formatKm(row.value)}.`
+    }
+    if (row.value >= 5) {
+      return `${actor} put road work in: ${formatKm(row.value)}.`
+    }
     return `${actor} logged ${formatKm(row.value)}.`
   }
 
+  // Press-ups: varied language
   if (row.value >= 100) {
     return `${actor} brought heat: ${row.value} reps.`
   }
 
+  if (row.value >= 75) {
+    return `${actor} dropped ${row.value}.`
+  }
+
   if (row.value >= 50) {
-    return `${actor} logged ${row.value} reps.`
+    return `${actor} added ${row.value} to the board.`
+  }
+
+  if (row.value >= 30) {
+    return `${actor} moved the board: ${row.value} reps.`
   }
 
   if (row.value >= 20) {
@@ -68,26 +84,27 @@ export function getChaseCopy(chase) {
       primary: 'You hold the crown.',
       secondary: chase.rowBelow
         ? `${getSafeName(chase.rowBelow.actorName)} is ${chase.gapToDefend} behind.`
-        : 'Protect your lead.',
-      action: 'Keep the pressure on.',
+        : 'You stand alone.',
+      action: chase.rowBelow ? "Don't go quiet." : 'Keep the pressure on.',
     }
   }
 
   if (chase.rowAbove && chase.rowBelow) {
-    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} ahead.` : ''
+    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} to break through.` : ''
     return {
       title: 'HUNTING',
-      primary: `${getSafeName(chase.rowAbove.actorName)} is slipping.`,
+      primary: `${getSafeName(chase.rowAbove.actorName)} can feel you.`,
       secondary: gapMsg,
-      action: chase.gapToCatch ? `${chase.gapToCatch} takes the spot.` : 'Close the gap.',
+      action: chase.gapToCatch ? `One set of ${Math.min(chase.gapToCatch, 50)} closes it.` : 'Close the gap.',
     }
   }
 
   if (chase.rowAbove) {
+    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} to take the spot.` : ''
     return {
       title: 'CHASING',
-      primary: `${getSafeName(chase.rowAbove.actorName)} is ahead.`,
-      secondary: chase.gapToCatch ? `${chase.gapToCatch} to catch.` : '',
+      primary: `${getSafeName(chase.rowAbove.actorName)} is exposed.`,
+      secondary: gapMsg,
       action: 'Make your move.',
     }
   }
@@ -96,15 +113,15 @@ export function getChaseCopy(chase) {
     return {
       title: 'HUNTED',
       primary: `${getSafeName(chase.rowBelow.actorName)} is hunting you.`,
-      secondary: chase.gapToDefend ? `${chase.gapToDefend} behind.` : '',
-      action: 'Defend the gap.',
+      secondary: chase.gapToDefend ? `Only ${chase.gapToDefend} keeps them off you.` : 'Hold the line.',
+      action: 'One log keeps them back.',
     }
   }
 
   return {
     title: 'LEADING',
     primary: 'You stand alone.',
-    secondary: 'Keep moving. Make someone chase.',
+    secondary: 'Log work. Find a rival.',
     action: null,
   }
 }
