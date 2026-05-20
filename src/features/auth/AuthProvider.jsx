@@ -213,6 +213,26 @@ export function AuthProvider({ children }) {
           },
         })
       },
+      signInWithPassword: (email, password) => {
+        return supabase.auth.signInWithPassword({ email, password })
+      },
+      signUpWithPassword: (email, password) => {
+        return supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
+        })
+      },
+      sendPasswordReset: (email) => {
+        return supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+      },
+      updateUserPassword: (password) => {
+        return supabase.auth.updateUser({ password })
+      },
       signOut: async () => {
         authLog('sign out start')
         const result = await supabase.auth.signOut()

@@ -95,16 +95,13 @@ Notes:
 
 ### Staging
 
-Examples:
-
-- `https://<your-cloudflare-preview>.pages.dev/*`
+- `https://onlygainsv2.gautie.workers.dev/*`
 - `https://v2.onlygains.club/*`
 
 ### Production
 
-Example:
-
 - `https://onlygains.club/*`
+- `https://v2.onlygains.club/*`
 
 The app requests magic-link return to `/dashboard` on the current origin, so the active deployed origin must be allowed in Supabase.
 
