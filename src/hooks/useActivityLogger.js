@@ -5,6 +5,43 @@ import { getLondonSubmissionParts } from '../utils/dates'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
 
+const PRESSUP_SUCCESS_MESSAGES = [
+  'Reps logged.',
+  'The board saw it.',
+  'Pressure added.',
+  'Another set on record.',
+  'Work made public.',
+  'Position defended.',
+  'You moved. They noticed.',
+]
+
+const KM_SUCCESS_MESSAGES = [
+  'KM logged.',
+  'Engine checked.',
+  'Distance banked.',
+  'Road work recorded.',
+  'Pace filed.',
+  'Legs paid rent.',
+  'The board moved.',
+]
+
+function getStableIndex(seed, length) {
+  let hash = 0
+  const value = String(seed)
+
+  for (const char of value) {
+    hash = (hash * 31 + char.charCodeAt(0)) | 0
+  }
+
+  return Math.abs(hash) % length
+}
+
+function getSuccessMessage(activityType, value) {
+  const list = activityType === 'km' ? KM_SUCCESS_MESSAGES : PRESSUP_SUCCESS_MESSAGES
+  const index = value != null ? getStableIndex(value, list.length) : getStableIndex(activityType, list.length)
+  return list[index]
+}
+
 function buildPendingSubmission({ value, circleId, userId, actorName, activityType }) {
   const dateParts = getLondonSubmissionParts()
 
@@ -98,7 +135,10 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
         ),
       )
 
-      showToast({ tone: 'success', message: 'Logged.' })
+      showToast({
+        tone: 'success',
+        message: getSuccessMessage(activityType, Number(savedSubmission.value)),
+      })
     },
     onError: (error, _variables, context) => {
       console.error('[Only Gains Logging] submission failed', error)

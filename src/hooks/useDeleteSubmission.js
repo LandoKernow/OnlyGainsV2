@@ -6,6 +6,23 @@ import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
 
+const DELETE_SUCCESS_MESSAGES = ['Entry removed.', 'Record cleaned.', 'Log removed.']
+
+function getStableIndex(seed, length) {
+  let hash = 0
+
+  for (const char of String(seed)) {
+    hash = (hash * 31 + char.charCodeAt(0)) | 0
+  }
+
+  return Math.abs(hash) % length
+}
+
+function getDeleteSuccessMessage(submissionId) {
+  const index = getStableIndex(submissionId ?? '', DELETE_SUCCESS_MESSAGES.length)
+  return DELETE_SUCCESS_MESSAGES[index]
+}
+
 export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
@@ -37,8 +54,11 @@ export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
         previousLeaderboardRowsKm,
       }
     },
-    onSuccess: () => {
-      showToast({ tone: 'success', message: 'Entry removed.' })
+    onSuccess: (_data, variables) => {
+      showToast({
+        tone: 'success',
+        message: getDeleteSuccessMessage(variables.submissionId),
+      })
     },
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(recentQueryKey, context?.previousRecentRows ?? [])
