@@ -1,12 +1,9 @@
 import { Card } from '../../components/Card'
-import { formatActivityValue, formatKm } from '../../utils/activity'
-import { getLeaderboardComment, getRecentActivityCopy } from '../../logic/leaderboard/comments'
+import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
+import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 
 function formatSubmissionTimestamp(value) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
+  return formatRelativeTime(value)
 }
 
 function buildLeaderboardChips(row) {
@@ -25,16 +22,12 @@ function buildLeaderboardChips(row) {
 
 export function HeroStatus({ profile }) {
   return (
-    <Card
-      title={profile?.name ? `${profile.name}, board live` : 'Board ready'}
-      body="Fast press-up path only. Keep the board moving."
-    >
+    <Card title={`${profile?.name || 'Warrior'}`} body="Board live.">
       <div className="stack">
         <div className="stat-strip">
           <span>{profile?.board_status ?? 'Active'}</span>
-          <span>Live board</span>
+          <span>Status ok</span>
         </div>
-        <p className="muted">Press-ups first. Keep the board moving with every set.</p>
       </div>
     </Card>
   )
@@ -43,28 +36,21 @@ export function HeroStatus({ profile }) {
 export function ProfileReadinessCard({ profile, isLoading, error }) {
   if (isLoading) {
     return (
-      <Card title="Profile loading" body="Getting your board identity ready.">
-        <p className="muted">If you are new here, a minimal profile is being created now.</p>
+      <Card title="Loading" body="Getting your profile ready.">
+        <p className="muted">One moment.</p>
       </Card>
     )
   }
 
   if (error) {
     return (
-      <Card title="Profile hit a snag" body="Auth worked, but the profile could not load.">
-        <p className="muted">Could not load profile. Try again.</p>
+      <Card title="Profile error" body="Could not load your profile.">
+        <p className="muted">Try again.</p>
       </Card>
     )
   }
 
-  return (
-    <Card title="Profile ready" body="Your board profile is set and ready to log press-ups.">
-      <div className="stat-strip">
-        <span>{profile?.name ?? 'Unnamed warrior'}</span>
-        <span>{profile?.board_status ?? 'Active'}</span>
-      </div>
-    </Card>
-  )
+  return null
 }
 
 export function LogActivityCard({
@@ -80,7 +66,7 @@ export function LogActivityCard({
   const isKm = activityType === 'km'
 
   return (
-    <Card title="Log Activity" body={isKm ? 'Log distance quickly and keep the board honest.' : 'Tap reps fast and watch the board move.'}>
+    <Card title={isKm ? 'Log KM' : 'Log Press-Ups'} body={isKm ? 'Distance logged.' : 'Board moves with every rep.'}>
       {!isKm ? (
         <div className="quick-actions">
           {quickValues.map((quickValue) => (
@@ -98,7 +84,7 @@ export function LogActivityCard({
       ) : null}
       <form className="stack section-gap" onSubmit={onManualSubmit}>
         <label className="stack">
-          <span>{isKm ? 'Manual KM log' : 'Manual press-up log'}</span>
+          <span>{isKm ? 'KM' : 'Reps'}</span>
           <input
             className="input"
             type="number"
@@ -107,12 +93,12 @@ export function LogActivityCard({
             inputMode="decimal"
             value={manualValue}
             onChange={(event) => onManualValueChange(event.target.value)}
-            placeholder={isKm ? 'Enter km' : 'Enter reps'}
+            placeholder={isKm ? 'e.g. 5.2' : 'e.g. 25'}
             disabled={isSaving}
           />
         </label>
         <button className="button" type="submit" disabled={isSaving}>
-          {isSaving ? 'Saving...' : isKm ? 'Log KM' : 'Log Press-Ups'}
+          {isSaving ? 'Saving...' : 'Log'}
         </button>
       </form>
       {manualError ? <p className="muted">{manualError}</p> : null}
@@ -149,7 +135,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
   }
 
   return (
-    <Card title="Leaderboard" body={isKm ? 'KM totals for the current board period.' : 'Press-up totals for the current board period.'}>
+    <Card title="Ranks" body={isKm ? 'KM totals.' : 'Press-up totals.'}>
       <div className="placeholder-tabs">
         <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
         <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
@@ -172,13 +158,12 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
         </div>
       ) : (
         <div className="stack">
-          <strong>No one has moved yet.</strong>
+          <strong>Not on the board yet.</strong>
           <p className="muted">Log first. Make them chase.</p>
         </div>
       )}
-      {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh and go again.</p> : null}
-      {isLoading ? <p className="muted">Loading leaderboard...</p> : null}
-      {!isLoading && rows.length === 0 ? null : null}
+      {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh.</p> : null}
+      {isLoading ? <p className="muted">Loading...</p> : null}
       {rows.length > 0 ? (
         <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
           {rows.map((row) => (
@@ -189,7 +174,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
               <div className="leaderboard-rank">#{row.rank}</div>
               <div className="leaderboard-copy">
                 <strong>{row.actorName}</strong>
-                <span>{getLeaderboardComment(row)}</span>
+                {getLeaderboardComment(row) ? <span>{getLeaderboardComment(row)}</span> : null}
                 <div className="row-chip-list">
                   {buildLeaderboardChips(row).map((chip) => (
                     <span key={`${row.userId}-${chip}`} className="row-chip">
@@ -209,79 +194,23 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
 
 export function ChaseCard({ chase, isLoading, period, compact = false, activityType = 'pressups' }) {
   const isKm = activityType === 'km'
-  const unitLabel = isKm ? 'KM' : 'Press-up'
-
-  function formatGap(value) {
-    if (value == null) {
-      return null
-    }
-
-    return isKm ? formatKm(value) : `${value} reps`
-  }
-
-  function formatSuggestedAction() {
-    if (isKm) {
-      return chase.gapToCatch ? `${formatKm(chase.gapToCatch)} takes the spot.` : 'Build the gap.'
-    }
-
-    return chase.suggestedAction
-  }
 
   if (isLoading) {
     return (
-      <Card title="The Chase" body="Finding the pressure points on the board.">
-        <p className="muted">Loading chase...</p>
+      <Card title="Chase" body="Computing pressure.">
+        <p className="muted">One moment...</p>
       </Card>
     )
   }
 
-  if (chase.state === 'off-board') {
-    return (
-      <Card title="The Chase" body={`${unitLabel} chase for the current ${period.replace('ly', '')} board.`}>
-        <div className="stack">
-          <strong>You&apos;re not on the board yet.</strong>
-          <p className="muted">Log first. Let the board react.</p>
-        </div>
-      </Card>
-    )
-  }
+  const copy = getChaseCopy(chase)
 
   return (
-    <Card title="The Chase" body={`${unitLabel} chase for the current ${period.replace('ly', '')} board.`}>
+    <Card title={copy.title} body={copy.primary}>
       <div className={compact ? 'stack chase-stack chase-stack--compact' : 'stack chase-stack'}>
-        {chase.currentUserRow?.rank === 1 ? (
-          <div className="chase-block">
-            <span className="chase-pill">DEFEND</span>
-            <strong>You&apos;re holding the crown.</strong>
-            <span>Protect your lead.</span>
-          </div>
-        ) : null}
-
-        {chase.rowAbove ? (
-          <div className="chase-block">
-            <span className="chase-pill">TARGET</span>
-            <strong>You're hunting {chase.rowAbove.actorName}.</strong>
-            <span>{formatGap(chase.gapToCatch)} ahead.</span>
-            <span>{formatSuggestedAction()}</span>
-          </div>
-        ) : null}
-
-        {chase.rowBelow ? (
-          <div className="chase-block">
-            <span className="chase-pill">DEFEND</span>
-            <strong>{chase.rowBelow.actorName} is hunting you.</strong>
-            <span>{formatGap(chase.gapToDefend)} behind.</span>
-            <span>Defend the gap.</span>
-          </div>
-        ) : null}
-
-        {!chase.rowAbove && !chase.rowBelow ? (
-          <div className="chase-block">
-            <span className="chase-pill">KEEP</span>
-            <strong>You&apos;re alone on the board.</strong>
-            <span>Keep logging. Make someone chase.</span>
-          </div>
-        ) : null}
+        <strong>{copy.primary}</strong>
+        {copy.secondary ? <span>{copy.secondary}</span> : null}
+        {copy.action ? <span>{copy.action}</span> : null}
       </div>
     </Card>
   )
@@ -298,20 +227,20 @@ export function ChasePlaceholder() {
 export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
   if (error && rows.length === 0) {
     return (
-      <Card title="Recent Activity" body="Could not load recent activity.">
-        <p className="muted">Try again in a moment.</p>
+      <Card title="Board live" body="Could not load recent activity.">
+        <p className="muted">Try again.</p>
       </Card>
     )
   }
 
   return (
-    <Card title="Recent Activity" body="Latest five submissions. Pending entries land here immediately.">
-      {error && rows.length > 0 ? <p className="muted">Could not refresh activity. Try again.</p> : null}
-      {isLoading ? <p className="muted">Loading recent activity...</p> : null}
+    <Card title="Board live" body="Recent movement.">
+      {error && rows.length > 0 ? <p className="muted">Could not refresh. Try again.</p> : null}
+      {isLoading ? <p className="muted">Loading...</p> : null}
       {!isLoading && rows.length === 0 ? (
         <div className="stack">
           <strong>No movement yet.</strong>
-          <p className="muted">Put the first reps on the board.</p>
+          <p className="muted">You go first.</p>
         </div>
       ) : null}
       {rows.length > 0 ? (
@@ -323,7 +252,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
               <li key={row.id} className={row.pending ? 'activity-item activity-item--pending' : 'activity-item'}>
                 <div className="activity-copy">
                   <strong>{getRecentActivityCopy(row, currentUserId)}</strong>
-                  <span>{row.pending ? 'Board updating...' : formatSubmissionTimestamp(row.createdAt)}</span>
+                  <span>{row.pending ? 'Saving...' : formatSubmissionTimestamp(row.createdAt)}</span>
                 </div>
                 <div className="activity-meta">
                   <span className="activity-value">{formatActivityValue(row.value, row.activityType)}</span>

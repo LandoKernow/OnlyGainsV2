@@ -169,21 +169,12 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
-        <div className="beta-note">
-          <strong>Board Beta is live.</strong>
-          <p>Log press-ups. Climb ranks. Chase the warrior above you.</p>
-          <p>Arena, The 1% and Profiles return soon — rebuilt properly.</p>
-        </div>
-        {isNewThisWeek ? (
-          <div className="dashboard-onboarding-note">
-            <strong>Start here.</strong>
-            <p>Log your first set and the board reacts.</p>
-          </div>
-        ) : null}
         <div className="activity-toggle" style={{display: 'flex', gap: '0.4rem', alignItems: 'center'}}>
           <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
           <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
         </div>
+
+        <HeroStatus profile={profileQuery.data} />
 
         <LogActivityCard
           quickValues={quickValues}
@@ -195,6 +186,17 @@ function AuthenticatedDashboard() {
           isSaving={logger.isPending}
           activityType={activityType}
         />
+
+        <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
+
+        <RecentActivityCard
+          rows={recentActivityQuery.data ?? []}
+          isLoading={recentActivityQuery.isLoading}
+          error={recentActivityQuery.error}
+          currentUserId={session.user.id}
+          onRequestRemove={setEntryToRemove}
+        />
+
         <PressupLeaderboardCard
           period={leaderboardPeriod}
           onPeriodChange={setLeaderboardPeriod}
@@ -204,20 +206,6 @@ function AuthenticatedDashboard() {
           error={leaderboardQuery.error}
           activityType={activityType}
           compact
-        />
-        <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
-        <RecentActivityCard
-          rows={recentActivityQuery.data ?? []}
-          isLoading={recentActivityQuery.isLoading}
-          error={recentActivityQuery.error}
-          currentUserId={session.user.id}
-          onRequestRemove={setEntryToRemove}
-        />
-        <HeroStatus profile={profileQuery.data} />
-        <ProfileReadinessCard
-          profile={profileQuery.data}
-          isLoading={profileQuery.isLoading}
-          error={profileQuery.error}
         />
       </div>
       <RemoveEntryModal

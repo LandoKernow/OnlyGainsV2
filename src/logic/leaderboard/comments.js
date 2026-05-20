@@ -10,27 +10,20 @@ export function getLeaderboardComment(row) {
   }
 
   if (row.rank === 1) {
-    return 'Holding the crown'
+    return row.todayTotal >= 50 ? 'Untouchable' : 'Holding'
   }
 
-  // Simpler, unit-agnostic commenting
+  // Sparse, competitive commentary. Reserve for top 3 and high activity only.
   if (row.todayTotal >= 100) {
-    return row.isCurrentUser ? 'War mode' : 'Bringing the heat'
+    return 'War mode'
   }
 
-  if (row.todayTotal >= 50) {
-    return 'Pressure rising'
+  if (row.todayTotal >= 50 && row.rank <= 3) {
+    return 'Pressure'
   }
 
-  if (row.todayTotal > 0) {
-    return row.rank <= 3 ? 'Closing the gap' : 'On the board'
-  }
-
-  if (row.total > 0) {
-    return 'Still quiet today'
-  }
-
-  return 'Board watching'
+  // Compress: no comment for lower activity unless top 3
+  return ''
 }
 
 export function getRecentActivityCopy(row, currentUserId) {
@@ -45,16 +38,73 @@ export function getRecentActivityCopy(row, currentUserId) {
   }
 
   if (row.value >= 100) {
-    return `${actor} brought heat with ${row.value} press-ups.`
+    return `${actor} brought heat: ${row.value} reps.`
   }
 
   if (row.value >= 50) {
-    return `${actor} put ${row.value} press-ups on the board.`
+    return `${actor} logged ${row.value} reps.`
   }
 
   if (row.value >= 20) {
-    return `${actor} is no longer hiding — ${row.value} press-ups logged.`
+    return `${actor} logged ${row.value} reps.`
   }
 
-  return `${actor} added ${row.value} reps. Board saw it.`
+  return `${actor} added ${row.value} reps.`
+}
+
+export function getChaseCopy(chase) {
+  if (chase.state === 'off-board') {
+    return {
+      title: 'Join the board',
+      primary: "You're not ranked yet.",
+      secondary: 'Log first. Make them chase.',
+      action: null,
+    }
+  }
+
+  if (chase.currentUserRow?.rank === 1) {
+    return {
+      title: 'DEFENDING',
+      primary: 'You hold the crown.',
+      secondary: chase.rowBelow
+        ? `${getSafeName(chase.rowBelow.actorName)} is ${chase.gapToDefend} behind.`
+        : 'Protect your lead.',
+      action: 'Keep the pressure on.',
+    }
+  }
+
+  if (chase.rowAbove && chase.rowBelow) {
+    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} ahead.` : ''
+    return {
+      title: 'HUNTING',
+      primary: `${getSafeName(chase.rowAbove.actorName)} is slipping.`,
+      secondary: gapMsg,
+      action: chase.gapToCatch ? `${chase.gapToCatch} takes the spot.` : 'Close the gap.',
+    }
+  }
+
+  if (chase.rowAbove) {
+    return {
+      title: 'CHASING',
+      primary: `${getSafeName(chase.rowAbove.actorName)} is ahead.`,
+      secondary: chase.gapToCatch ? `${chase.gapToCatch} to catch.` : '',
+      action: 'Make your move.',
+    }
+  }
+
+  if (chase.rowBelow) {
+    return {
+      title: 'HUNTED',
+      primary: `${getSafeName(chase.rowBelow.actorName)} is hunting you.`,
+      secondary: chase.gapToDefend ? `${chase.gapToDefend} behind.` : '',
+      action: 'Defend the gap.',
+    }
+  }
+
+  return {
+    title: 'LEADING',
+    primary: 'You stand alone.',
+    secondary: 'Keep moving. Make someone chase.',
+    action: null,
+  }
 }
