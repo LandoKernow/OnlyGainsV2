@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '../../components/Card'
 import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
-import { getMomentumChip, getPressureGap } from '../../utils/status'
+import { getMomentumChip } from '../../utils/status'
 
 function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)

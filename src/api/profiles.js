@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase'
 
 function profileLog(step, details) {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
   if (details === undefined || details === null || details === '') {
     console.log(`[Only Gains Profile] ${step}`)
     return

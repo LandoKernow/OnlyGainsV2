@@ -4,6 +4,10 @@ import { supabase, supabaseSetupError } from '../../lib/supabase'
 const AuthContext = createContext(null)
 
 function authLog(step, details) {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
   if (details === undefined || details === null || details === '') {
     console.log(`[Only Gains Auth] ${step}`)
     return

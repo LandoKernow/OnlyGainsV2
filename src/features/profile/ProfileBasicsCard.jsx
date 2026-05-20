@@ -45,7 +45,7 @@ export function ProfileBasicsCard() {
   }
 
   return (
-    <Card title="Profile basics" body="Name, avatar, and accent help the board identify you quickly in this beta.">
+    <Card title="Profile basics" body="Name, avatar, and accent help the board identify you quickly.">
       <form
         className="stack"
         onSubmit={(event) => {
