@@ -9,12 +9,14 @@ import {
   ProfileReadinessCard,
   RecentActivityCard,
   RemoveEntryModal,
+  WeeklyLeaderMessageCard,
 } from '../../features/dashboard/DashboardSections'
 import { useChase } from '../../hooks/useChase'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useDeleteSubmission } from '../../hooks/useDeleteSubmission'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useActivityLogger } from '../../hooks/useActivityLogger'
+import { useWeeklyLeaderMessage } from '../../hooks/useWeeklyLeaderMessage'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
@@ -69,6 +71,16 @@ function AuthenticatedDashboard() {
     period: leaderboardPeriod,
     currentUserId: session.user.id,
     activityType: activityType === 'km' ? 'km' : 'pressups',
+  })
+  const isPressupWeeklyLeader =
+    !leaderboardQuery.isLoading &&
+    activityType === 'pressups' &&
+    leaderboardPeriod === 'weekly' &&
+    leaderboardQuery.currentUserRow?.rank === 1
+  const weeklyLeaderMessageQuery = useWeeklyLeaderMessage({
+    circleId,
+    currentUserId: session.user.id,
+    isCurrentWeeklyLeader: isPressupWeeklyLeader,
   })
   const chase = useChase(leaderboardQuery.rows, session.user.id)
   const deleteSubmission = useDeleteSubmission({
@@ -188,6 +200,13 @@ function AuthenticatedDashboard() {
         />
 
         <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
+
+        <WeeklyLeaderMessageCard
+          messageRow={weeklyLeaderMessageQuery.messageRow}
+          isLeader={isPressupWeeklyLeader}
+          isLoading={weeklyLeaderMessageQuery.isLoading}
+          saveMessage={weeklyLeaderMessageQuery.save}
+        />
 
         <RecentActivityCard
           rows={recentActivityQuery.data ?? []}

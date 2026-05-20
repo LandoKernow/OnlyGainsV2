@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Card } from '../../components/Card'
 import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
@@ -119,6 +120,93 @@ export function LeaderboardPlaceholder() {
         <span className="pill">Yearly</span>
       </div>
       <p className="muted">Leaderboard totals will appear once the board warms up.</p>
+    </Card>
+  )
+}
+
+export function WeeklyLeaderMessageCard({
+  messageRow,
+  isLeader,
+  isLoading,
+  saveMessage,
+}) {
+  const [draftMessage, setDraftMessage] = useState('')
+  const [validationError, setValidationError] = useState('')
+
+  useEffect(() => {
+    if (messageRow?.message) {
+      setDraftMessage(messageRow.message)
+    }
+  }, [messageRow?.message])
+
+  const hasMessage = Boolean(messageRow?.message)
+  const isSaving = saveMessage?.isLoading
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    const normalized = draftMessage.trim()
+
+    if (!normalized) {
+      setValidationError('Say something first.')
+      return
+    }
+
+    if (normalized.length > 120) {
+      setValidationError('Keep it under 120 characters.')
+      return
+    }
+
+    setValidationError('')
+    saveMessage.mutate({ message: normalized, existingId: messageRow?.id })
+  }
+
+  return (
+    <Card title="Leader message" body="Weekly press-up leader attention.">
+      {isLoading ? (
+        <p className="muted">Checking the weekly leader message.</p>
+      ) : (
+        <div className="stack">
+          {hasMessage ? (
+            <blockquote className="leader-message">{messageRow.message}</blockquote>
+          ) : (
+            <div className="stack">
+              <strong>{isLeader ? 'The board is waiting.' : 'No message set yet.'}</strong>
+              <span>
+                {isLeader
+                  ? 'Write the weekly press-up leader message that everyone sees.'
+                  : 'The weekly press-up leader can set a short message for the board.'}
+              </span>
+            </div>
+          )}
+
+          {isLeader ? (
+            <form className="stack section-gap" onSubmit={handleSubmit}>
+              <label className="stack">
+                <span>Message</span>
+                <textarea
+                  className="input"
+                  rows={3}
+                  maxLength={120}
+                  value={draftMessage}
+                  onChange={(event) => setDraftMessage(event.target.value)}
+                  placeholder="Say something sharp. 120 characters max."
+                  disabled={isSaving}
+                />
+              </label>
+              <div className="stack">
+                <button className="button" type="submit" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Set message'}
+                </button>
+                {validationError ? <p className="muted">{validationError}</p> : null}
+                {saveMessage?.error ? (
+                  <p className="muted">Unable to save. {saveMessage.error.message}</p>
+                ) : null}
+              </div>
+            </form>
+          ) : null}
+        </div>
+      )}
     </Card>
   )
 }
