@@ -634,6 +634,86 @@ button {
   padding: 0;
 }
 
+.profile-year-screen {
+  padding-bottom: 1rem;
+}
+
+.profile-year-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.profile-year-grid,
+.profile-year-records {
+  display: grid;
+  gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.profile-year-record-field,
+.profile-year-month-field {
+  min-width: 0;
+}
+
+.profile-year-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.profile-year-checkbox input {
+  margin-top: 0.2rem;
+}
+
+.profile-year-checkbox span {
+  color: var(--text-muted);
+}
+
+.profile-year-monthly-section {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.9rem;
+}
+
+.profile-year-monthly-section summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.55rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.profile-year-monthly-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-year-monthly-section summary span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.profile-year-monthly-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.9rem;
+}
+
+.profile-year-month-field span {
+  color: var(--text-muted);
+}
+
+.profile-year-save {
+  width: 100%;
+}
+
 .toast-stack {
   position: fixed;
   left: 50%;
@@ -859,6 +939,12 @@ button {
   .activity-copy span,
   .activity-value {
     font-size: 0.78rem;
+  }
+
+  .profile-year-grid,
+  .profile-year-records,
+  .profile-year-monthly-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .chase-block {

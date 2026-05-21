@@ -4,6 +4,7 @@ import { Card } from '../../components/Card'
 import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
+import { useProfileYearSetup } from '../../hooks/useProfileYearSetup'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
@@ -119,6 +120,54 @@ function VaultProfileCard() {
   )
 }
 
+function ProfileYearEntryCard() {
+  const profileYearSetup = useProfileYearSetup(2026)
+  const profileYear = profileYearSetup.profileYear
+  const recordCount = profileYearSetup.recordEntries.length
+  const title = !profileYear
+    ? 'Build your 2026 profile'
+    : '2026 profile'
+  const statusLabel = !profileYear
+    ? 'Not started'
+    : profileYear.setupStatus === 'claimed'
+      ? 'Claimed'
+      : 'In progress'
+
+  if (profileYearSetup.isLoading) {
+    return (
+      <Card title="Build your 2026 profile" body="Claim records. Add yearly totals. Power the Vault.">
+        <p className="muted">Loading your year setup.</p>
+      </Card>
+    )
+  }
+
+  if (profileYearSetup.error) {
+    return (
+      <Card title="Build your 2026 profile" body="Claim records. Add yearly totals. Power the Vault.">
+        <p className="muted">Could not load year setup yet.</p>
+        <Link className="button" to="/profile/year/2026">
+          Build your year
+        </Link>
+      </Card>
+    )
+  }
+
+  return (
+    <Card title={title} body="Claim records. Add yearly totals. Power the Vault.">
+      <div className="stack">
+        <div className="stat-strip">
+          <span>{statusLabel}</span>
+          <span>{recordCount} records claimed</span>
+        </div>
+        <p className="muted">Leave a mark. The Board is earned live. The Profile remembers the year.</p>
+        <Link className="button" to="/profile/year/2026">
+          Build your year
+        </Link>
+      </div>
+    </Card>
+  )
+}
+
 function FeedbackActions() {
   const { showToast } = useToast()
 
@@ -160,6 +209,7 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <ProfileYearEntryCard />
           <VaultProfileCard />
           <ProfileBasicsCard />
         </div>

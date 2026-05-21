@@ -169,6 +169,21 @@ export async function upsertProfileRecordEntries(userId, year, records = []) {
   ensureSupabase()
 
   const normalizedRecords = normalizeProfileRecordEntries(records)
+  const recordTypesToKeep = new Set(normalizedRecords.map((record) => record.recordType))
+  const existingEntries = await fetchProfileRecordEntries(userId, year)
+  const entriesToDelete = existingEntries.filter((entry) => !recordTypesToKeep.has(entry.recordType))
+
+  if (entriesToDelete.length > 0) {
+    const idsToDelete = entriesToDelete.map((entry) => entry.id)
+    const { error: deleteError } = await supabase
+      .from('profile_record_entries')
+      .delete()
+      .in('id', idsToDelete)
+
+    if (deleteError) {
+      throw deleteError
+    }
+  }
 
   if (normalizedRecords.length === 0) {
     return []
@@ -221,6 +236,30 @@ export async function upsertProfileMonthlyTotals(userId, year, totals = []) {
   ensureSupabase()
 
   const normalizedTotals = normalizeProfileMonthlyTotals(totals)
+  const totalsToKeep = normalizedTotals.map((total) => ({
+    month: total.month,
+    activityType: total.activityType,
+  }))
+
+  const existingTotals = await fetchProfileMonthlyTotals(userId, year)
+  const totalsToDelete = existingTotals.filter(
+    (existingTotal) =>
+      !totalsToKeep.some(
+        (total) => total.month === existingTotal.month && total.activityType === existingTotal.activityType,
+      ),
+  )
+
+  if (totalsToDelete.length > 0) {
+    const idsToDelete = totalsToDelete.map((total) => total.id)
+    const { error: deleteError } = await supabase
+      .from('profile_monthly_totals')
+      .delete()
+      .in('id', idsToDelete)
+
+    if (deleteError) {
+      throw deleteError
+    }
+  }
 
   if (normalizedTotals.length === 0) {
     return []

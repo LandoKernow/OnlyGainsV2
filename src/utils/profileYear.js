@@ -15,6 +15,22 @@ export const PROFILE_YEAR_RECORD_TYPES = [
 ]
 
 export const PROFILE_YEAR_MONTHLY_ACTIVITY_TYPES = ['pressups', 'pullups', 'km']
+export const PROFILE_YEAR_MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+export const PROFILE_YEAR_RECORD_LABELS = {
+  pressups_day: 'Most press-ups in a day',
+  pressups_week: 'Most press-ups in a week',
+  pressups_set: 'Max press-ups in one set',
+  pullups_day: 'Most pull-ups in a day',
+  pullups_week: 'Most pull-ups in a week',
+  pullups_set: 'Max pull-ups in one set',
+  km_day: 'Most KM in a day',
+  km_week: 'Most KM in a week',
+  fastest_5k: 'Fastest 5K',
+  fastest_10k: 'Fastest 10K',
+  half_marathon: 'Half marathon',
+  marathon: 'Marathon',
+  longest_run: 'Longest run',
+}
 
 const REP_RECORD_TYPES = new Set([
   'pressups_day',
