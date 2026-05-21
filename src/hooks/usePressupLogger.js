@@ -98,7 +98,7 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
         ),
       )
 
-      showToast({ tone: 'success', message: 'Logged.' })
+      showToast({ tone: 'success', message: 'BOARD UPDATED.' })
     },
     onError: (error, _variables, context) => {
       console.error('[Only Gains Logging] submission failed', error)

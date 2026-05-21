@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card } from '../../components/Card'
 import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
-import { getMomentumChip } from '../../utils/status'
+import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 
 function getSafeName(name) {
   return name || 'Someone'
@@ -23,31 +23,68 @@ function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)
 }
 
-function buildLeaderboardChips(row, activityType = 'pressups') {
+function buildStatusChip(label) {
+  return {
+    label,
+    tone: getStatusTone(label),
+  }
+}
+
+function buildLeaderboardChips(row, allRows = [], activityType = 'pressups') {
   const chips = []
 
-  // Momentum indicator
-  const momentum = getMomentumChip(row)
+  const momentum = getMomentumChip(row, allRows, activityType)
   if (momentum) {
-    chips.push(momentum)
+    chips.push(buildStatusChip(momentum))
   }
 
   // Today's activity
   if (row.todayTotal > 0) {
-    chips.push(`Today: ${activityType === 'km' ? formatKm(row.todayTotal) : row.todayTotal}`)
+    chips.push({
+      label: `Today: ${activityType === 'km' ? formatKm(row.todayTotal) : row.todayTotal}`,
+      tone: 'default',
+    })
   }
 
   // Current user indicator
   if (row.isCurrentUser) {
-    chips.push('You')
+    chips.push({ label: 'You', tone: 'current' })
   }
 
   // Pending indicator
   if (row.pending) {
-    chips.push('Pending')
+    chips.push({ label: 'Pending', tone: 'warning' })
   }
 
   return chips
+}
+
+function getStatusLine(row, chase, activityType) {
+  if (!row) {
+    return 'Log to be seen.'
+  }
+
+  if (chase?.rowAbove && chase?.gapToCatch != null) {
+    return `${formatActivityGap(chase.gapToCatch, activityType)} behind ${getSafeName(chase.rowAbove.actorName)}`
+  }
+
+  if (chase?.rowBelow && chase?.gapToDefend != null) {
+    return `${formatActivityGap(chase.gapToDefend, activityType)} on ${getSafeName(chase.rowBelow.actorName)}`
+  }
+
+  return row.rank === 1 ? 'Nobody is above you.' : 'One log changes the table.'
+}
+
+function getLeaderboardBody(period, activityType) {
+  if (period === 'weekly' && activityType === 'pressups') {
+    return "This week's killers."
+  }
+
+  if (period === 'weekly' && activityType === 'km') {
+    return 'Current war.'
+  }
+
+  return "The table doesn't care."
 }
 
 function getPressureContext(row, allRows = [], activityType = 'pressups') {
@@ -103,7 +140,7 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
           <div className="modal-summary">
             <span>#{row.rank}</span>
             <span>{formatActivityValue(row.total, activityType)}</span>
-            {getMomentumChip(row) ? <span>{getMomentumChip(row)}</span> : null}
+            {getMomentumChip(row, allRows, activityType) ? <span>{getMomentumChip(row, allRows, activityType)}</span> : null}
           </div>
           <div className="stack">
             {getPressureContext(row, allRows, activityType) ? (
@@ -123,15 +160,38 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
   )
 }
 
-export function HeroStatus({ profile }) {
-  const statusLabel = profile?.board_status ? String(profile.board_status) : 'active'
+export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups' }) {
+  const statusLabel = currentUserRow ? getRowStatus(currentUserRow, rows, activityType) : 'QUIET'
+  const chips = currentUserRow
+    ? [
+        buildStatusChip(statusLabel),
+        currentUserRow.todayTotal > 0
+          ? {
+              label: activityType === 'km' ? `${formatKm(currentUserRow.todayTotal)} today` : `${currentUserRow.todayTotal} today`,
+              tone: 'default',
+            }
+          : null,
+      ].filter(Boolean)
+    : [buildStatusChip('QUIET')]
 
   return (
-    <Card title={`${profile?.name || 'Warrior'}`} body="Visible discipline.">
+    <Card title={`${profile?.name || 'Warrior'}`} body="The board remembers.">
       <div className="stack">
-        <div className="stat-strip">
-          <span>Status: {statusLabel}</span>
-          <span>Show up. Log it. Get better.</span>
+        <div className="hero-status-grid">
+          <div className="hero-status-grid__main">
+            <strong>{currentUserRow ? `#${currentUserRow.rank} this week` : 'Not ranked this week'}</strong>
+            <span>{currentUserRow ? formatActivityValue(currentUserRow.total, activityType) : 'Visible discipline starts with one log.'}</span>
+          </div>
+          <div className="hero-status-grid__meta">
+            <span>{getStatusLine(currentUserRow, chase, activityType)}</span>
+          </div>
+        </div>
+        <div className="row-chip-list">
+          {chips.map((chip) => (
+            <span key={chip.label} className={chip.tone ? `row-chip row-chip--${chip.tone}` : 'row-chip'}>
+              {chip.label}
+            </span>
+          ))}
         </div>
       </div>
     </Card>
@@ -171,7 +231,7 @@ export function LogActivityCard({
   const isKm = activityType === 'km'
 
   return (
-    <Card title={isKm ? 'Log KM' : 'Log Press-Ups'} body={isKm ? 'Distance logged.' : 'Board moves with every rep.'}>
+    <Card title={isKm ? 'Log KM' : 'Log Press-Ups'} body="Move now. The board is watching.">
       {!isKm ? (
         <div className="quick-actions">
           {quickValues.map((quickValue) => (
@@ -326,7 +386,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
   ]
 
   const isKm = activityType === 'km'
-  const cardBody = isKm ? 'KM standings.' : 'Who\'s winning.'
+  const cardBody = getLeaderboardBody(period, activityType)
 
   function formatValue(value) {
     return formatActivityValue(value, activityType)
@@ -380,10 +440,15 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
         <>
           <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
             {rows.map((row) => {
+              const status = getRowStatus(row, rows, activityType)
               const pressureContext = getPressureContext(row, rows, activityType)
-              const rowClassName = row.isCurrentUser
-                ? 'leaderboard-row leaderboard-row--current leaderboard-row--clickable'
-                : 'leaderboard-row leaderboard-row--clickable'
+              const rowClassName = [
+                'leaderboard-row',
+                row.isCurrentUser ? 'leaderboard-row--current' : '',
+                row.rank === 1 ? 'leaderboard-row--crown' : '',
+                status === 'QUIET' || status === 'COLD' ? 'leaderboard-row--quiet' : '',
+                'leaderboard-row--clickable',
+              ].filter(Boolean).join(' ')
 
               return (
                 <li
@@ -400,9 +465,12 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                     <strong>{row.actorName}</strong>
                     {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
                     <div className="row-chip-list">
-                      {buildLeaderboardChips(row, activityType).map((chip) => (
-                        <span key={`${row.userId}-${chip}`} className="row-chip">
-                          {chip}
+                      {buildLeaderboardChips(row, rows, activityType).map((chip) => (
+                        <span
+                          key={`${row.userId}-${chip.label}`}
+                          className={chip.tone ? `row-chip row-chip--${chip.tone}` : 'row-chip'}
+                        >
+                          {chip.label}
                         </span>
                       ))}
                     </div>
@@ -483,7 +551,7 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
     : null
 
   return (
-    <Card title="Pressure" body="Who you are hunting and who is hunting you.">
+    <Card title="Pressure" body="Who folds first.">
       <div className="stack pressure-card-stack">
         <div className="pressure-row">
           <strong>You&apos;re chasing</strong>
@@ -540,7 +608,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
   }
 
   return (
-    <Card title="Board live" body="Is the board moving?">
+    <Card title="Board live" body="The board is moving." aside={<span className="live-badge">LIVE</span>}>
       {error && rows.length > 0 ? <p className="muted">Could not refresh. Try again.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
       {!isLoading && rows.length === 0 ? (
@@ -551,11 +619,18 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
       ) : null}
       {rows.length > 0 ? (
         <ul className="activity-feed">
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const canRemove = row.userId === currentUserId && !row.pending
 
             return (
-              <li key={row.id} className={row.pending ? 'activity-item activity-item--pending' : 'activity-item'}>
+              <li
+                key={row.id}
+                className={[
+                  'activity-item',
+                  row.pending ? 'activity-item--pending' : '',
+                  index === 0 ? 'activity-item--latest' : '',
+                ].filter(Boolean).join(' ')}
+              >
                 <div className="activity-copy">
                   <strong>{getRecentActivityCopy(row, currentUserId)}</strong>
                   <span>{row.pending ? 'Saving...' : formatSubmissionTimestamp(row.createdAt)}</span>

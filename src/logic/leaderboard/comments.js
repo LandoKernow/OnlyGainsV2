@@ -36,12 +36,12 @@ export function getRecentActivityCopy(row, currentUserId) {
 
   if (row.activityType === 'km') {
     if (row.value >= 10) {
-      return `${actor} banked ${formatKm(row.value)}.`
+      return `${actor} banked distance: ${formatKm(row.value)}.`
     }
     if (row.value >= 5) {
-      return `${actor} put road work in: ${formatKm(row.value)}.`
+      return `${actor} moved the board: ${formatKm(row.value)}.`
     }
-    return `${actor} logged ${formatKm(row.value)}.`
+    return `${actor} broke silence with ${formatKm(row.value)}.`
   }
 
   // Press-ups: varied language
@@ -50,11 +50,11 @@ export function getRecentActivityCopy(row, currentUserId) {
   }
 
   if (row.value >= 75) {
-    return `${actor} dropped ${row.value}.`
+    return `${actor} took ground: ${row.value} reps.`
   }
 
   if (row.value >= 50) {
-    return `${actor} added ${row.value} to the board.`
+    return `${actor} added pressure: ${row.value} reps.`
   }
 
   if (row.value >= 30) {
@@ -62,10 +62,10 @@ export function getRecentActivityCopy(row, currentUserId) {
   }
 
   if (row.value >= 20) {
-    return `${actor} logged ${row.value} reps.`
+    return `${actor} defended position: ${row.value} reps.`
   }
 
-  return `${actor} added ${row.value} reps.`
+  return `${actor} broke silence: ${row.value} reps.`
 }
 
 export function getChaseCopy(chase, activityType = 'pressups') {
@@ -85,7 +85,7 @@ export function getChaseCopy(chase, activityType = 'pressups') {
       secondary: chase.rowBelow
         ? `${getSafeName(chase.rowBelow.actorName)} is ${formatActivityGap(chase.gapToDefend, activityType)} behind.`
         : 'You stand alone.',
-      action: chase.rowBelow ? "Don't go quiet." : 'Keep the pressure on.',
+      action: chase.rowBelow ? "Don't go quiet." : 'Keep the board under you.',
     }
   }
 
@@ -97,8 +97,8 @@ export function getChaseCopy(chase, activityType = 'pressups') {
       secondary: gapMsg,
       action: chase.gapToCatch
         ? activityType === 'km'
-          ? `${formatActivityGap(chase.gapToCatch, activityType)} closes it.`
-          : `One set of ${Math.min(chase.gapToCatch, 50)} closes it.`
+          ? 'One good log changes this.'
+          : `One more set breaks them.`
         : 'Close the gap.',
     }
   }
@@ -109,16 +109,18 @@ export function getChaseCopy(chase, activityType = 'pressups') {
       title: 'CHASING',
       primary: `${getSafeName(chase.rowAbove.actorName)} is exposed.`,
       secondary: gapMsg,
-      action: 'Make your move.',
+      action: 'Take the spot.',
     }
   }
 
   if (chase.rowBelow) {
     return {
       title: 'HUNTED',
-      primary: `${getSafeName(chase.rowBelow.actorName)} is hunting you.`,
-      secondary: chase.gapToDefend ? `Only ${formatActivityGap(chase.gapToDefend, activityType)} keeps them off you.` : 'Hold the line.',
-      action: 'One log keeps them back.',
+      primary: "You're exposed.",
+      secondary: chase.gapToDefend
+        ? `${getSafeName(chase.rowBelow.actorName)} only needs ${formatActivityGap(chase.gapToDefend, activityType)}.`
+        : 'Hold the line.',
+      action: 'One log changes this.',
     }
   }
 

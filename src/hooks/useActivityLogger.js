@@ -7,23 +7,22 @@ import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
 
 const PRESSUP_SUCCESS_MESSAGES = [
-  'Reps logged.',
-  'The board saw it.',
+  'BOARD UPDATED.',
   'Pressure added.',
-  'Another set on record.',
-  'Work made public.',
-  'Position defended.',
+  'The board saw it.',
   'You moved. They noticed.',
+  'Ground taken.',
+  'Position defended.',
 ]
 
 const KM_SUCCESS_MESSAGES = [
-  'KM logged.',
-  'Engine checked.',
+  'BOARD UPDATED.',
   'Distance banked.',
-  'Road work recorded.',
-  'Pace filed.',
-  'Legs paid rent.',
   'The board moved.',
+  'Road work recorded.',
+  'Pressure added.',
+  'You moved. They noticed.',
+  'Legs paid rent.',
 ]
 
 function getStableIndex(seed, length) {

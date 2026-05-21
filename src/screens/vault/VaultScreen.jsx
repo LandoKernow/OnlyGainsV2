@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
@@ -46,10 +47,17 @@ function VaultRecordCard({ title, record, emptyCopy }) {
       {record ? (
         <>
           <div className="vault-card__holder">{record.actorName || 'Unknown'}</div>
-          <div className="vault-card__status">{`${formatSourceLabel(record.sourceLabel)} · ${record.year}`}</div>
+          <div className="vault-card__status">
+            {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
+          </div>
         </>
       ) : (
-        <div className="vault-card__empty">{emptyCopy}</div>
+        <div className="stack">
+          <div className="vault-card__empty">{emptyCopy}</div>
+          <Link className="button button--ghost vault-card__action" to="/profile/year/2026">
+            Claim it
+          </Link>
+        </div>
       )}
     </article>
   )
@@ -86,7 +94,8 @@ export default function VaultScreen() {
       <div className="stack-lg">
         <Card title="THE VAULT" body="Records are remembered.">
           <div className="stack">
-            <p className="muted">Take the board. Keep the record.</p>
+            <p className="muted">Claimed records are visible. Verified records are coming.</p>
+            <p className="muted">The Vault remembers what the Board forgets.</p>
           </div>
         </Card>
 

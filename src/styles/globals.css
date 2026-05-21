@@ -387,6 +387,10 @@ button {
   color: var(--text-muted);
 }
 
+.vault-card__action {
+  width: fit-content;
+}
+
 .vault-future {
   display: flex;
   flex-wrap: wrap;
@@ -443,6 +447,15 @@ button {
 .leaderboard-row--current {
   border-color: rgba(213, 106, 44, 0.42);
   background: rgba(213, 106, 44, 0.09);
+}
+
+.leaderboard-row--crown {
+  border-color: rgba(213, 106, 44, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(213, 106, 44, 0.18);
+}
+
+.leaderboard-row--quiet {
+  opacity: 0.78;
 }
 
 .leaderboard-row--clickable {
@@ -505,6 +518,42 @@ button {
   font-size: 0.72rem;
 }
 
+.row-chip--crown {
+  border-color: rgba(213, 106, 44, 0.4);
+  background: rgba(213, 106, 44, 0.14);
+  color: #fff4ed;
+}
+
+.row-chip--danger {
+  border-color: rgba(234, 95, 95, 0.36);
+  background: rgba(234, 95, 95, 0.12);
+  color: #ffdede;
+}
+
+.row-chip--warning {
+  border-color: rgba(213, 106, 44, 0.32);
+  background: rgba(213, 106, 44, 0.09);
+  color: #ffd4b9;
+}
+
+.row-chip--success {
+  border-color: rgba(114, 211, 123, 0.3);
+  background: rgba(114, 211, 123, 0.08);
+  color: #dffbe2;
+}
+
+.row-chip--muted {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
+}
+
+.row-chip--current {
+  border-color: rgba(108, 168, 249, 0.32);
+  background: rgba(108, 168, 249, 0.08);
+  color: #dbe8ff;
+}
+
 .leader-message {
   margin: 0;
   padding: 1rem 1.1rem;
@@ -544,6 +593,30 @@ button {
 
 .pressure-row__meta {
   color: #f7f1eb;
+}
+
+.hero-status-grid,
+.profile-identity-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.hero-status-grid__main,
+.hero-status-grid__meta,
+.profile-identity-grid__row {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.hero-status-grid__main strong,
+.profile-identity-grid__row strong {
+  font-size: 1rem;
+}
+
+.hero-status-grid__main span,
+.hero-status-grid__meta span,
+.profile-identity-grid__row span {
+  color: var(--text-muted);
 }
 
 .chase-stack {
@@ -599,6 +672,11 @@ button {
   background: rgba(213, 106, 44, 0.09);
 }
 
+.activity-item--latest {
+  border-color: rgba(213, 106, 44, 0.32);
+  box-shadow: inset 0 0 0 1px rgba(213, 106, 44, 0.08);
+}
+
 .activity-copy {
   display: grid;
   gap: 0.2rem;
@@ -632,6 +710,21 @@ button {
   color: var(--accent);
   min-height: 2rem;
   padding: 0;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  border-radius: 999px;
+  padding: 0.28rem 0.62rem;
+  border: 1px solid rgba(213, 106, 44, 0.34);
+  background: rgba(213, 106, 44, 0.12);
+  color: #ffd9c2;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
 }
 
 .profile-year-screen {
@@ -877,7 +970,7 @@ button {
 }
 
 .prompt-modal {
-  width: min(28rem, 100%);
+  width: min(29rem, 100%);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1.4rem;
@@ -885,44 +978,67 @@ button {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
 }
 
+.prompt-modal__image-shell {
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0c;
+}
+
+.prompt-modal__image-shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.26)),
+    linear-gradient(90deg, transparent 72%, rgba(10, 10, 12, 0.55));
+  pointer-events: none;
+}
+
 .prompt-modal__image {
   width: 100%;
   height: min(11rem, 34vw);
   min-height: 9rem;
   object-fit: cover;
-  object-position: center 18%;
+  object-position: 44% 20%;
   display: block;
-  filter: grayscale(1) contrast(1.05);
+  filter: grayscale(1) contrast(1.08);
+  transform: scale(1.28);
+  transform-origin: center;
 }
 
 .prompt-modal__content {
-  padding: 1rem;
+  padding: 1.1rem;
+  gap: 1.1rem;
 }
 
 .prompt-modal__eyebrow {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.65rem;
 }
 
 .prompt-modal__title {
   margin: 0;
-  font-size: clamp(1.3rem, 6vw, 1.9rem);
-  line-height: 0.98;
+  font-size: clamp(1.55rem, 7vw, 2.55rem);
+  line-height: 0.92;
   letter-spacing: -0.03em;
+  max-width: 10ch;
 }
 
 .prompt-modal__body {
-  margin: 0.8rem 0 0;
+  margin: 1rem 0 0;
   color: var(--text-muted);
-  font-size: 0.95rem;
+  font-size: 1rem;
+  line-height: 1.35;
+  max-width: 26rem;
 }
 
 .prompt-modal__copy {
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .prompt-modal__copy p {
   margin: 0;
   font-weight: 700;
+  font-size: 1.02rem;
 }
 
 .prompt-modal__microcopy {
@@ -932,6 +1048,18 @@ button {
 .prompt-modal__actions {
   display: grid;
   gap: 0.7rem;
+}
+
+.prompt-modal__actions .button {
+  min-height: 3.1rem;
+  font-size: 0.98rem;
+  border-radius: 1.1rem;
+}
+
+.prompt-modal__actions .button--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f7f1eb;
 }
 
 .pill--active {
@@ -1026,6 +1154,15 @@ button {
     padding: 0.9rem;
   }
 
+  .prompt-modal__title {
+    max-width: none;
+    font-size: clamp(1.45rem, 9vw, 2rem);
+  }
+
+  .prompt-modal__body {
+    font-size: 0.95rem;
+  }
+
   .chase-block {
     padding: 0.7rem 0.8rem;
   }
@@ -1045,18 +1182,19 @@ button {
   }
 
   .prompt-modal {
-    width: min(38rem, 100%);
+    width: min(42rem, 100%);
     display: grid;
-    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
   }
 
   .prompt-modal__image {
     height: 100%;
     min-height: 100%;
+    object-position: 40% 22%;
   }
 
   .prompt-modal__content {
-    padding: 1.2rem;
+    padding: 1.45rem;
     align-content: center;
   }
 }

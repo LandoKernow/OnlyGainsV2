@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
-import { ChaseCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
+import { ChaseCard, PressureCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useChase } from '../../hooks/useChase'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
@@ -18,7 +18,7 @@ function ChaseContent() {
     currentUserId: session.user.id,
     activityType,
   })
-  const chase = useChase(leaderboardQuery.rows, session.user.id)
+  const chase = useChase(leaderboardQuery.rows, session.user.id, activityType)
 
   return (
     <div className="stack-lg">
@@ -28,6 +28,7 @@ function ChaseContent() {
       </div>
 
       <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={period} activityType={activityType} />
+      <PressureCard chase={chase} isLoading={leaderboardQuery.isLoading} activityType={activityType} />
       <PressupLeaderboardCard
         period={period}
         onPeriodChange={setPeriod}

@@ -90,16 +90,20 @@ export function ProfileBuildPrompt() {
         aria-labelledby="profile-build-prompt-title"
         aria-describedby="profile-build-prompt-body"
       >
-        <img
-          className="prompt-modal__image"
-          src="/images/profile-build-prompt.webp"
-          alt="Bodybuilder posing under stage lights."
-        />
+        <div className="prompt-modal__image-shell">
+          <img
+            className="prompt-modal__image"
+            src="/images/profile-build-prompt.webp"
+            alt="Bodybuilder posing under stage lights."
+          />
+        </div>
         <div className="stack prompt-modal__content">
           <div>
             <p className="eyebrow prompt-modal__eyebrow">ONLY GAINS</p>
             <h2 id="profile-build-prompt-title" className="prompt-modal__title">
-              BUILD YOUR 2026 PROFILE
+              BUILD YOUR
+              <br />
+              2026 PROFILE
             </h2>
             <p id="profile-build-prompt-body" className="prompt-modal__body">
               The board shows what you do today. Your profile shows what you&apos;re made of this year.

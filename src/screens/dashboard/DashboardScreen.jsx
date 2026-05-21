@@ -197,7 +197,13 @@ function AuthenticatedDashboard() {
           saveMessage={weeklyLeaderMessageQuery.save}
         />
 
-        <HeroStatus profile={profileQuery.data} />
+        <HeroStatus
+          profile={profileQuery.data}
+          currentUserRow={leaderboardQuery.currentUserRow}
+          chase={chase}
+          rows={leaderboardQuery.rows}
+          activityType={activityType}
+        />
 
         <LogActivityCard
           quickValues={quickValues}
