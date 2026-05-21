@@ -865,6 +865,75 @@ button {
   gap: 0.75rem;
 }
 
+.prompt-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, var(--safe-top)) 1rem calc(6.75rem + var(--safe-bottom));
+  background: rgba(2, 2, 4, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 60;
+}
+
+.prompt-modal {
+  width: min(28rem, 100%);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.4rem;
+  background: linear-gradient(180deg, rgba(28, 21, 18, 0.98), rgba(10, 10, 12, 0.98));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.42);
+}
+
+.prompt-modal__image {
+  width: 100%;
+  height: min(11rem, 34vw);
+  min-height: 9rem;
+  object-fit: cover;
+  object-position: center 18%;
+  display: block;
+  filter: grayscale(1) contrast(1.05);
+}
+
+.prompt-modal__content {
+  padding: 1rem;
+}
+
+.prompt-modal__eyebrow {
+  margin-bottom: 0.5rem;
+}
+
+.prompt-modal__title {
+  margin: 0;
+  font-size: clamp(1.3rem, 6vw, 1.9rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.prompt-modal__body {
+  margin: 0.8rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.prompt-modal__copy {
+  gap: 0.35rem;
+}
+
+.prompt-modal__copy p {
+  margin: 0;
+  font-weight: 700;
+}
+
+.prompt-modal__microcopy {
+  font-size: 0.84rem;
+}
+
+.prompt-modal__actions {
+  display: grid;
+  gap: 0.7rem;
+}
+
 .pill--active {
   background: var(--accent-soft);
   color: #fff4ed;
@@ -947,6 +1016,16 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .prompt-backdrop {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-bottom: calc(6rem + var(--safe-bottom));
+  }
+
+  .prompt-modal__content {
+    padding: 0.9rem;
+  }
+
   .chase-block {
     padding: 0.7rem 0.8rem;
   }
@@ -963,5 +1042,21 @@ button {
 
   .card {
     padding: 1.2rem;
+  }
+
+  .prompt-modal {
+    width: min(38rem, 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  }
+
+  .prompt-modal__image {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .prompt-modal__content {
+    padding: 1.2rem;
+    align-content: center;
   }
 }

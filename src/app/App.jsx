@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
+import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ScreenFallback } from '../components/ScreenFallback'
 
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/vault" element={<VaultScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
+          <ProfileBuildPrompt />
         </Suspense>
       </ErrorBoundary>
     </AppShell>
