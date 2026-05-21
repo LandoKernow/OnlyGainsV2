@@ -2,29 +2,64 @@ import { Card } from '../../components/Card'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
+import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
 
-function VaultRecordCard({ title, record, holder, year, hasRecord }) {
+const CLAIMED_RECORD_TYPES = [
+  'pressups_set',
+  'pullups_day',
+  'pullups_week',
+  'pullups_set',
+  'fastest_5k',
+  'fastest_10k',
+  'half_marathon',
+  'marathon',
+  'longest_run',
+]
+
+function formatSourceLabel(sourceLabel) {
+  return String(sourceLabel || '').replace(/_/g, '-').toUpperCase()
+}
+
+function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
+  if (!record) {
+    return 'No record yet'
+  }
+
+  if (record.unit === 'seconds') {
+    return formatDurationFromSeconds(record.valueSeconds)
+  }
+
+  if (record.unit === 'km') {
+    return formatActivityValue(record.valueNumeric ?? record.value, 'km')
+  }
+
+  return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
+}
+
+function VaultRecordCard({ title, record, emptyCopy }) {
   return (
     <article className="vault-card vault-record-card">
       <strong>{title}</strong>
-      <div className="vault-card__value">{record}</div>
-      {hasRecord ? (
+      <div className="vault-card__value">
+        {formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}
+      </div>
+      {record ? (
         <>
-          <div className="vault-card__holder">{holder}</div>
-          <div className="vault-card__status">CURRENT HOLDER · {year}</div>
+          <div className="vault-card__holder">{record.actorName || 'Unknown'}</div>
+          <div className="vault-card__status">{`${formatSourceLabel(record.sourceLabel)} · ${record.year}`}</div>
         </>
       ) : (
-        <div className="vault-card__empty">No holder yet. Log enough to leave a mark.</div>
+        <div className="vault-card__empty">{emptyCopy}</div>
       )}
     </article>
   )
 }
 
 function VaultFutureSection() {
-  const futureTitles = ['Fastest 5K', 'Fastest 10K', 'Half marathon', 'Marathon']
+  const futureTitles = ['Verified claims', 'Proof flow', 'Year-over-year comparisons']
 
   return (
-    <Card title="COMING NEXT" body="Profile PBs will power these soon.">
+    <Card title="COMING NEXT" body="The Vault gets sharper from here.">
       <div className="vault-future">
         {futureTitles.map((title) => (
           <span key={title} className="vault-future-chip">
@@ -44,6 +79,7 @@ export default function VaultScreen() {
   const pressupsWeek = records.pressupsWeek
   const kmDay = records.kmDay
   const kmWeek = records.kmWeek
+  const claimedRecords = records.claimed ?? {}
 
   return (
     <div className="screen screen--vault">
@@ -56,43 +92,52 @@ export default function VaultScreen() {
 
         <div className="vault-intro">
           <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
-          <p className="vault-intro__copy">Current year Vault.</p>
+          <p className="vault-intro__copy">App-tracked live. Claimed records clearly labelled.</p>
         </div>
 
         {!isLoading && !error ? (
-          <div className="vault-records">
-            <VaultRecordCard
-              title="Most press-ups / day"
-              record={pressupsDay ? formatActivityValue(pressupsDay.value, 'pressups') : 'No record yet'}
-              holder={pressupsDay ? pressupsDay.actorName : ''}
-              year={currentYear}
-              hasRecord={Boolean(pressupsDay)}
-            />
-            <VaultRecordCard
-              title="Most press-ups / week"
-              record={pressupsWeek ? formatActivityValue(pressupsWeek.value, 'pressups') : 'No record yet'}
-              holder={pressupsWeek ? pressupsWeek.actorName : ''}
-              year={currentYear}
-              hasRecord={Boolean(pressupsWeek)}
-            />
-            <VaultRecordCard
-              title="Most KM / day"
-              record={kmDay ? formatActivityValue(kmDay.value, 'km') : 'No record yet'}
-              holder={kmDay ? kmDay.actorName : ''}
-              year={currentYear}
-              hasRecord={Boolean(kmDay)}
-            />
-            <VaultRecordCard
-              title="Most KM / week"
-              record={kmWeek ? formatActivityValue(kmWeek.value, 'km') : 'No record yet'}
-              holder={kmWeek ? kmWeek.actorName : ''}
-              year={currentYear}
-              hasRecord={Boolean(kmWeek)}
-            />
-          </div>
+          <>
+            <Card title="APP-TRACKED" body="Earned through live submissions.">
+              <div className="vault-records">
+                <VaultRecordCard
+                  title="Most press-ups / day"
+                  record={pressupsDay}
+                  emptyCopy="No holder yet. Log enough to leave a mark."
+                />
+                <VaultRecordCard
+                  title="Most press-ups / week"
+                  record={pressupsWeek}
+                  emptyCopy="No holder yet. Log enough to leave a mark."
+                />
+                <VaultRecordCard
+                  title="Most KM / day"
+                  record={kmDay}
+                  emptyCopy="No holder yet. Log enough to leave a mark."
+                />
+                <VaultRecordCard
+                  title="Most KM / week"
+                  record={kmWeek}
+                  emptyCopy="No holder yet. Log enough to leave a mark."
+                />
+              </div>
+            </Card>
+
+            <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
+              <div className="vault-records">
+                {CLAIMED_RECORD_TYPES.map((recordType) => (
+                  <VaultRecordCard
+                    key={recordType}
+                    title={PROFILE_YEAR_RECORD_LABELS[recordType]}
+                    record={claimedRecords[recordType] ?? null}
+                    emptyCopy="No holder yet. Claim it from your 2026 profile."
+                  />
+                ))}
+              </div>
+            </Card>
+          </>
         ) : null}
 
-        {isLoading ? <p className="muted">Loading legacy totals…</p> : null}
+        {isLoading ? <p className="muted">Loading Vault records...</p> : null}
         {error ? <p className="muted">Unable to load Vault records.</p> : null}
 
         <VaultFutureSection />
