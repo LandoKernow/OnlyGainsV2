@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
 import {
-  ChaseCard,
   HeroStatus,
   LogActivityCard,
   PressureCard,
@@ -86,7 +85,7 @@ function AuthenticatedDashboard() {
   const leaderMessageOwnerName = weeklyLeaderMessageQuery.messageRow?.userId
     ? leaderboardQuery.rows.find((row) => row.userId === weeklyLeaderMessageQuery.messageRow.userId)?.actorName || 'Weekly leader'
     : 'Weekly leader'
-  const chase = useChase(leaderboardQuery.rows, session.user.id)
+  const chase = useChase(leaderboardQuery.rows, session.user.id, activityType)
   const deleteSubmission = useDeleteSubmission({
     circleId,
     userId: session.user.id,
@@ -210,8 +209,6 @@ function AuthenticatedDashboard() {
           isSaving={logger.isPending}
           activityType={activityType}
         />
-
-        <ChaseCard chase={chase} isLoading={leaderboardQuery.isLoading} period={leaderboardPeriod} compact activityType={activityType} />
 
         <PressureCard
           chase={chase}

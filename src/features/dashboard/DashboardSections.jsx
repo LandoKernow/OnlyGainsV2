@@ -4,6 +4,21 @@ import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/a
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 import { getMomentumChip } from '../../utils/status'
 
+function getSafeName(name) {
+  return name || 'Someone'
+}
+
+function getSafeRank(rank) {
+  return Number.isFinite(rank) ? `#${rank}` : 'Unranked'
+}
+
+function getGapCopy(gap, activityType, direction) {
+  const formattedGap = formatActivityValue(gap, activityType)
+  return direction === 'ahead'
+    ? `${formattedGap} to overtake`
+    : `${formattedGap} behind`
+}
+
 function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)
 }
@@ -440,25 +455,65 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
     )
   }
 
-  const hunterLabel = chase?.gapToCatch
-    ? `${formatActivityValue(chase.gapToCatch, activityType)} to overtake #${chase.rowAbove?.rank}`
-    : 'No one ahead yet.'
-  const huntedLabel = chase?.gapToDefend
-    ? `${formatActivityValue(chase.gapToDefend, activityType)} to hold #${chase.currentUserRow?.rank}`
-    : 'No one close enough yet.'
-  const hunterTitle = chase?.gapToCatch ? 'Hunt mode' : 'Crown mode'
-  const huntedTitle = chase?.gapToDefend ? 'Hunted' : 'Position stable'
+  if (!chase?.currentUserRow) {
+    return (
+      <Card title="Pressure" body="Log effort to enter the fight.">
+        <p className="muted">Log effort to enter the fight.</p>
+      </Card>
+    )
+  }
+
+  const rowAbove = chase.rowAbove
+  const rowBelow = chase.rowBelow
+  const chasingCopy = rowAbove
+    ? {
+        name: getSafeName(rowAbove.actorName),
+        rank: getSafeRank(rowAbove.rank),
+        gap: getGapCopy(chase.gapToCatch ?? 0, activityType, 'ahead'),
+      }
+    : null
+  const huntedCopy = rowBelow
+    ? {
+        name: getSafeName(rowBelow.actorName),
+        rank: getSafeRank(rowBelow.rank),
+        gap: getGapCopy(chase.gapToDefend ?? 0, activityType, 'behind'),
+      }
+    : null
 
   return (
     <Card title="Pressure" body="Who you are hunting and who is hunting you.">
       <div className="stack pressure-card-stack">
-        <div>
-          <strong>{hunterTitle}</strong>
-          <span>{hunterLabel}</span>
+        <div className="pressure-row">
+          <strong>You&apos;re chasing</strong>
+          {chasingCopy ? (
+            <>
+              <span className="pressure-row__meta">
+                {chasingCopy.name} <span aria-hidden="true">·</span> {chasingCopy.rank}
+              </span>
+              <span>{chasingCopy.gap}</span>
+            </>
+          ) : (
+            <>
+              <span className="pressure-row__meta">You hold the line.</span>
+              <span>No one above you.</span>
+            </>
+          )}
         </div>
-        <div>
-          <strong>{huntedTitle}</strong>
-          <span>{huntedLabel}</span>
+        <div className="pressure-row">
+          <strong>Chasing you</strong>
+          {huntedCopy ? (
+            <>
+              <span className="pressure-row__meta">
+                {huntedCopy.name} <span aria-hidden="true">·</span> {huntedCopy.rank}
+              </span>
+              <span>{huntedCopy.gap}</span>
+            </>
+          ) : (
+            <>
+              <span className="pressure-row__meta">Clear behind.</span>
+              <span>Stay active.</span>
+            </>
+          )}
         </div>
       </div>
     </Card>

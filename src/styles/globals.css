@@ -519,22 +519,31 @@ button {
   gap: 0.85rem;
 }
 
-.pressure-card-stack > div {
+.pressure-row {
+  display: grid;
+  gap: 0.28rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
   padding: 0.85rem;
   background: rgba(255, 255, 255, 0.04);
+  min-width: 0;
 }
 
-.pressure-card-stack strong {
+.pressure-row strong {
   display: block;
   margin-bottom: 0.35rem;
   font-size: 0.95rem;
 }
 
-.pressure-card-stack span {
+.pressure-row span {
   color: var(--text-muted);
   font-size: 0.88rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pressure-row__meta {
+  color: #f7f1eb;
 }
 
 .chase-stack {
