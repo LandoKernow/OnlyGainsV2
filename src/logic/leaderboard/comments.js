@@ -1,4 +1,4 @@
-import { formatKm } from '../../utils/activity'
+import { formatActivityGap, formatKm } from '../../utils/activity'
 
 function getSafeName(name) {
   return name || 'Someone'
@@ -68,7 +68,7 @@ export function getRecentActivityCopy(row, currentUserId) {
   return `${actor} added ${row.value} reps.`
 }
 
-export function getChaseCopy(chase) {
+export function getChaseCopy(chase, activityType = 'pressups') {
   if (chase.state === 'off-board') {
     return {
       title: 'Join the board',
@@ -83,24 +83,28 @@ export function getChaseCopy(chase) {
       title: 'DEFENDING',
       primary: 'You hold the crown.',
       secondary: chase.rowBelow
-        ? `${getSafeName(chase.rowBelow.actorName)} is ${chase.gapToDefend} behind.`
+        ? `${getSafeName(chase.rowBelow.actorName)} is ${formatActivityGap(chase.gapToDefend, activityType)} behind.`
         : 'You stand alone.',
       action: chase.rowBelow ? "Don't go quiet." : 'Keep the pressure on.',
     }
   }
 
   if (chase.rowAbove && chase.rowBelow) {
-    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} to break through.` : ''
+    const gapMsg = chase.gapToCatch ? `${formatActivityGap(chase.gapToCatch, activityType)} to break through.` : ''
     return {
       title: 'HUNTING',
       primary: `${getSafeName(chase.rowAbove.actorName)} can feel you.`,
       secondary: gapMsg,
-      action: chase.gapToCatch ? `One set of ${Math.min(chase.gapToCatch, 50)} closes it.` : 'Close the gap.',
+      action: chase.gapToCatch
+        ? activityType === 'km'
+          ? `${formatActivityGap(chase.gapToCatch, activityType)} closes it.`
+          : `One set of ${Math.min(chase.gapToCatch, 50)} closes it.`
+        : 'Close the gap.',
     }
   }
 
   if (chase.rowAbove) {
-    const gapMsg = chase.gapToCatch ? `${chase.gapToCatch} to take the spot.` : ''
+    const gapMsg = chase.gapToCatch ? `${formatActivityGap(chase.gapToCatch, activityType)} to take the spot.` : ''
     return {
       title: 'CHASING',
       primary: `${getSafeName(chase.rowAbove.actorName)} is exposed.`,
@@ -113,7 +117,7 @@ export function getChaseCopy(chase) {
     return {
       title: 'HUNTED',
       primary: `${getSafeName(chase.rowBelow.actorName)} is hunting you.`,
-      secondary: chase.gapToDefend ? `Only ${chase.gapToDefend} keeps them off you.` : 'Hold the line.',
+      secondary: chase.gapToDefend ? `Only ${formatActivityGap(chase.gapToDefend, activityType)} keeps them off you.` : 'Hold the line.',
       action: 'One log keeps them back.',
     }
   }

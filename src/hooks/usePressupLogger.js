@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createSubmission } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
 import { getLondonSubmissionParts } from '../utils/dates'
+import { createClientId } from '../utils/uuid'
 import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
 
@@ -9,7 +10,7 @@ function buildPendingSubmission({ value, circleId, userId, actorName }) {
   const dateParts = getLondonSubmissionParts()
 
   return {
-    id: `pending-${crypto.randomUUID()}`,
+    id: `pending-${createClientId()}`,
     circleId,
     userId,
     activityType: 'pressups',
@@ -36,7 +37,7 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
       const createdAt = new Date().toISOString()
       const dateParts = getLondonSubmissionParts(new Date(createdAt))
       const payload = {
-        id: crypto.randomUUID(),
+        id: createClientId(),
         circle_id: circleId,
         user_id: userId,
         activity_type: 'pressups',

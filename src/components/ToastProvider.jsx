@@ -1,10 +1,11 @@
 import { createContext, useContext, useMemo, useState } from 'react'
+import { createClientId } from '../utils/uuid'
 
 const ToastContext = createContext(null)
 
 function buildToast(toast) {
   return {
-    id: crypto.randomUUID(),
+    id: createClientId(),
     tone: toast.tone ?? 'success',
     message: toast.message,
   }

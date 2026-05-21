@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { createClientId } from '../utils/uuid'
 
 function mapLeaderMessage(row) {
   if (!row) {
@@ -57,7 +58,7 @@ export async function upsertWeeklyLeaderMessage({
   }
 
   const payload = {
-    id: existingId ?? crypto.randomUUID(),
+    id: existingId ?? createClientId(),
     circle_id: circleId,
     activity_type: activityType,
     period_type: periodType,

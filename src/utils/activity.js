@@ -12,6 +12,15 @@ export function formatKm(value) {
   return `${formatted} km`
 }
 
+export function formatActivityGap(value, activityType) {
+  if (activityType === 'km') {
+    return formatKm(value)
+  }
+
+  const normalized = Math.round(Number(value) || 0)
+  return normalized === 1 ? '1 rep' : `${normalized} reps`
+}
+
 export function formatActivityValue(value, activityType) {
   if (activityType === 'km') {
     return formatKm(value)

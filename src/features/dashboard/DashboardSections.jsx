@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Card } from '../../components/Card'
-import { formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
+import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 import { getMomentumChip } from '../../utils/status'
 
@@ -13,7 +13,7 @@ function getSafeRank(rank) {
 }
 
 function getGapCopy(gap, activityType, direction) {
-  const formattedGap = formatActivityValue(gap, activityType)
+  const formattedGap = formatActivityGap(gap, activityType)
   return direction === 'ahead'
     ? `${formattedGap} to overtake`
     : `${formattedGap} behind`
@@ -23,7 +23,7 @@ function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)
 }
 
-function buildLeaderboardChips(row, allRows = []) {
+function buildLeaderboardChips(row, activityType = 'pressups') {
   const chips = []
 
   // Momentum indicator
@@ -34,7 +34,7 @@ function buildLeaderboardChips(row, allRows = []) {
 
   // Today's activity
   if (row.todayTotal > 0) {
-    chips.push(`Today: ${row.todayTotal}`)
+    chips.push(`Today: ${activityType === 'km' ? formatKm(row.todayTotal) : row.todayTotal}`)
   }
 
   // Current user indicator
@@ -50,7 +50,7 @@ function buildLeaderboardChips(row, allRows = []) {
   return chips
 }
 
-function getPressureContext(row, allRows = []) {
+function getPressureContext(row, allRows = [], activityType = 'pressups') {
   if (row.rank === 1) {
     return 'CROWN'
   }
@@ -61,17 +61,19 @@ function getPressureContext(row, allRows = []) {
   if (rankAbove && rankBelow) {
     const gapAhead = (rankAbove.total || 0) - (row.total || 0)
     const gapBehind = (row.total || 0) - (rankBelow.total || 0)
-    return gapAhead <= gapBehind ? `${gapAhead} from #${row.rank - 1}` : `${gapBehind} ahead of #${row.rank + 1}`
+    return gapAhead <= gapBehind
+      ? `${formatActivityGap(gapAhead, activityType)} from #${row.rank - 1}`
+      : `${formatActivityGap(gapBehind, activityType)} ahead of #${row.rank + 1}`
   }
 
   if (rankAbove) {
     const gapAhead = (rankAbove.total || 0) - (row.total || 0)
-    return `${gapAhead} from #${row.rank - 1}`
+    return `${formatActivityGap(gapAhead, activityType)} from #${row.rank - 1}`
   }
 
   if (rankBelow) {
     const gapBehind = (row.total || 0) - (rankBelow.total || 0)
-    return `${gapBehind} ahead of #${row.rank + 1}`
+    return `${formatActivityGap(gapBehind, activityType)} ahead of #${row.rank + 1}`
   }
 
   return null
@@ -104,8 +106,8 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
             {getMomentumChip(row) ? <span>{getMomentumChip(row)}</span> : null}
           </div>
           <div className="stack">
-            {getPressureContext(row, allRows) ? (
-              <p>{getPressureContext(row, allRows)}</p>
+            {getPressureContext(row, allRows, activityType) ? (
+              <p>{getPressureContext(row, allRows, activityType)}</p>
             ) : (
               <p className="muted">No immediate pressure data for this row.</p>
             )}
@@ -378,7 +380,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
         <>
           <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
             {rows.map((row) => {
-              const pressureContext = getPressureContext(row, rows)
+              const pressureContext = getPressureContext(row, rows, activityType)
               const rowClassName = row.isCurrentUser
                 ? 'leaderboard-row leaderboard-row--current leaderboard-row--clickable'
                 : 'leaderboard-row leaderboard-row--clickable'
@@ -398,7 +400,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                     <strong>{row.actorName}</strong>
                     {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
                     <div className="row-chip-list">
-                      {buildLeaderboardChips(row, rows).map((chip) => (
+                      {buildLeaderboardChips(row, activityType).map((chip) => (
                         <span key={`${row.userId}-${chip}`} className="row-chip">
                           {chip}
                         </span>
@@ -433,7 +435,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false, activityT
     )
   }
 
-  const copy = getChaseCopy(chase)
+  const copy = getChaseCopy(chase, activityType)
 
   return (
     <Card title={copy.title} body={copy.primary}>
