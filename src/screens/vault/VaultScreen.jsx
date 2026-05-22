@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
+import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
@@ -35,6 +36,18 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   }
 
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
+}
+
+function formatAwardValue(award) {
+  if (award.valueSeconds != null) {
+    return formatDurationFromSeconds(award.valueSeconds)
+  }
+
+  if (award.valueNumeric != null && award.activityType) {
+    return formatActivityValue(award.valueNumeric, award.activityType)
+  }
+
+  return null
 }
 
 function VaultRecordCard({ title, record, emptyCopy }) {
@@ -82,12 +95,14 @@ function VaultFutureSection() {
 export default function VaultScreen() {
   const { circleId } = useBoardMeta()
   const { records, isLoading, error, currentYear } = useVaultRecords({ circleId })
+  const awardsQuery = useVaultAwards(circleId)
 
   const pressupsDay = records.pressupsDay
   const pressupsWeek = records.pressupsWeek
   const kmDay = records.kmDay
   const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
+  const awards = awardsQuery.awards
 
   return (
     <div className="screen screen--vault">
@@ -143,6 +158,21 @@ export default function VaultScreen() {
                 ))}
               </div>
             </Card>
+
+            {awards.length > 0 ? (
+              <Card title="AWARDS" body="Major wins stored for the year.">
+                <div className="stack">
+                  {awards.map((award) => (
+                    <article key={award.id} className="vault-card">
+                      <strong>{award.title}</strong>
+                      <div className="vault-card__holder">{award.actorName}</div>
+                      {formatAwardValue(award) ? <div className="vault-card__value">{formatAwardValue(award)}</div> : null}
+                      {award.quote ? <p className="muted">{award.quote}</p> : null}
+                    </article>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
           </>
         ) : null}
 

@@ -11,6 +11,30 @@ function getDismissKey(userId) {
   return `${DISMISS_KEY_PREFIX}_${userId}`
 }
 
+function readDismissed(key) {
+  if (!key) {
+    return false
+  }
+
+  try {
+    return globalThis.localStorage?.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function writeDismissed(key) {
+  if (!key) {
+    return
+  }
+
+  try {
+    globalThis.localStorage?.setItem(key, 'true')
+  } catch {
+    // Ignore storage issues in restrictive mobile webviews.
+  }
+}
+
 export function ProfileBuildPrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
@@ -27,7 +51,7 @@ export function ProfileBuildPrompt() {
       return
     }
 
-    setIsDismissed(window.localStorage.getItem(dismissKey) === 'true')
+    setIsDismissed(readDismissed(dismissKey))
   }, [dismissKey, isAuthenticated])
 
   const profileYearQuery = useQuery({
@@ -48,10 +72,10 @@ export function ProfileBuildPrompt() {
       }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
+    globalThis.window?.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+      globalThis.window?.removeEventListener('keydown', handleKeyDown)
     }
   }, [isAuthenticated, isDismissed, isProfileYearRoute])
 
@@ -60,7 +84,7 @@ export function ProfileBuildPrompt() {
       return
     }
 
-    window.localStorage.setItem(dismissKey, 'true')
+    writeDismissed(dismissKey)
     setIsDismissed(true)
   }
 
@@ -73,9 +97,7 @@ export function ProfileBuildPrompt() {
     isAuthenticated &&
     !isDismissed &&
     !isProfileYearRoute &&
-    !profileYearQuery.isLoading &&
-    !profileYearQuery.data &&
-    !profileYearQuery.error
+    !profileYearQuery.data
 
   if (!shouldShow) {
     return null

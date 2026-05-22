@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import { createClientId } from '../utils/uuid'
+import { MachoToast } from './MachoToast'
 
 const ToastContext = createContext(null)
 
@@ -7,7 +8,12 @@ function buildToast(toast) {
   return {
     id: createClientId(),
     tone: toast.tone ?? 'success',
-    message: toast.message,
+    message: toast.message ?? '',
+    title: toast.title ?? '',
+    eyebrow: toast.eyebrow ?? '',
+    imagePath: toast.imagePath ?? '',
+    variant: toast.variant ?? 'default',
+    durationMs: toast.durationMs ?? (toast.variant === 'macho' ? 4200 : 2400),
   }
 }
 
@@ -21,7 +27,7 @@ export function ToastProvider({ children }) {
   function showToast(toast) {
     const nextToast = buildToast(toast)
     setToasts((current) => [...current, nextToast])
-    window.setTimeout(() => dismissToast(nextToast.id), 2400)
+    window.setTimeout(() => dismissToast(nextToast.id), nextToast.durationMs)
   }
 
   const value = useMemo(
@@ -37,21 +43,25 @@ export function ToastProvider({ children }) {
       {children}
       <div className="toast-stack" aria-live="polite" aria-atomic="true">
         {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={toast.tone === 'error' ? 'toast toast--error' : 'toast toast--success'}
-            role="status"
-          >
-            <span>{toast.message}</span>
-            <button
-              className="toast__dismiss"
-              type="button"
-              aria-label="Dismiss toast"
-              onClick={() => dismissToast(toast.id)}
+          toast.variant === 'macho' ? (
+            <MachoToast key={toast.id} toast={toast} onDismiss={dismissToast} />
+          ) : (
+            <div
+              key={toast.id}
+              className={toast.tone === 'error' ? 'toast toast--error' : 'toast toast--success'}
+              role="status"
             >
-              x
-            </button>
-          </div>
+              <span>{toast.message}</span>
+              <button
+                className="toast__dismiss"
+                type="button"
+                aria-label="Dismiss toast"
+                onClick={() => dismissToast(toast.id)}
+              >
+                x
+              </button>
+            </div>
+          )
         ))}
       </div>
     </ToastContext.Provider>
