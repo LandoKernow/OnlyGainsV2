@@ -67,8 +67,8 @@ function VaultRecordCard({ title, record, emptyCopy }) {
       ) : (
         <div className="stack">
           <div className="vault-card__empty">{emptyCopy}</div>
-          <Link className="button button--ghost vault-card__action" to="/profile/year/2026">
-            Claim it
+          <Link className="button button--ghost vault-card__action" to="/profile/records">
+            View your records
           </Link>
         </div>
       )}
@@ -111,6 +111,9 @@ export default function VaultScreen() {
           <div className="stack">
             <p className="muted">Claimed records are visible. Verified records are coming.</p>
             <p className="muted">The Vault remembers what the Board forgets.</p>
+            <Link className="button button--ghost" to="/profile/records">
+              View your records
+            </Link>
           </div>
         </Card>
 

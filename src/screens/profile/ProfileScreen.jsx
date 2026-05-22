@@ -116,6 +116,19 @@ function VaultProfileCard() {
   )
 }
 
+function PersonalRecordsEntryCard() {
+  return (
+    <Card title="Personal Records" body="Your best work is on record.">
+      <div className="stack">
+        <p className="muted">Break this. Update the mark.</p>
+        <Link className="button" to="/profile/records">
+          View your records
+        </Link>
+      </div>
+    </Card>
+  )
+}
+
 function ProfileYearEntryCard() {
   const profileYearSetup = useProfileYearSetup(2026)
   const profileYear = profileYearSetup.profileYear
@@ -205,6 +218,7 @@ export default function ProfileScreen() {
         <div className="stack-lg">
           <ProfileSummary />
           <ProfileYearEntryCard />
+          <PersonalRecordsEntryCard />
           <VaultProfileCard />
           <ProfileBasicsCard />
         </div>
