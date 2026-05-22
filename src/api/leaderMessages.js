@@ -1,5 +1,4 @@
 import { supabase } from '../lib/supabase'
-import { createClientId } from '../utils/uuid'
 
 function mapLeaderMessage(row) {
   if (!row) {
@@ -23,6 +22,17 @@ export function getWeeklyLeaderMessageQueryKey(circleId, weekStart) {
   return ['dashboard', 'weekly-leader-message', circleId, weekStart]
 }
 
+export function isLeaderMessagePermissionError(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error?.code === '42501' ||
+    message.includes('only the current weekly leader can take the mic') ||
+    message.includes('not the current weekly leader') ||
+    message.includes('no current weekly leader')
+  )
+}
+
 export async function fetchWeeklyLeaderMessage({ circleId, weekStart, activityType = 'pressups', periodType = 'weekly' }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
@@ -44,40 +54,24 @@ export async function fetchWeeklyLeaderMessage({ circleId, weekStart, activityTy
   return mapLeaderMessage(data)
 }
 
-export async function upsertWeeklyLeaderMessage({
+export async function setWeeklyLeaderMessage({
   circleId,
-  weekStart,
   activityType = 'pressups',
-  periodType = 'weekly',
-  userId,
   message,
-  existingId,
 }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
-  const payload = {
-    id: existingId ?? createClientId(),
-    circle_id: circleId,
-    activity_type: activityType,
-    period_type: periodType,
-    week_start: weekStart,
-    user_id: userId,
-    message,
-  }
-
   const { data, error } = await supabase
-    .from('leader_messages')
-    .upsert(payload, {
-      onConflict: ['circle_id', 'period_type', 'activity_type', 'week_start'],
+    .rpc('set_weekly_leader_message', {
+      p_circle_id: circleId,
+      p_activity_type: activityType,
+      p_message: message,
     })
-    .select('id,circle_id,period_type,activity_type,week_start,user_id,message,created_at,updated_at')
     .single()
 
   if (error) {
-    const sql = `create unique index if not exists leader_messages_unique_period on public.leader_messages (circle_id, period_type, activity_type, week_start);`
-    error.message = `${error.message} If this fails because the unique constraint is missing, run: ${sql}`
     throw error
   }
 

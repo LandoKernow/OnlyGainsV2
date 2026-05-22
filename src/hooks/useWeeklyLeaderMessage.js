@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchWeeklyLeaderMessage, getWeeklyLeaderMessageQueryKey, upsertWeeklyLeaderMessage } from '../api/leaderMessages'
+import { fetchWeeklyLeaderMessage, getWeeklyLeaderMessageQueryKey, setWeeklyLeaderMessage } from '../api/leaderMessages'
 import { getLondonPeriodKeys } from '../utils/dates'
 
 export function useWeeklyLeaderMessage({ circleId, currentUserId, isCurrentWeeklyLeader }) {
@@ -20,15 +20,11 @@ export function useWeeklyLeaderMessage({ circleId, currentUserId, isCurrentWeekl
 
   const queryClient = useQueryClient()
   const save = useMutation({
-    mutationFn: async ({ message, existingId }) =>
-      upsertWeeklyLeaderMessage({
+    mutationFn: async ({ message }) =>
+      setWeeklyLeaderMessage({
         circleId,
-        weekStart: currentWeekStart,
         activityType: 'pressups',
-        periodType: 'weekly',
-        userId: currentUserId,
         message,
-        existingId,
       }),
     onSuccess: (data) => {
       queryClient.setQueryData(queryKey, data)

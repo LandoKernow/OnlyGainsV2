@@ -3,6 +3,7 @@ import { Card } from '../../components/Card'
 import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
+import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 
 function getSafeName(name) {
   return name || 'Someone'
@@ -28,6 +29,14 @@ function buildStatusChip(label) {
     label,
     tone: getStatusTone(label),
   }
+}
+
+function getLeaderMessageErrorCopy(error) {
+  if (isLeaderMessagePermissionError(error)) {
+    return 'Only the current weekly leader can take the mic.'
+  }
+
+  return 'Couldn’t save the leader message.'
 }
 
 function buildLeaderboardChips(row, allRows = [], activityType = 'pressups') {
@@ -321,7 +330,7 @@ export function WeeklyLeaderMessageCard({
     }
 
     setValidationError('')
-    saveMessage.mutate({ message: normalized, existingId: messageRow?.id })
+    saveMessage.mutate({ message: normalized })
   }
 
   return (
@@ -366,7 +375,7 @@ export function WeeklyLeaderMessageCard({
                 </button>
                 {validationError ? <p className="muted">{validationError}</p> : null}
                 {saveMessage?.error ? (
-                  <p className="muted">Unable to save. {saveMessage.error.message}</p>
+                  <p className="muted">{getLeaderMessageErrorCopy(saveMessage.error)}</p>
                 ) : null}
               </div>
             </form>
