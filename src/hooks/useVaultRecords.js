@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchVaultRecords } from '../api/submissions'
 import { fetchPublicProfileRecordEntries, getPublicProfileRecordEntriesQueryKey } from '../api/profileYearSetup'
+import { fetchVaultRecordExclusions, getVaultRecordExclusionsQueryKey } from '../api/vaultRecordExclusions'
 import { getLondonDateParts, getSubmissionPeriodKeys } from '../utils/dates'
 
 export function getVaultRecordsQueryKey(circleId, year) {
@@ -46,10 +47,20 @@ function findTopGroup(rows, periodKey) {
         period,
         value: 0,
         year: row.year ?? null,
+        sourceType: 'submission',
+        sourceId: row.id,
+        sourceIds: [],
+        topSubmissionValue: Number(row.value) || 0,
       }
     }
 
     groups[key].value += value
+    groups[key].sourceIds.push(row.id)
+
+    if (value >= groups[key].topSubmissionValue) {
+      groups[key].topSubmissionValue = value
+      groups[key].sourceId = row.id
+    }
   })
 
   return Object.values(groups).sort((a, b) => b.value - a.value)[0] || null
@@ -65,6 +76,8 @@ function normalizeSubmissionRecord(record, sourceLabel = 'app_tracked') {
     sourceLabel,
     year: record.year ?? null,
     claimedAt: record.claimedAt ?? null,
+    sourceType: record.sourceType ?? 'submission',
+    sourceId: record.sourceId ?? record.id ?? null,
   }
 }
 
@@ -90,23 +103,45 @@ function compareClaimedRecords(a, b) {
 function findBestClaimedRecord(rows, recordType) {
   return rows
     .filter((row) => row.recordType === recordType)
-    .sort(compareClaimedRecords)[0] || null
+    .sort(compareClaimedRecords)
+    .map((row) => ({
+      ...row,
+      sourceType: 'profile_record_entry',
+      sourceId: row.id,
+    }))[0] || null
+}
+
+function createExclusionSet(rows) {
+  return new Set(
+    rows.map((row) => `${row.sourceType}:${row.sourceId}`),
+  )
+}
+
+function isExcluded(exclusionSet, sourceType, sourceId) {
+  if (!sourceType || !sourceId) {
+    return false
+  }
+
+  return exclusionSet.has(`${sourceType}:${sourceId}`)
 }
 
 export function useVaultRecords({ circleId }) {
   const currentYear = getLondonDateParts(new Date()).year
+  const exclusionsQueryKey = getVaultRecordExclusionsQueryKey()
 
   const query = useQuery({
     queryKey: getVaultRecordsQueryKey(circleId, currentYear),
     queryFn: async () => {
-      const [appTrackedRecords, claimedRecords] = await Promise.all([
+      const [appTrackedRecords, claimedRecords, exclusions] = await Promise.all([
         fetchVaultRecords({ circleId, year: currentYear }),
         fetchPublicProfileRecordEntries(currentYear),
+        fetchVaultRecordExclusions(),
       ])
 
       return {
         appTrackedRecords,
         claimedRecords,
+        exclusions,
       }
     },
     enabled: Boolean(circleId),
@@ -114,9 +149,16 @@ export function useVaultRecords({ circleId }) {
   })
 
   const records = useMemo(() => {
-    const pressups = query.data?.appTrackedRecords?.pressups ?? []
-    const km = query.data?.appTrackedRecords?.km ?? []
-    const claimedRows = query.data?.claimedRecords ?? []
+    const exclusionSet = createExclusionSet(query.data?.exclusions ?? [])
+    const pressups = (query.data?.appTrackedRecords?.pressups ?? []).filter(
+      (row) => !isExcluded(exclusionSet, 'submission', row.id),
+    )
+    const km = (query.data?.appTrackedRecords?.km ?? []).filter(
+      (row) => !isExcluded(exclusionSet, 'submission', row.id),
+    )
+    const claimedRows = (query.data?.claimedRecords ?? []).filter(
+      (row) => !isExcluded(exclusionSet, 'profile_record_entry', row.id),
+    )
 
     return {
       pressupsDay: normalizeSubmissionRecord(findTopGroup(pressups, 'todayKey')),
@@ -134,5 +176,6 @@ export function useVaultRecords({ circleId }) {
     records,
     currentYear,
     publicRecordsQueryKey: getPublicProfileRecordEntriesQueryKey(currentYear),
+    exclusionsQueryKey,
   }
 }
