@@ -80,6 +80,11 @@ button {
     transparent;
 }
 
+.app-shell--immersive {
+  padding-top: calc(1rem + var(--safe-top));
+  padding-bottom: calc(1.5rem + var(--safe-bottom));
+}
+
 .app-header {
   display: flex;
   align-items: flex-start;
@@ -404,6 +409,18 @@ button {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-muted);
   font-size: 0.83rem;
+}
+
+.vault-award-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.vault-award-card__button {
+  min-width: 5.5rem;
+  text-align: center;
+  text-decoration: none;
 }
 
 .leaderboard-summary {
@@ -868,6 +885,24 @@ button {
   padding: 0.9rem 0 0.9rem;
 }
 
+.macho-toast__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.15rem;
+}
+
+.macho-toast__action {
+  min-height: 2.2rem;
+  border-radius: 0.85rem;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.macho-toast__action--ghost {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 .macho-toast__eyebrow {
   margin: 0;
   color: var(--accent);
@@ -1223,6 +1258,86 @@ button {
   overflow-wrap: anywhere;
 }
 
+.award-stage {
+  display: grid;
+  gap: 1rem;
+}
+
+.award-share-card {
+  border: 1px solid rgba(213, 106, 44, 0.28);
+  border-radius: 1.35rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(213, 106, 44, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(25, 18, 14, 0.98), rgba(8, 8, 10, 0.98));
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.36);
+}
+
+.award-share-card__image-shell {
+  height: 10.5rem;
+  background: #0a0a0c;
+  overflow: hidden;
+}
+
+.award-share-card__image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  filter: grayscale(1) contrast(1.08);
+}
+
+.award-share-card__content {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.15rem;
+}
+
+.award-share-card__brand {
+  margin: 0;
+}
+
+.award-share-card__title {
+  margin: 0;
+  font-size: clamp(1.65rem, 9vw, 2.7rem);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+}
+
+.award-share-card__winner {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.award-share-card__summary,
+.award-share-card__quote,
+.award-share-card__period,
+.award-share-card__source,
+.award-share-card__footer span {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.award-share-card__quote {
+  color: #f7f1eb;
+}
+
+.award-share-card__footer {
+  display: grid;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.award-stage__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
 .pill--active {
   background: var(--accent-soft);
   color: #fff4ed;
@@ -1382,6 +1497,30 @@ button {
   .macho-toast__message {
     font-size: 0.82rem;
   }
+
+  .macho-toast__actions {
+    gap: 0.4rem;
+  }
+
+  .macho-toast__action {
+    min-height: 2.05rem;
+    font-size: 0.76rem;
+    padding: 0.42rem 0.68rem;
+  }
+
+  .award-share-card__image-shell {
+    height: 8.9rem;
+  }
+
+  .award-share-card__content {
+    padding: 0.95rem;
+    gap: 0.6rem;
+  }
+
+  .award-stage__actions .button {
+    flex: 1 1 0;
+    text-align: center;
+  }
 }
 
 @media (min-width: 768px) {
@@ -1408,5 +1547,14 @@ button {
   .prompt-modal__content {
     padding: 1.45rem;
     align-content: center;
+  }
+
+  .award-stage {
+    max-width: 34rem;
+    margin: 0 auto;
+  }
+
+  .award-share-card__image-shell {
+    height: 12.5rem;
   }
 }

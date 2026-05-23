@@ -47,6 +47,26 @@ function formatSourceLabel(sourceLabel, year) {
   return `${String(sourceLabel || '').replace(/_/g, '-').toUpperCase()} ${String.fromCharCode(183)} ${year ?? 2026}`
 }
 
+function getGroupPriority(recordType) {
+  const priorityMap = {
+    pressups_set: 3,
+    pressups_day: 2,
+    pressups_week: 1,
+    pullups_set: 3,
+    pullups_day: 2,
+    pullups_week: 1,
+    longest_run: 6,
+    km_week: 5,
+    half_marathon: 4,
+    marathon: 3,
+    fastest_10k: 2,
+    fastest_5k: 1,
+    km_day: 0,
+  }
+
+  return priorityMap[recordType] ?? 0
+}
+
 function formatRecordValue(record, category) {
   if (!record) {
     return 'NO RECORD YET'
@@ -124,6 +144,7 @@ function PersonalRecordsContent() {
             }
           })
           .filter(Boolean)
+          .sort((a, b) => getGroupPriority(b.recordType) - getGroupPriority(a.recordType))
           .slice(0, 3)
           .map((record, index) => ({
             ...record,

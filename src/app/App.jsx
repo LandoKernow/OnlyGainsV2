@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
+import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ScreenFallback } from '../components/ScreenFallback'
@@ -10,6 +11,7 @@ const LeaderboardScreen = lazy(() => import('../screens/leaderboard/LeaderboardS
 const ChaseScreen = lazy(() => import('../screens/chase/ChaseScreen'))
 const ActivityScreen = lazy(() => import('../screens/activity/ActivityScreen'))
 const AdminAwardsScreen = lazy(() => import('../screens/admin/AdminAwardsScreen'))
+const AwardShareScreen = lazy(() => import('../screens/awards/AwardShareScreen'))
 const ProfileScreen = lazy(() => import('../screens/profile/ProfileScreen'))
 const ProfileYearSetupScreen = lazy(() => import('../screens/profile/ProfileYearSetupScreen'))
 const PersonalRecordsScreen = lazy(() => import('../screens/profile/PersonalRecordsScreen'))
@@ -28,12 +30,14 @@ export default function App() {
             <Route path="/chase" element={<ChaseScreen />} />
             <Route path="/activity" element={<ActivityScreen />} />
             <Route path="/admin/awards" element={<AdminAwardsScreen />} />
+            <Route path="/award/:awardId" element={<AwardShareScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
             <Route path="/profile/records" element={<PersonalRecordsScreen />} />
             <Route path="/profile/year/:year" element={<ProfileYearSetupScreen />} />
             <Route path="/vault" element={<VaultScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
+          <AwardCelebrationWatcher />
           <ProfileBuildPrompt />
         </Suspense>
       </ErrorBoundary>

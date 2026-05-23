@@ -1,9 +1,17 @@
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
+import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
+import {
+  formatAwardPeriodRange,
+  formatAwardSourceLabel,
+  formatAwardSummaryLine,
+  formatAwardValue,
+  shareAward,
+} from '../../utils/awardShare'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
 
 const CLAIMED_RECORD_TYPES = [
@@ -36,41 +44,6 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   }
 
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
-}
-
-function formatAwardValue(award) {
-  if (award.valueSeconds != null) {
-    return formatDurationFromSeconds(award.valueSeconds)
-  }
-
-  if (award.valueNumeric != null && award.activityType) {
-    return formatActivityValue(award.valueNumeric, award.activityType)
-  }
-
-  return null
-}
-
-function formatAwardMeta(award) {
-  if (award.activityType === 'combined') {
-    return award.periodType === 'monthly' ? 'Press Ups + KM · Month' : 'Press Ups + KM · Week'
-  }
-
-  const activityLabel = award.activityType === 'km' ? 'KM' : 'Press Ups'
-  const periodLabel = award.periodType === 'monthly' ? 'Month' : award.periodType === 'weekly' ? 'Week' : award.periodType
-
-  return `${activityLabel} · ${periodLabel}`
-}
-
-function formatAwardPeriod(award) {
-  if (!award.periodStart) {
-    return ''
-  }
-
-  if (!award.periodEnd) {
-    return award.periodStart
-  }
-
-  return `${award.periodStart} to ${award.periodEnd}`
 }
 
 function VaultRecordCard({ title, record, emptyCopy }) {
@@ -116,6 +89,7 @@ function VaultFutureSection() {
 }
 
 export default function VaultScreen() {
+  const { showToast } = useToast()
   const { circleId } = useBoardMeta()
   const { records, isLoading, error, currentYear } = useVaultRecords({ circleId })
   const awardsQuery = useVaultAwards(circleId)
@@ -126,6 +100,22 @@ export default function VaultScreen() {
   const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
   const awards = awardsQuery.awards
+
+  async function handleShareAward(award) {
+    try {
+      const result = await shareAward(award)
+      if (result === 'cancelled') {
+        return
+      }
+
+      showToast({
+        tone: 'success',
+        message: result === 'shared' ? 'Award shared.' : 'Share link copied.',
+      })
+    } catch {
+      showToast({ tone: 'error', message: 'Could not share award.' })
+    }
+  }
 
   return (
     <div className="screen screen--vault">
@@ -193,11 +183,19 @@ export default function VaultScreen() {
                       <article key={award.id} className="vault-card">
                         <strong>{award.title}</strong>
                         <div className="vault-card__holder">{award.actorName}</div>
-                        <p className="muted">{formatAwardMeta(award)}</p>
+                        <p className="muted">{formatAwardSummaryLine(award)}</p>
                         {formatAwardValue(award) ? <div className="vault-card__value">{formatAwardValue(award)}</div> : null}
                         {award.quote ? <p className="muted">{award.quote}</p> : null}
-                        {formatAwardPeriod(award) ? <p className="muted">{formatAwardPeriod(award)}</p> : null}
-                        <p className="muted">{formatSourceLabel(award.sourceType || 'leaderboard')}</p>
+                        {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
+                        <p className="muted">{formatAwardSourceLabel(award)}</p>
+                        <div className="vault-award-card__actions">
+                          <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
+                            View
+                          </Link>
+                          <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
+                            Share
+                          </button>
+                        </div>
                       </article>
                     ))
                   ) : (

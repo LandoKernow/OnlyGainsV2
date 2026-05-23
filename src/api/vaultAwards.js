@@ -29,17 +29,45 @@ export function getVaultAwardsQueryKey(circleId) {
   return ['vault', 'awards', circleId]
 }
 
-export async function fetchVaultAwards(circleId) {
+export function getVaultAwardQueryKey(awardId) {
+  return ['vault', 'award', awardId]
+}
+
+async function fetchProfilesByUserIds(userIds) {
+  if (userIds.length === 0) {
+    return {}
+  }
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id,name')
+    .in('id', userIds)
+
+  if (profilesError) {
+    throw profilesError
+  }
+
+  return Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
+}
+
+export async function fetchVaultAwards(circleId, options = {}) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
-  const { data, error } = await supabase
+  const limit = Number(options.limit) > 0 ? Number(options.limit) : 6
+  let query = supabase
     .from('vault_awards')
     .select('id,user_id,circle_id,award_type,activity_type,period_type,period_start,period_end,record_type,value_numeric,value_seconds,unit,source_type,source_id,title,quote,image_path,metadata,created_at')
     .eq('circle_id', circleId)
     .order('created_at', { ascending: false })
-    .limit(6)
+    .limit(limit)
+
+  if (options.userId) {
+    query = query.eq('user_id', options.userId)
+  }
+
+  const { data, error } = await query
 
   if (error) {
     const message = String(error.message || '').toLowerCase()
@@ -55,20 +83,30 @@ export async function fetchVaultAwards(circleId) {
   }
 
   const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-  let profilesByUserId = {}
-
-  if (userIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id,name')
-      .in('id', userIds)
-
-    if (profilesError) {
-      throw profilesError
-    }
-
-    profilesByUserId = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
-  }
+  const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
   return (data ?? []).map((row) => mapVaultAward(row, profilesByUserId))
+}
+
+export async function fetchVaultAwardById(awardId) {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured.')
+  }
+
+  const { data, error } = await supabase
+    .from('vault_awards')
+    .select('id,user_id,circle_id,award_type,activity_type,period_type,period_start,period_end,record_type,value_numeric,value_seconds,unit,source_type,source_id,title,quote,image_path,metadata,created_at')
+    .eq('id', awardId)
+    .maybeSingle()
+
+  if (error) {
+    throw error
+  }
+
+  if (!data) {
+    return null
+  }
+
+  const profilesByUserId = await fetchProfilesByUserIds(data.user_id ? [data.user_id] : [])
+  return mapVaultAward(data, profilesByUserId)
 }

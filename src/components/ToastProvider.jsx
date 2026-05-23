@@ -14,6 +14,10 @@ function buildToast(toast) {
     imagePath: toast.imagePath ?? '',
     variant: toast.variant ?? 'default',
     durationMs: toast.durationMs ?? (toast.variant === 'macho' ? 4200 : 2400),
+    primaryActionLabel: toast.primaryActionLabel ?? '',
+    secondaryActionLabel: toast.secondaryActionLabel ?? '',
+    onPrimaryAction: toast.onPrimaryAction ?? null,
+    onSecondaryAction: toast.onSecondaryAction ?? null,
   }
 }
 
