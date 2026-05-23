@@ -27,6 +27,8 @@ export function isLeaderMessagePermissionError(error) {
 
   return (
     error?.code === '42501' ||
+    message.includes('permission') ||
+    message.includes('authentication required') ||
     message.includes('only the current weekly leader can take the mic') ||
     message.includes('not the current weekly leader') ||
     message.includes('no current weekly leader')
