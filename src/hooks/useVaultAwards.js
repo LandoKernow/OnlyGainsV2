@@ -16,15 +16,24 @@ export function useVaultAwards(circleId, options = {}) {
 }
 
 export function useVaultAward(awardId) {
+  const normalizedAwardId = String(awardId || '').trim()
   const query = useQuery({
-    queryKey: getVaultAwardQueryKey(awardId),
-    queryFn: () => fetchVaultAwardById(awardId),
-    enabled: Boolean(awardId),
+    queryKey: getVaultAwardQueryKey(normalizedAwardId),
+    queryFn: () => fetchVaultAwardById(normalizedAwardId),
+    enabled: Boolean(normalizedAwardId),
     staleTime: 30_000,
   })
 
   return {
     ...query,
+    awardId: normalizedAwardId,
     award: query.data ?? null,
+    state: query.isLoading
+      ? 'loading'
+      : query.error
+      ? 'error'
+      : query.data
+      ? 'success'
+      : 'not-found',
   }
 }

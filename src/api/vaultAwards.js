@@ -93,10 +93,16 @@ export async function fetchVaultAwardById(awardId) {
     throw new Error('Supabase client is not configured.')
   }
 
+  const normalizedAwardId = String(awardId || '').trim()
+
+  if (!normalizedAwardId) {
+    return null
+  }
+
   const { data, error } = await supabase
     .from('vault_awards')
     .select('id,user_id,circle_id,award_type,activity_type,period_type,period_start,period_end,record_type,value_numeric,value_seconds,unit,source_type,source_id,title,quote,image_path,metadata,created_at')
-    .eq('id', awardId)
+    .eq('id', normalizedAwardId)
     .maybeSingle()
 
   if (error) {

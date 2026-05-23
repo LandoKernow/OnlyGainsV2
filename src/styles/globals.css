@@ -379,6 +379,21 @@ button {
   padding: 1.1rem;
 }
 
+.screen--vault-public .vault-record-card--public {
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+}
+
+.screen--vault-public .vault-card__value {
+  font-size: 1rem;
+}
+
+.screen--vault-public .vault-card__holder,
+.screen--vault-public .vault-card__status,
+.screen--vault-public .vault-card__empty {
+  font-size: 0.82rem;
+}
+
 .vault-card__holder {
   font-weight: 700;
 }

@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
+import { useAuth } from '../../features/auth/AuthProvider'
 import { useVaultAward } from '../../hooks/useVaultAwards'
 import {
   formatAwardMetricLine,
@@ -13,6 +14,7 @@ import {
 function AwardShareContent() {
   const { awardId = '' } = useParams()
   const { showToast } = useToast()
+  const { status } = useAuth()
   const awardQuery = useVaultAward(awardId)
   const award = awardQuery.award
 
@@ -43,12 +45,19 @@ function AwardShareContent() {
           <p className="muted">The Vault is pulling your name forward.</p>
         </Card>
       ) : awardQuery.error ? (
-        <Card title="AWARD OFFLINE" body="Could not load this award.">
-          <p className="muted">Try the Vault again in a moment.</p>
+        <Card title="AWARD OFFLINE" body="Could not load this award right now.">
+          <p className="muted">This looks like a read or network problem, not a missing award.</p>
+          <Link className="button button--ghost" to="/vault">
+            View Vault
+          </Link>
         </Card>
       ) : !award ? (
-        <Card title="AWARD MISSING" body="Nothing written here yet.">
-          <p className="muted">The Vault could not find that mark.</p>
+        <Card title="AWARD UNAVAILABLE" body="This mark could not be shown right now.">
+          <p className="muted">
+            {status === 'unauthenticated'
+              ? 'The award may not be public yet, or the public read policy is blocking it.'
+              : 'The Vault could not find that mark.'}
+          </p>
           <Link className="button button--ghost" to="/vault">
             View Vault
           </Link>

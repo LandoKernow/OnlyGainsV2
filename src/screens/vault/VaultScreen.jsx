@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
+import { useAuth } from '../../features/auth/AuthProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
@@ -45,9 +46,9 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
 }
 
-function VaultRecordCard({ title, record, emptyCopy }) {
+function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor }) {
   return (
-    <article className="vault-card vault-record-card">
+    <article className={isPublicVisitor ? 'vault-card vault-record-card vault-record-card--public' : 'vault-card vault-record-card'}>
       <strong>{title}</strong>
       <div className="vault-card__value">
         {formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}
@@ -62,8 +63,8 @@ function VaultRecordCard({ title, record, emptyCopy }) {
       ) : (
         <div className="stack">
           <div className="vault-card__empty">{emptyCopy}</div>
-          <Link className="button button--ghost vault-card__action" to="/profile/records">
-            View your records
+          <Link className="button button--ghost vault-card__action" to={isPublicVisitor ? '/dashboard' : '/profile/records'}>
+            {isPublicVisitor ? 'Join the board' : 'View your records'}
           </Link>
         </div>
       )}
@@ -89,9 +90,11 @@ function VaultFutureSection() {
 
 export default function VaultScreen() {
   const { showToast } = useToast()
+  const { status } = useAuth()
   const { circleId } = useBoardMeta()
   const { records, isLoading, error, currentYear } = useVaultRecords({ circleId })
   const awardsQuery = useVaultAwards(circleId)
+  const isPublicVisitor = status === 'unauthenticated'
 
   const pressupsDay = records.pressupsDay
   const pressupsWeek = records.pressupsWeek
@@ -117,14 +120,17 @@ export default function VaultScreen() {
   }
 
   return (
-    <div className="screen screen--vault">
+    <div className={isPublicVisitor ? 'screen screen--vault screen--vault-public' : 'screen screen--vault'}>
       <div className="stack-lg">
-        <Card title="THE VAULT" body="Records are remembered.">
+        <Card
+          title="THE VAULT"
+          body={isPublicVisitor ? 'Discipline becomes public. Records are remembered. Join the board.' : 'Records are remembered.'}
+        >
           <div className="stack">
             <p className="muted">Claimed records are visible. Verified records are coming.</p>
             <p className="muted">The Vault remembers what the Board forgets.</p>
-            <Link className="button button--ghost" to="/profile/records">
-              View your records
+            <Link className="button button--ghost" to={isPublicVisitor ? '/dashboard' : '/profile/records'}>
+              {isPublicVisitor ? 'Join the board' : 'View your records'}
             </Link>
           </div>
         </Card>
@@ -142,21 +148,25 @@ export default function VaultScreen() {
                   title="Most press-ups / day"
                   record={pressupsDay}
                   emptyCopy="No holder yet. Log enough to leave a mark."
+                  isPublicVisitor={isPublicVisitor}
                 />
                 <VaultRecordCard
                   title="Most press-ups / week"
                   record={pressupsWeek}
                   emptyCopy="No holder yet. Log enough to leave a mark."
+                  isPublicVisitor={isPublicVisitor}
                 />
                 <VaultRecordCard
                   title="Most KM / day"
                   record={kmDay}
                   emptyCopy="No holder yet. Log enough to leave a mark."
+                  isPublicVisitor={isPublicVisitor}
                 />
                 <VaultRecordCard
                   title="Most KM / week"
                   record={kmWeek}
                   emptyCopy="No holder yet. Log enough to leave a mark."
+                  isPublicVisitor={isPublicVisitor}
                 />
               </div>
             </Card>
@@ -169,6 +179,7 @@ export default function VaultScreen() {
                     title={PROFILE_YEAR_RECORD_LABELS[recordType]}
                     record={claimedRecords[recordType] ?? null}
                     emptyCopy="No holder yet. Claim it from your 2026 profile."
+                    isPublicVisitor={isPublicVisitor}
                   />
                 ))}
               </div>

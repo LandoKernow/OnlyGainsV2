@@ -14,6 +14,8 @@ export function AppShell({ children }) {
   const location = useLocation()
   const userLabel = session?.user?.email ? session.user.email.split('@')[0] : null
   const isAwardRoute = location.pathname.startsWith('/award/')
+  const showBottomNav = status === 'authenticated' && !isAwardRoute
+  const showSessionPill = status !== 'unauthenticated'
 
   return (
     <div className={isAwardRoute ? 'app-shell app-shell--immersive' : 'app-shell'}>
@@ -23,18 +25,19 @@ export function AppShell({ children }) {
             <p className="eyebrow">ONLY GAINS</p>
             <h1>Show up. Log it. Get better.</h1>
           </div>
-          <div className="session-pill" title={session?.user?.email} aria-live="polite">
-            {status === 'loading' && 'Session loading'}
-            {status === 'authenticated' && userLabel}
-            {status === 'unauthenticated' && 'Signed out'}
-            {status === 'setup-error' && (authError || 'Setup error')}
-          </div>
+          {showSessionPill ? (
+            <div className="session-pill" title={session?.user?.email} aria-live="polite">
+              {status === 'loading' && 'Session loading'}
+              {status === 'authenticated' && userLabel}
+              {status === 'setup-error' && (authError || 'Setup error')}
+            </div>
+          ) : null}
         </header>
       ) : null}
 
       <main className="app-main">{children}</main>
 
-      {!isAwardRoute ? (
+      {showBottomNav ? (
         <nav className="bottom-nav" aria-label="Primary">
           {navItems.map((item) => (
             <NavLink
