@@ -17,6 +17,23 @@ function mapSubmission(row, profilesByUserId = {}) {
   }
 }
 
+async function fetchProfilesByUserIds(userIds) {
+  if (userIds.length === 0) {
+    return {}
+  }
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', userIds)
+
+  if (profilesError) {
+    return {}
+  }
+
+  return Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
+}
+
 export async function createSubmission(payload) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
@@ -52,21 +69,7 @@ export async function fetchRecentSubmissions({ circleId, limit }) {
   }
 
   const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-
-  let profilesByUserId = {}
-
-  if (userIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .in('id', userIds)
-
-    if (profilesError) {
-      throw profilesError
-    }
-
-    profilesByUserId = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
-  }
+  const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
   return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
 }
@@ -89,20 +92,7 @@ export async function fetchLeaderboardSubmissions({ circleId, year, activityType
   }
 
   const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-  let profilesByUserId = {}
-
-  if (userIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .in('id', userIds)
-
-    if (profilesError) {
-      throw profilesError
-    }
-
-    profilesByUserId = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
-  }
+  const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
   return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
 }
@@ -129,20 +119,7 @@ export async function fetchVaultSubmissions({ circleId, year, activityType }) {
   }
 
   const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-  let profilesByUserId = {}
-
-  if (userIds.length > 0) {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .in('id', userIds)
-
-    if (profilesError) {
-      throw profilesError
-    }
-
-    profilesByUserId = Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
-  }
+  const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
   return (data ?? []).map((row) => ({
     id: row.id,

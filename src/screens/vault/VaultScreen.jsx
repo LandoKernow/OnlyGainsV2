@@ -6,10 +6,9 @@ import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
 import {
+  formatAwardMetricLine,
   formatAwardPeriodRange,
   formatAwardSourceLabel,
-  formatAwardSummaryLine,
-  formatAwardValue,
   shareAward,
 } from '../../utils/awardShare'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
@@ -183,10 +182,9 @@ export default function VaultScreen() {
                       <article key={award.id} className="vault-card">
                         <strong>{award.title}</strong>
                         <div className="vault-card__holder">{award.actorName}</div>
-                        <p className="muted">{formatAwardSummaryLine(award)}</p>
-                        {formatAwardValue(award) ? <div className="vault-card__value">{formatAwardValue(award)}</div> : null}
-                        {award.quote ? <p className="muted">{award.quote}</p> : null}
+                        <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
                         {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
+                        {award.quote ? <p className="muted">{award.quote}</p> : null}
                         <p className="muted">{formatAwardSourceLabel(award)}</p>
                         <div className="vault-award-card__actions">
                           <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>

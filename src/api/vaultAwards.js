@@ -44,7 +44,7 @@ async function fetchProfilesByUserIds(userIds) {
     .in('id', userIds)
 
   if (profilesError) {
-    throw profilesError
+    return {}
   }
 
   return Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))

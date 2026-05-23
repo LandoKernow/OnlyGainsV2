@@ -29,23 +29,68 @@ function copyText(text) {
   return Promise.resolve()
 }
 
-function formatDateRange(start, end) {
-  if (!start) {
+function parseUtcDate(value) {
+  if (!value) {
+    return null
+  }
+
+  return new Date(`${value}T12:00:00.000Z`)
+}
+
+function formatMonthlyPeriod(start) {
+  const startDate = parseUtcDate(start)
+
+  if (!startDate) {
     return ''
   }
 
-  const startDate = new Date(`${start}T12:00:00.000Z`)
-  const endDate = end ? new Date(`${end}T12:00:00.000Z`) : null
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-  })
+  return new Intl.DateTimeFormat('en-GB', {
+    month: 'long',
+    year: 'numeric',
+  }).format(startDate)
+}
 
-  if (!endDate) {
-    return `${formatter.format(startDate)} ${startDate.getUTCFullYear()}`
+function formatWeeklyPeriod(start, end) {
+  const startDate = parseUtcDate(start)
+  const endDate = parseUtcDate(end)
+
+  if (!startDate) {
+    return ''
   }
 
-  return `${formatter.format(startDate)} - ${formatter.format(endDate)} ${endDate.getUTCFullYear()}`
+  if (!endDate) {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }).format(startDate)
+  }
+
+  endDate.setUTCDate(endDate.getUTCDate() - 1)
+
+  const sameYear = startDate.getUTCFullYear() === endDate.getUTCFullYear()
+  const sameMonth = sameYear && startDate.getUTCMonth() === endDate.getUTCMonth()
+
+  if (sameMonth) {
+    const monthYear = new Intl.DateTimeFormat('en-GB', {
+      month: 'short',
+      year: 'numeric',
+    }).format(endDate)
+
+    return `${startDate.getUTCDate()}\u2013${endDate.getUTCDate()} ${monthYear}`
+  }
+
+  const startLabel = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  }).format(startDate)
+  const endLabel = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(endDate)
+
+  return `${startLabel} \u2013 ${endLabel}`
 }
 
 export function getAwardSeenStorageKey(awardId) {
@@ -108,19 +153,39 @@ export function formatAwardValue(award) {
   return ''
 }
 
-export function formatAwardSummaryLine(award) {
+export function formatAwardMetricLine(award) {
   if (award.activityType === 'combined') {
     return 'Press Ups + KM'
   }
 
-  const activityLabel = award.activityType === 'km' ? 'KM' : 'Press Ups'
-  const value = formatAwardValue(award)
+  if (award.activityType === 'km') {
+    return formatAwardValue(award)
+  }
 
-  return value ? `${activityLabel} ${String.fromCharCode(183)} ${value}` : activityLabel
+  const rawValue = Number(award.valueNumeric ?? 0)
+  return `${rawValue.toLocaleString('en-GB')} press-ups`
 }
 
 export function formatAwardPeriodRange(award) {
-  return formatDateRange(award.periodStart, award.periodEnd)
+  if (award.periodType === 'monthly') {
+    return formatMonthlyPeriod(award.periodStart)
+  }
+
+  if (award.periodType === 'weekly') {
+    return formatWeeklyPeriod(award.periodStart, award.periodEnd)
+  }
+
+  const startDate = parseUtcDate(award.periodStart)
+
+  if (!startDate) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(startDate)
 }
 
 export function formatAwardSourceLabel(award) {
@@ -204,51 +269,57 @@ export function buildAwardCelebrationToast(award) {
 
 export function buildAwardSharePayload(award) {
   const awardUrl = `${LIVE_SHARE_ORIGIN}/award/${award.id}`
-  const value = formatAwardValue(award)
+  const metricLine = formatAwardMetricLine(award)
 
   if (award.awardType === 'double_monthly_win') {
     return {
-      title: 'MONTHLY DOUBLE CROWN',
-      text: `MONTHLY DOUBLE CROWN on Only Gains.\nOwned reps and distance for the month.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+      title: 'Only Gains Award',
+      text: 'MONTHLY DOUBLE CROWN on Only Gains.\n\nOwned reps and distance for the month.\nName in the Vault.\n\nView the award:',
+      clipboardText: `MONTHLY DOUBLE CROWN on Only Gains.\n\nOwned reps and distance for the month.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   if (award.awardType === 'double_weekly_win') {
     return {
-      title: 'DOUBLE CROWN',
-      text: `DOUBLE CROWN on Only Gains.\nWon Press Ups and KM in the same week.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+      title: 'Only Gains Award',
+      text: 'DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM in the same week.\nName in the Vault.\n\nView the award:',
+      clipboardText: `DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM in the same week.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   if (award.awardType === 'monthly_win' && award.activityType === 'km') {
     return {
-      title: 'Only Gains monthly KM winner',
-      text: `I won the Only Gains monthly KM board.\n${value}. Distance crowned.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+      title: 'Only Gains Award',
+      text: `I won the Only Gains monthly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:`,
+      clipboardText: `I won the Only Gains monthly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   if (award.awardType === 'monthly_win') {
     return {
-      title: 'Only Gains monthly Press Ups winner',
-      text: `I won the Only Gains monthly Press Ups board.\n${value}. Name in the Vault.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+      title: 'Only Gains Award',
+      text: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:`,
+      clipboardText: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   if (award.activityType === 'km') {
     return {
-      title: 'Only Gains weekly KM winner',
-      text: `I won the Only Gains weekly KM board.\n${value}. Distance crowned.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+      title: 'Only Gains Award',
+      text: `I won the Only Gains weekly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:`,
+      clipboardText: `I won the Only Gains weekly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   return {
-    title: 'Only Gains weekly Press Ups winner',
-    text: `I won the Only Gains weekly Press Ups board.\n${value}. Name in the Vault.\nJoin the board: ${LIVE_SHARE_ORIGIN}\n${awardUrl}`,
+    title: 'Only Gains Award',
+    text: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:`,
+    clipboardText: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
     url: awardUrl,
   }
 }
@@ -269,6 +340,6 @@ export async function shareAward(award) {
     }
   }
 
-  await copyText(payload.text)
+  await copyText(payload.clipboardText)
   return 'copied'
 }
