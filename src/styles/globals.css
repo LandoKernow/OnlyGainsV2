@@ -384,6 +384,17 @@ button {
   padding: 0.85rem 0.9rem;
 }
 
+.vault-record-card__inline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.vault-card__inline-dot {
+  color: var(--text-muted);
+}
+
 .screen--vault-public .vault-card__value {
   font-size: 1rem;
 }
@@ -409,6 +420,18 @@ button {
 
 .vault-card__action {
   width: fit-content;
+}
+
+.vault-public-hero__line {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #f7f1eb;
+}
+
+.vault-public-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
 }
 
 .vault-future {
@@ -1351,6 +1374,33 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.7rem;
+}
+
+.award-stage__actions--stacked {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.award-stage__primary {
+  width: 100%;
+  text-align: center;
+}
+
+.award-stage__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.award-stage__share {
+  min-width: 7rem;
+}
+
+.award-stage__tertiary {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.92rem;
 }
 
 .pill--active {

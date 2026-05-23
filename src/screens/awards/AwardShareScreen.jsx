@@ -4,6 +4,7 @@ import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useVaultAward } from '../../hooks/useVaultAwards'
 import {
+  formatAwardLandingCopy,
   formatAwardMetricLine,
   formatAwardPeriodRange,
   formatAwardSourceLabel,
@@ -74,7 +75,7 @@ function AwardShareContent() {
               <p className="award-share-card__winner">{award.actorName || 'Unknown'}</p>
               <p className="award-share-card__summary">{formatAwardMetricLine(award)}</p>
               {formatAwardPeriodRange(award) ? <p className="award-share-card__period">{formatAwardPeriodRange(award)}</p> : null}
-              {award.quote ? <p className="award-share-card__quote">{award.quote}</p> : null}
+              <p className="award-share-card__quote">{formatAwardLandingCopy(award)}</p>
               <p className="award-share-card__source">{formatAwardSourceLabel(award)}</p>
               <div className="award-share-card__footer">
                 <strong>JOIN THE BOARD</strong>
@@ -83,16 +84,18 @@ function AwardShareContent() {
             </div>
           </article>
 
-          <div className="award-stage__actions">
-            <Link className="button" to="/dashboard">
+          <div className="award-stage__actions award-stage__actions--stacked">
+            <Link className="button award-stage__primary" to="/dashboard">
               Join the board
             </Link>
-            <button className="button button--ghost" type="button" onClick={handleShare}>
-              Share
-            </button>
-            <Link className="button button--ghost" to="/vault">
-              View Vault
-            </Link>
+            <div className="award-stage__secondary">
+              <button className="button button--ghost award-stage__share" type="button" onClick={handleShare}>
+                Share
+              </button>
+              <Link className="award-stage__tertiary" to="/vault">
+                View Vault
+              </Link>
+            </div>
           </div>
         </div>
       )}

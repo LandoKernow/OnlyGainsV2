@@ -47,6 +47,24 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
 }
 
 function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor }) {
+  if (record && isPublicVisitor) {
+    return (
+      <article className="vault-card vault-record-card vault-record-card--public">
+        <strong>{title}</strong>
+        <div className="vault-record-card__inline">
+          <span className="vault-card__value">{formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}</span>
+          <span className="vault-card__inline-dot" aria-hidden="true">
+            &middot;
+          </span>
+          <span className="vault-card__holder">{record.actorName || 'Unknown'}</span>
+        </div>
+        <div className="vault-card__status">
+          {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
+        </div>
+      </article>
+    )
+  }
+
   return (
     <article className={isPublicVisitor ? 'vault-card vault-record-card vault-record-card--public' : 'vault-card vault-record-card'}>
       <strong>{title}</strong>
@@ -122,28 +140,44 @@ export default function VaultScreen() {
   return (
     <div className={isPublicVisitor ? 'screen screen--vault screen--vault-public' : 'screen screen--vault'}>
       <div className="stack-lg">
-        <Card
-          title="THE VAULT"
-          body={isPublicVisitor ? 'Discipline becomes public. Records are remembered. Join the board.' : 'Records are remembered.'}
-        >
-          <div className="stack">
-            <p className="muted">Claimed records are visible. Verified records are coming.</p>
-            <p className="muted">The Vault remembers what the Board forgets.</p>
-            <Link className="button button--ghost" to={isPublicVisitor ? '/dashboard' : '/profile/records'}>
-              {isPublicVisitor ? 'Join the board' : 'View your records'}
-            </Link>
-          </div>
-        </Card>
+        {isPublicVisitor ? (
+          <Card title="THE VAULT" body="Records are remembered. Crowns are written here. Join the board.">
+            <div className="stack">
+              <p className="eyebrow">ONLY GAINS</p>
+              <p className="vault-public-hero__line">Discipline becomes public.</p>
+              <div className="vault-public-hero__actions">
+                <Link className="button" to="/dashboard">
+                  Join the board
+                </Link>
+                <a className="button button--ghost" href="#vault-records">
+                  View records
+                </a>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card title="THE VAULT" body="Records are remembered.">
+            <div className="stack">
+              <p className="muted">Claimed records are visible. Verified records are coming.</p>
+              <p className="muted">The Vault remembers what the Board forgets.</p>
+              <Link className="button button--ghost" to="/profile/records">
+                View your records
+              </Link>
+            </div>
+          </Card>
+        )}
 
         <div className="vault-intro">
           <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
           <p className="vault-intro__copy">App-tracked live. Claimed records clearly labelled.</p>
+          {isPublicVisitor ? <p className="vault-intro__copy">Think you can beat one? Join the board.</p> : null}
         </div>
 
         {!isLoading && !error ? (
           <>
             <Card title="APP-TRACKED" body="Earned through live submissions.">
               <div className="vault-records">
+                <div id="vault-records" />
                 <VaultRecordCard
                   title="Most press-ups / day"
                   record={pressupsDay}
@@ -183,6 +217,13 @@ export default function VaultScreen() {
                   />
                 ))}
               </div>
+              {isPublicVisitor ? (
+                <div className="section-gap">
+                  <Link className="button button--ghost" to="/dashboard">
+                    Think you can beat one? Join the board.
+                  </Link>
+                </div>
+              ) : null}
             </Card>
 
             {!awardsQuery.error ? (

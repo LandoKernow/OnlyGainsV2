@@ -166,6 +166,35 @@ export function formatAwardMetricLine(award) {
   return `${rawValue.toLocaleString('en-GB')} press-ups`
 }
 
+export function formatAwardShareMetricLine(award) {
+  if (award.activityType === 'combined') {
+    return 'Press Ups + KM'
+  }
+
+  if (award.activityType === 'km') {
+    return `${formatAwardValue(award)}.`
+  }
+
+  const rawValue = Number(award.valueNumeric ?? 0)
+  return `${rawValue.toLocaleString('en-GB')} press-ups.`
+}
+
+export function formatAwardLandingCopy(award) {
+  if (award.awardType === 'double_monthly_win') {
+    return 'Month owned. Name in the Vault.'
+  }
+
+  if (award.awardType === 'double_weekly_win') {
+    return 'Same week. Both boards. Name in the Vault.'
+  }
+
+  if (award.awardType === 'monthly_win') {
+    return 'Month owned. Name in the Vault.'
+  }
+
+  return 'Name in the Vault.'
+}
+
 export function formatAwardPeriodRange(award) {
   if (award.periodType === 'monthly') {
     return formatMonthlyPeriod(award.periodStart)
@@ -269,7 +298,7 @@ export function buildAwardCelebrationToast(award) {
 
 export function buildAwardSharePayload(award) {
   const awardUrl = `${LIVE_SHARE_ORIGIN}/award/${award.id}`
-  const metricLine = formatAwardMetricLine(award)
+  const metricLine = formatAwardShareMetricLine(award)
 
   if (award.awardType === 'double_monthly_win') {
     return {
@@ -292,8 +321,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'monthly_win' && award.activityType === 'km') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains monthly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:`,
-      clipboardText: `I won the Only Gains monthly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains monthly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:`,
+      clipboardText: `I won the Only Gains monthly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -301,8 +330,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'monthly_win') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:`,
-      clipboardText: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:`,
+      clipboardText: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -310,16 +339,16 @@ export function buildAwardSharePayload(award) {
   if (award.activityType === 'km') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains weekly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:`,
-      clipboardText: `I won the Only Gains weekly KM board.\n\n${metricLine}.\nDistance crowned.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains weekly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:`,
+      clipboardText: `I won the Only Gains weekly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   return {
     title: 'Only Gains Award',
-    text: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:`,
-    clipboardText: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+    text: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:`,
+    clipboardText: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:\n${awardUrl}`,
     url: awardUrl,
   }
 }
