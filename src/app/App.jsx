@@ -9,6 +9,7 @@ const DashboardScreen = lazy(() => import('../screens/dashboard/DashboardScreen'
 const LeaderboardScreen = lazy(() => import('../screens/leaderboard/LeaderboardScreen'))
 const ChaseScreen = lazy(() => import('../screens/chase/ChaseScreen'))
 const ActivityScreen = lazy(() => import('../screens/activity/ActivityScreen'))
+const AdminAwardsScreen = lazy(() => import('../screens/admin/AdminAwardsScreen'))
 const ProfileScreen = lazy(() => import('../screens/profile/ProfileScreen'))
 const ProfileYearSetupScreen = lazy(() => import('../screens/profile/ProfileYearSetupScreen'))
 const PersonalRecordsScreen = lazy(() => import('../screens/profile/PersonalRecordsScreen'))
@@ -26,6 +27,7 @@ export default function App() {
             <Route path="/leaderboard" element={<LeaderboardScreen />} />
             <Route path="/chase" element={<ChaseScreen />} />
             <Route path="/activity" element={<ActivityScreen />} />
+            <Route path="/admin/awards" element={<AdminAwardsScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
             <Route path="/profile/records" element={<PersonalRecordsScreen />} />
             <Route path="/profile/year/:year" element={<ProfileYearSetupScreen />} />

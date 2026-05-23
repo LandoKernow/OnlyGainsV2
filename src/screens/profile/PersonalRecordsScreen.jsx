@@ -25,6 +25,24 @@ const RECORD_CATEGORIES = [
   { key: 'longest_run', tab: 'Longest Run', title: 'LONGEST RUN', activityType: 'km' },
 ]
 
+const WALL_GROUPS = [
+  {
+    key: 'pressups',
+    title: 'PRESS UPS',
+    recordTypes: ['pressups_day', 'pressups_week', 'pressups_set'],
+  },
+  {
+    key: 'pullups',
+    title: 'PULL UPS',
+    recordTypes: ['pullups_day', 'pullups_week', 'pullups_set'],
+  },
+  {
+    key: 'running',
+    title: 'KM / RUNNING',
+    recordTypes: ['km_day', 'km_week', 'longest_run', 'fastest_5k', 'fastest_10k', 'half_marathon', 'marathon'],
+  },
+]
+
 function formatSourceLabel(sourceLabel, year) {
   return `${String(sourceLabel || '').replace(/_/g, '-').toUpperCase()} ${String.fromCharCode(183)} ${year ?? 2026}`
 }
@@ -88,14 +106,38 @@ function PersonalRecordsContent() {
   const heroRecord = selectedRecords[0] ?? null
   const heroCopy = getHeroCopy(heroRecord, selectedCategory, hasAppTrackedSupport(selectedCategory.key))
 
-  const wallRows = useMemo(
+  const wallGroups = useMemo(
     () =>
-      selectedRecords.map((record, index) => ({
-        ...record,
-        place: index + 1,
-      })),
-    [selectedRecords],
+      WALL_GROUPS.map((group) => {
+        const rows = group.recordTypes
+          .map((recordType) => {
+            const bestRecord = recordsByType[recordType]?.[0] ?? null
+
+            if (!bestRecord) {
+              return null
+            }
+
+            return {
+              ...bestRecord,
+              recordType,
+              category: RECORD_CATEGORIES.find((category) => category.key === recordType) ?? null,
+            }
+          })
+          .filter(Boolean)
+          .slice(0, 3)
+          .map((record, index) => ({
+            ...record,
+            place: index + 1,
+          }))
+
+        return {
+          ...group,
+          rows,
+        }
+      }),
+    [recordsByType],
   )
+  const hasWallRows = wallGroups.some((group) => group.rows.length > 0)
 
   return (
     <div className="screen">
@@ -143,27 +185,34 @@ function PersonalRecordsContent() {
             )}
           </Card>
 
-          <Card title="ON THE WALL" body="Your previous marks stay visible here.">
+          <Card title="ON THE WALL" body="Your strongest marks stay here.">
             {isLoading ? (
               <p className="muted">Loading wall history...</p>
             ) : error ? (
               <p className="muted">Could not load the wall yet.</p>
-            ) : wallRows.length > 1 ? (
+            ) : hasWallRows ? (
               <div className="stack">
-                {wallRows.map((row) => (
-                  <div key={`${row.sourceType}-${row.sourceId}-${row.place}`} className="records-wall-row">
-                    <strong>#{row.place}</strong>
-                    <span>{formatRecordValue(row, selectedCategory)}</span>
-                    <span className="muted">{formatSourceLabel(row.sourceLabel, row.year)}</span>
-                  </div>
-                ))}
+                {wallGroups.map((group) =>
+                  group.rows.length > 0 ? (
+                    <section key={group.key} className="records-wall-group">
+                      <strong className="records-wall-group__title">{group.title}</strong>
+                      <div className="stack">
+                        {group.rows.map((row) => (
+                          <div key={`${group.key}-${row.recordType}-${row.sourceType}-${row.sourceId}`} className="records-wall-row">
+                            <strong>#{row.place}</strong>
+                            <span>{formatRecordValue(row, row.category ?? selectedCategory)}</span>
+                            <span className="muted">{formatSourceLabel(row.sourceLabel, row.year)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null,
+                )}
               </div>
-            ) : wallRows.length === 1 ? (
-              <p className="muted">No previous mark yet.</p>
             ) : (
               <div className="stack">
-                <strong>NO RECORD YET</strong>
-                <p className="muted">Nothing claimed. Put a number on the wall.</p>
+                <strong>No marks yet.</strong>
+                <p className="muted">Build your 2026 profile or log live work.</p>
                 <Link className="button button--ghost" to="/profile/year/2026">
                   Build 2026 profile
                 </Link>

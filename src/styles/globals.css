@@ -1199,6 +1199,30 @@ button {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.records-wall-group {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.records-wall-group__title {
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+
+.admin-sql-block {
+  margin: 0;
+  padding: 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.22);
+  color: #f7f1eb;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .pill--active {
   background: var(--accent-soft);
   color: #fff4ed;
@@ -1323,6 +1347,11 @@ button {
 
   .records-wall-row .muted {
     grid-column: 1 / -1;
+  }
+
+  .admin-sql-block {
+    font-size: 0.75rem;
+    padding: 0.8rem;
   }
 
   .chase-block {

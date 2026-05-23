@@ -50,6 +50,29 @@ function formatAwardValue(award) {
   return null
 }
 
+function formatAwardMeta(award) {
+  if (award.activityType === 'combined') {
+    return award.periodType === 'monthly' ? 'Press Ups + KM · Month' : 'Press Ups + KM · Week'
+  }
+
+  const activityLabel = award.activityType === 'km' ? 'KM' : 'Press Ups'
+  const periodLabel = award.periodType === 'monthly' ? 'Month' : award.periodType === 'weekly' ? 'Week' : award.periodType
+
+  return `${activityLabel} · ${periodLabel}`
+}
+
+function formatAwardPeriod(award) {
+  if (!award.periodStart) {
+    return ''
+  }
+
+  if (!award.periodEnd) {
+    return award.periodStart
+  }
+
+  return `${award.periodStart} to ${award.periodEnd}`
+}
+
 function VaultRecordCard({ title, record, emptyCopy }) {
   return (
     <article className="vault-card vault-record-card">
@@ -162,17 +185,27 @@ export default function VaultScreen() {
               </div>
             </Card>
 
-            {awards.length > 0 ? (
-              <Card title="AWARDS" body="Major wins stored for the year.">
+            {!awardsQuery.error ? (
+              <Card title="AWARDS" body="Final wins are written into the Vault.">
                 <div className="stack">
-                  {awards.map((award) => (
-                    <article key={award.id} className="vault-card">
-                      <strong>{award.title}</strong>
-                      <div className="vault-card__holder">{award.actorName}</div>
-                      {formatAwardValue(award) ? <div className="vault-card__value">{formatAwardValue(award)}</div> : null}
-                      {award.quote ? <p className="muted">{award.quote}</p> : null}
-                    </article>
-                  ))}
+                  {awards.length > 0 ? (
+                    awards.map((award) => (
+                      <article key={award.id} className="vault-card">
+                        <strong>{award.title}</strong>
+                        <div className="vault-card__holder">{award.actorName}</div>
+                        <p className="muted">{formatAwardMeta(award)}</p>
+                        {formatAwardValue(award) ? <div className="vault-card__value">{formatAwardValue(award)}</div> : null}
+                        {award.quote ? <p className="muted">{award.quote}</p> : null}
+                        {formatAwardPeriod(award) ? <p className="muted">{formatAwardPeriod(award)}</p> : null}
+                        <p className="muted">{formatSourceLabel(award.sourceType || 'leaderboard')}</p>
+                      </article>
+                    ))
+                  ) : (
+                    <div className="stack">
+                      <strong>No final wins stored yet.</strong>
+                      <p className="muted">Finalise a week or month to write names into the Vault.</p>
+                    </div>
+                  )}
                 </div>
               </Card>
             ) : null}
