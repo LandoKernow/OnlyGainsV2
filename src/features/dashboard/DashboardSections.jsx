@@ -36,7 +36,7 @@ function getLeaderMessageErrorCopy(error) {
     return 'Only the current weekly leader can take the mic.'
   }
 
-  return 'Couldn’t save the leader message.'
+  return "Couldn't save the leader message."
 }
 
 function buildLeaderboardChips(row, allRows = [], activityType = 'pressups') {
