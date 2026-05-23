@@ -59,9 +59,16 @@ function AwardShareContent() {
               ? 'The award may not be public yet, or the public read policy is blocking it.'
               : 'The Vault could not find that mark.'}
           </p>
-          <Link className="button button--ghost" to="/vault">
-            View Vault
-          </Link>
+          <div className="award-stage__actions award-stage__actions--stacked">
+            <Link className="button award-stage__primary" to="/dashboard">
+              Join the board
+            </Link>
+            <div className="award-stage__secondary">
+              <Link className="button button--ghost award-stage__share" to="/vault">
+                View Vault
+              </Link>
+            </div>
+          </div>
         </Card>
       ) : (
         <div className="award-stage">
@@ -92,7 +99,7 @@ function AwardShareContent() {
               <button className="button button--ghost award-stage__share" type="button" onClick={handleShare}>
                 Share
               </button>
-              <Link className="award-stage__tertiary" to="/vault">
+              <Link className="button button--ghost award-stage__share" to="/vault">
                 View Vault
               </Link>
             </div>

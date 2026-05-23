@@ -174,90 +174,168 @@ export default function VaultScreen() {
         </div>
 
         {!isLoading && !error ? (
-          <>
-            <Card title="APP-TRACKED" body="Earned through live submissions.">
-              <div className="vault-records">
-                <div id="vault-records" />
-                <VaultRecordCard
-                  title="Most press-ups / day"
-                  record={pressupsDay}
-                  emptyCopy="No holder yet. Log enough to leave a mark."
-                  isPublicVisitor={isPublicVisitor}
-                />
-                <VaultRecordCard
-                  title="Most press-ups / week"
-                  record={pressupsWeek}
-                  emptyCopy="No holder yet. Log enough to leave a mark."
-                  isPublicVisitor={isPublicVisitor}
-                />
-                <VaultRecordCard
-                  title="Most KM / day"
-                  record={kmDay}
-                  emptyCopy="No holder yet. Log enough to leave a mark."
-                  isPublicVisitor={isPublicVisitor}
-                />
-                <VaultRecordCard
-                  title="Most KM / week"
-                  record={kmWeek}
-                  emptyCopy="No holder yet. Log enough to leave a mark."
-                  isPublicVisitor={isPublicVisitor}
-                />
-              </div>
-            </Card>
+          isPublicVisitor ? (
+            <>
+              {!awardsQuery.error ? (
+                <Card title="AWARDS" body="Final wins are written into the Vault.">
+                  <div className="stack">
+                    {awards.length > 0 ? (
+                      awards.map((award) => (
+                        <article key={award.id} className="vault-card">
+                          <strong>{award.title}</strong>
+                          <div className="vault-card__holder">{award.actorName}</div>
+                          <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
+                          {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
+                          {award.quote ? <p className="muted">{award.quote}</p> : null}
+                          <p className="muted">{formatAwardSourceLabel(award)}</p>
+                          <div className="vault-award-card__actions">
+                            <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
+                              View
+                            </Link>
+                            <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
+                              Share
+                            </button>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div className="stack">
+                        <strong>No final wins stored yet.</strong>
+                        <p className="muted">Finalise a week or month to write names into the Vault.</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : null}
 
-            <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
-              <div className="vault-records">
-                {CLAIMED_RECORD_TYPES.map((recordType) => (
+              <Card title="APP-TRACKED" body="Earned through live submissions.">
+                <div className="vault-records">
+                  <div id="vault-records" />
                   <VaultRecordCard
-                    key={recordType}
-                    title={PROFILE_YEAR_RECORD_LABELS[recordType]}
-                    record={claimedRecords[recordType] ?? null}
-                    emptyCopy="No holder yet. Claim it from your 2026 profile."
+                    title="Most press-ups / day"
+                    record={pressupsDay}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
                   />
-                ))}
-              </div>
-              {isPublicVisitor ? (
+                  <VaultRecordCard
+                    title="Most press-ups / week"
+                    record={pressupsWeek}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                  <VaultRecordCard
+                    title="Most KM / day"
+                    record={kmDay}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                  <VaultRecordCard
+                    title="Most KM / week"
+                    record={kmWeek}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                </div>
+              </Card>
+
+              <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
+                <div className="vault-records">
+                  {CLAIMED_RECORD_TYPES.map((recordType) => (
+                    <VaultRecordCard
+                      key={recordType}
+                      title={PROFILE_YEAR_RECORD_LABELS[recordType]}
+                      record={claimedRecords[recordType] ?? null}
+                      emptyCopy="No holder yet. Claim it from your 2026 profile."
+                      isPublicVisitor={isPublicVisitor}
+                    />
+                  ))}
+                </div>
                 <div className="section-gap">
                   <Link className="button button--ghost" to="/dashboard">
                     Think you can beat one? Join the board.
                   </Link>
                 </div>
-              ) : null}
-            </Card>
-
-            {!awardsQuery.error ? (
-              <Card title="AWARDS" body="Final wins are written into the Vault.">
-                <div className="stack">
-                  {awards.length > 0 ? (
-                    awards.map((award) => (
-                      <article key={award.id} className="vault-card">
-                        <strong>{award.title}</strong>
-                        <div className="vault-card__holder">{award.actorName}</div>
-                        <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
-                        {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
-                        {award.quote ? <p className="muted">{award.quote}</p> : null}
-                        <p className="muted">{formatAwardSourceLabel(award)}</p>
-                        <div className="vault-award-card__actions">
-                          <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
-                            View
-                          </Link>
-                          <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
-                            Share
-                          </button>
-                        </div>
-                      </article>
-                    ))
-                  ) : (
-                    <div className="stack">
-                      <strong>No final wins stored yet.</strong>
-                      <p className="muted">Finalise a week or month to write names into the Vault.</p>
-                    </div>
-                  )}
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card title="APP-TRACKED" body="Earned through live submissions.">
+                <div className="vault-records">
+                  <div id="vault-records" />
+                  <VaultRecordCard
+                    title="Most press-ups / day"
+                    record={pressupsDay}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                  <VaultRecordCard
+                    title="Most press-ups / week"
+                    record={pressupsWeek}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                  <VaultRecordCard
+                    title="Most KM / day"
+                    record={kmDay}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
+                  <VaultRecordCard
+                    title="Most KM / week"
+                    record={kmWeek}
+                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    isPublicVisitor={isPublicVisitor}
+                  />
                 </div>
               </Card>
-            ) : null}
-          </>
+
+              <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
+                <div className="vault-records">
+                  {CLAIMED_RECORD_TYPES.map((recordType) => (
+                    <VaultRecordCard
+                      key={recordType}
+                      title={PROFILE_YEAR_RECORD_LABELS[recordType]}
+                      record={claimedRecords[recordType] ?? null}
+                      emptyCopy="No holder yet. Claim it from your 2026 profile."
+                      isPublicVisitor={isPublicVisitor}
+                    />
+                  ))}
+                </div>
+              </Card>
+
+              {!awardsQuery.error ? (
+                <Card title="AWARDS" body="Final wins are written into the Vault.">
+                  <div className="stack">
+                    {awards.length > 0 ? (
+                      awards.map((award) => (
+                        <article key={award.id} className="vault-card">
+                          <strong>{award.title}</strong>
+                          <div className="vault-card__holder">{award.actorName}</div>
+                          <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
+                          {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
+                          {award.quote ? <p className="muted">{award.quote}</p> : null}
+                          <p className="muted">{formatAwardSourceLabel(award)}</p>
+                          <div className="vault-award-card__actions">
+                            <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
+                              View
+                            </Link>
+                            <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
+                              Share
+                            </button>
+                          </div>
+                        </article>
+                      ))
+                    ) : (
+                      <div className="stack">
+                        <strong>No final wins stored yet.</strong>
+                        <p className="muted">Finalise a week or month to write names into the Vault.</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ) : null}
+            </>
+          )
         ) : null}
 
         {isLoading ? <p className="muted">Loading Vault records...</p> : null}

@@ -303,8 +303,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'double_monthly_win') {
     return {
       title: 'Only Gains Award',
-      text: 'MONTHLY DOUBLE CROWN on Only Gains.\n\nOwned reps and distance for the month.\nName in the Vault.\n\nView the award:',
-      clipboardText: `MONTHLY DOUBLE CROWN on Only Gains.\n\nOwned reps and distance for the month.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+      text: 'DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM.\nName in the Vault.\n\nThink you can take it?',
+      clipboardText: `DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM.\nName in the Vault.\n\nThink you can take it?\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -312,8 +312,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'double_weekly_win') {
     return {
       title: 'Only Gains Award',
-      text: 'DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM in the same week.\nName in the Vault.\n\nView the award:',
-      clipboardText: `DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM in the same week.\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+      text: 'DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM.\nName in the Vault.\n\nThink you can take it?',
+      clipboardText: `DOUBLE CROWN on Only Gains.\n\nWon Press Ups and KM.\nName in the Vault.\n\nThink you can take it?\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -321,8 +321,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'monthly_win' && award.activityType === 'km') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains monthly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:`,
-      clipboardText: `I won the Only Gains monthly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains monthly KM board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?`,
+      clipboardText: `I won the Only Gains monthly KM board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -330,8 +330,8 @@ export function buildAwardSharePayload(award) {
   if (award.awardType === 'monthly_win') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:`,
-      clipboardText: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?`,
+      clipboardText: `I won the Only Gains monthly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?\n${awardUrl}`,
       url: awardUrl,
     }
   }
@@ -339,16 +339,16 @@ export function buildAwardSharePayload(award) {
   if (award.activityType === 'km') {
     return {
       title: 'Only Gains Award',
-      text: `I won the Only Gains weekly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:`,
-      clipboardText: `I won the Only Gains weekly KM board.\n\n${metricLine}\nDistance crowned.\n\nView the award:\n${awardUrl}`,
+      text: `I won the Only Gains weekly KM board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?`,
+      clipboardText: `I won the Only Gains weekly KM board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?\n${awardUrl}`,
       url: awardUrl,
     }
   }
 
   return {
     title: 'Only Gains Award',
-    text: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:`,
-    clipboardText: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nView the award:\n${awardUrl}`,
+    text: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?`,
+    clipboardText: `I won the Only Gains weekly Press Ups board.\n\n${metricLine}\nName in the Vault.\n\nThink you can beat it?\n${awardUrl}`,
     url: awardUrl,
   }
 }
