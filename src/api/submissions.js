@@ -108,7 +108,7 @@ export async function fetchVaultSubmissions({ circleId, year, activityType }) {
 
   const { data, error } = await supabase
     .from('submissions')
-    .select('id, circle_id, user_id, activity_type, value, activity_date, year')
+    .select('id, circle_id, user_id, activity_type, value, unit, source, activity_date, created_at, year')
     .eq('circle_id', circleId)
     .eq('year', year)
     .eq('activity_type', activityType)
@@ -127,7 +127,10 @@ export async function fetchVaultSubmissions({ circleId, year, activityType }) {
     userId: row.user_id,
     activityType: row.activity_type,
     value: Number(row.value),
+    unit: row.unit,
+    source: row.source,
     activityDate: row.activity_date,
+    createdAt: row.created_at,
     year: row.year,
     actorName: profilesByUserId[row.user_id]?.name ?? 'Unknown',
   }))

@@ -4,6 +4,7 @@ import { fetchVaultRecords } from '../api/submissions'
 import { fetchPublicProfileRecordEntries, getPublicProfileRecordEntriesQueryKey } from '../api/profileYearSetup'
 import { fetchVaultRecordExclusions, getVaultRecordExclusionsQueryKey } from '../api/vaultRecordExclusions'
 import { getLondonDateParts, getSubmissionPeriodKeys } from '../utils/dates'
+import { isVaultEligibleSubmission } from '../utils/vaultEligibility'
 
 export function getVaultRecordsQueryKey(circleId, year) {
   return ['vault', circleId, year]
@@ -151,10 +152,10 @@ export function useVaultRecords({ circleId }) {
   const records = useMemo(() => {
     const exclusionSet = createExclusionSet(query.data?.exclusions ?? [])
     const pressups = (query.data?.appTrackedRecords?.pressups ?? []).filter(
-      (row) => !isExcluded(exclusionSet, 'submission', row.id),
+      (row) => isVaultEligibleSubmission(row) && !isExcluded(exclusionSet, 'submission', row.id),
     )
     const km = (query.data?.appTrackedRecords?.km ?? []).filter(
-      (row) => !isExcluded(exclusionSet, 'submission', row.id),
+      (row) => isVaultEligibleSubmission(row) && !isExcluded(exclusionSet, 'submission', row.id),
     )
     const claimedRows = (query.data?.claimedRecords ?? []).filter(
       (row) => !isExcluded(exclusionSet, 'profile_record_entry', row.id),
