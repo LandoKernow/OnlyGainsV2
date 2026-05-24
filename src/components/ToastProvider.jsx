@@ -38,8 +38,10 @@ export function ToastProvider({ children }) {
     () => ({
       showToast,
       dismissToast,
+      activeToastCount: toasts.length,
+      activeMachoToastCount: toasts.filter((toast) => toast.variant === 'macho').length,
     }),
-    [],
+    [toasts],
   )
 
   return (

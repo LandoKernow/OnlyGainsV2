@@ -7,11 +7,11 @@ import { useAuth } from '../features/auth/AuthProvider'
 const PROFILE_YEAR = 2026
 const DISMISS_KEY_PREFIX = 'only_gains_profile_build_prompt_dismissed_v1'
 
-function getDismissKey(userId) {
+export function getProfileBuildPromptDismissKey(userId) {
   return `${DISMISS_KEY_PREFIX}_${userId}`
 }
 
-function readDismissed(key) {
+export function hasDismissedProfileBuildPrompt(key) {
   if (!key) {
     return false
   }
@@ -40,7 +40,7 @@ export function ProfileBuildPrompt() {
   const location = useLocation()
   const navigate = useNavigate()
   const userId = session?.user?.id ?? ''
-  const dismissKey = useMemo(() => (userId ? getDismissKey(userId) : ''), [userId])
+  const dismissKey = useMemo(() => (userId ? getProfileBuildPromptDismissKey(userId) : ''), [userId])
   const [isDismissed, setIsDismissed] = useState(true)
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
   const isProfileYearRoute = location.pathname === `/profile/year/${PROFILE_YEAR}`
@@ -51,7 +51,7 @@ export function ProfileBuildPrompt() {
       return
     }
 
-    setIsDismissed(readDismissed(dismissKey))
+    setIsDismissed(hasDismissedProfileBuildPrompt(dismissKey))
   }, [dismissKey, isAuthenticated])
 
   const profileYearQuery = useQuery({

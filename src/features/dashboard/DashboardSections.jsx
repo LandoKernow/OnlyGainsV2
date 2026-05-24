@@ -4,6 +4,7 @@ import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } 
 import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
+import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
 
 function getSafeName(name) {
   return name || 'Someone'
@@ -131,41 +132,14 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
   }
 
   return (
-    <div className="modal-backdrop" role="presentation" onClick={onClose}>
-      <div
-        className="modal-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="preview-row-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="stack">
-          <div>
-            <h2 id="preview-row-title" className="modal-title">
-              {row.actorName || 'Board member'}
-            </h2>
-            <p className="muted">Weekly board preview built from existing rank data.</p>
-          </div>
-          <div className="modal-summary">
-            <span>#{row.rank}</span>
-            <span>{formatActivityValue(row.total, activityType)}</span>
-            {getMomentumChip(row, allRows, activityType) ? <span>{getMomentumChip(row, allRows, activityType)}</span> : null}
-          </div>
-          <div className="stack">
-            {getPressureContext(row, allRows, activityType) ? (
-              <p>{getPressureContext(row, allRows, activityType)}</p>
-            ) : (
-              <p className="muted">No immediate pressure data for this row.</p>
-            )}
-          </div>
-          <div className="modal-actions">
-            <button className="button button--ghost" type="button" onClick={onClose}>
-              Close preview
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ProfilePreviewModal
+      userId={row.userId}
+      initialName={row.actorName || 'Board member'}
+      initialRank={row.rank}
+      initialWeeklyTotal={row.total}
+      initialActivityType={activityType}
+      onClose={onClose}
+    />
   )
 }
 

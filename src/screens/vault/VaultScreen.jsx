@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
+import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
 import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
@@ -46,7 +48,7 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
 }
 
-function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor }) {
+function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor, onPreviewHolder }) {
   if (record && isPublicVisitor) {
     return (
       <article className="vault-card vault-record-card vault-record-card--public">
@@ -56,7 +58,9 @@ function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor }) {
           <span className="vault-card__inline-dot" aria-hidden="true">
             &middot;
           </span>
-          <span className="vault-card__holder">{record.actorName || 'Unknown'}</span>
+          <button className="profile-link-button vault-card__holder" type="button" onClick={onPreviewHolder}>
+            {record.actorName || 'Unknown'}
+          </button>
         </div>
         <div className="vault-card__status">
           {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
@@ -73,7 +77,9 @@ function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor }) {
       </div>
       {record ? (
         <>
-          <div className="vault-card__holder">{record.actorName || 'Unknown'}</div>
+          <button className="profile-link-button vault-card__holder" type="button" onClick={onPreviewHolder}>
+            {record.actorName || 'Unknown'}
+          </button>
           <div className="vault-card__status">
             {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
           </div>
@@ -107,6 +113,7 @@ function VaultFutureSection() {
 }
 
 export default function VaultScreen() {
+  const [previewState, setPreviewState] = useState(null)
   const { showToast } = useToast()
   const { status } = useAuth()
   const { circleId } = useBoardMeta()
@@ -120,6 +127,18 @@ export default function VaultScreen() {
   const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
   const awards = awardsQuery.awards
+
+  function openProfilePreview(userId, actorName, activityType = 'pressups') {
+    if (!userId) {
+      return
+    }
+
+    setPreviewState({
+      userId,
+      actorName,
+      activityType,
+    })
+  }
 
   async function handleShareAward(award) {
     try {
@@ -183,7 +202,13 @@ export default function VaultScreen() {
                       awards.map((award) => (
                         <article key={award.id} className="vault-card">
                           <strong>{award.title}</strong>
-                          <div className="vault-card__holder">{award.actorName}</div>
+                          <button
+                            className="profile-link-button vault-card__holder"
+                            type="button"
+                            onClick={() => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+                          >
+                            {award.actorName}
+                          </button>
                           <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
                           {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
                           {award.quote ? <p className="muted">{award.quote}</p> : null}
@@ -216,24 +241,28 @@ export default function VaultScreen() {
                     record={pressupsDay}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most press-ups / week"
                     record={pressupsWeek}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most KM / day"
                     record={kmDay}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
                   />
                   <VaultRecordCard
                     title="Most KM / week"
                     record={kmWeek}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
                   />
                 </div>
               </Card>
@@ -247,6 +276,7 @@ export default function VaultScreen() {
                       record={claimedRecords[recordType] ?? null}
                       emptyCopy="No holder yet. Claim it from your 2026 profile."
                       isPublicVisitor={isPublicVisitor}
+                      onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
                     />
                   ))}
                 </div>
@@ -267,24 +297,28 @@ export default function VaultScreen() {
                     record={pressupsDay}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most press-ups / week"
                     record={pressupsWeek}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most KM / day"
                     record={kmDay}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
                   />
                   <VaultRecordCard
                     title="Most KM / week"
                     record={kmWeek}
                     emptyCopy="No holder yet. Log enough to leave a mark."
                     isPublicVisitor={isPublicVisitor}
+                    onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
                   />
                 </div>
               </Card>
@@ -298,6 +332,7 @@ export default function VaultScreen() {
                       record={claimedRecords[recordType] ?? null}
                       emptyCopy="No holder yet. Claim it from your 2026 profile."
                       isPublicVisitor={isPublicVisitor}
+                      onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
                     />
                   ))}
                 </div>
@@ -310,7 +345,13 @@ export default function VaultScreen() {
                       awards.map((award) => (
                         <article key={award.id} className="vault-card">
                           <strong>{award.title}</strong>
-                          <div className="vault-card__holder">{award.actorName}</div>
+                          <button
+                            className="profile-link-button vault-card__holder"
+                            type="button"
+                            onClick={() => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+                          >
+                            {award.actorName}
+                          </button>
                           <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
                           {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
                           {award.quote ? <p className="muted">{award.quote}</p> : null}
@@ -343,6 +384,14 @@ export default function VaultScreen() {
 
         <VaultFutureSection />
       </div>
+      {previewState ? (
+        <ProfilePreviewModal
+          userId={previewState.userId}
+          initialName={previewState.actorName}
+          initialActivityType={previewState.activityType}
+          onClose={() => setPreviewState(null)}
+        />
+      ) : null}
     </div>
   )
 }
