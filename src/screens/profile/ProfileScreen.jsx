@@ -5,12 +5,16 @@ import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useProfileYearSetup } from '../../hooks/useProfileYearSetup'
+import { useIsAdmin } from '../../hooks/useIsAdmin'
+import { useAdminAwardFinalization, getAdminAwardFinalizationErrorCopy } from '../../hooks/useAdminAwardFinalization'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
 import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
+import { getLondonPeriodKeys } from '../../utils/dates'
+import { formatAwardPeriodRange } from '../../utils/awardShare'
 
 function ProfileSummary() {
   const { session, signOut } = useAuth()
@@ -177,6 +181,101 @@ function ProfileYearEntryCard() {
   )
 }
 
+function getLastCompletedWeekStart() {
+  const { weekKey } = getLondonPeriodKeys(new Date())
+  const weekStart = new Date(`${weekKey}T12:00:00.000Z`)
+  weekStart.setUTCDate(weekStart.getUTCDate() - 7)
+  return weekStart.toISOString().slice(0, 10)
+}
+
+function getLastCompletedMonthStart() {
+  const { monthKey } = getLondonPeriodKeys(new Date())
+  const monthStart = new Date(`${monthKey}-01T12:00:00.000Z`)
+  monthStart.setUTCMonth(monthStart.getUTCMonth() - 1)
+  return monthStart.toISOString().slice(0, 10)
+}
+
+function AdminAwardControls() {
+  const { circleId } = useBoardMeta()
+  const { showToast } = useToast()
+  const isAdminQuery = useIsAdmin()
+  const finalizeMutation = useAdminAwardFinalization(circleId)
+
+  const lastWeekStart = getLastCompletedWeekStart()
+  const lastMonthStart = getLastCompletedMonthStart()
+  const lastWeekLabel = formatAwardPeriodRange({
+    periodType: 'weekly',
+    periodStart: lastWeekStart,
+    periodEnd: new Date(new Date(`${lastWeekStart}T12:00:00.000Z`).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  })
+  const lastMonthLabel = formatAwardPeriodRange({
+    periodType: 'monthly',
+    periodStart: lastMonthStart,
+  })
+
+  if (!isAdminQuery.isAdmin) {
+    return null
+  }
+
+  async function handleFinalize(periodType, periodStart) {
+    try {
+      const rows = await finalizeMutation.mutateAsync({
+        circleId,
+        periodType,
+        periodStart,
+      })
+
+      showToast({
+        tone: 'success',
+        message: rows.length > 0 ? 'Awards finalised.' : 'No completed awards found.',
+      })
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        message: getAdminAwardFinalizationErrorCopy(error),
+      })
+    }
+  }
+
+  return (
+    <Card title="ADMIN" body="Finalise awards.">
+      <div className="stack">
+        <div className="profile-identity-grid">
+          <div className="profile-identity-grid__row">
+            <span className="muted">Last completed week</span>
+            <strong>{lastWeekLabel}</strong>
+          </div>
+          <div className="profile-identity-grid__row">
+            <span className="muted">Last completed month</span>
+            <strong>{lastMonthLabel}</strong>
+          </div>
+        </div>
+        <div className="profile-year-actions">
+          <button
+            className="button"
+            type="button"
+            disabled={finalizeMutation.isPending}
+            onClick={() => handleFinalize('weekly', lastWeekStart)}
+          >
+            {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last week'}
+          </button>
+          <button
+            className="button"
+            type="button"
+            disabled={finalizeMutation.isPending}
+            onClick={() => handleFinalize('monthly', lastMonthStart)}
+          >
+            {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last month'}
+          </button>
+        </div>
+        <Link className="button button--ghost" to="/admin/awards">
+          Manual SQL helper
+        </Link>
+      </div>
+    </Card>
+  )
+}
+
 function FeedbackActions() {
   const { showToast } = useToast()
 
@@ -220,6 +319,7 @@ export default function ProfileScreen() {
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
           <VaultProfileCard />
+          <AdminAwardControls />
           <ProfileBasicsCard />
         </div>
       </AuthGate>

@@ -48,6 +48,108 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
 }
 
+function FeaturedAwardCard({ award, onPreviewWinner, onShare }) {
+  return (
+    <article className="vault-award-featured">
+      <p className="vault-award-featured__eyebrow">LATEST AWARD</p>
+      <strong className="vault-award-featured__title">{award.title}</strong>
+      <button className="profile-link-button vault-award-featured__winner" type="button" onClick={onPreviewWinner}>
+        {award.actorName}
+      </button>
+      <div className="vault-award-featured__value">{formatAwardMetricLine(award)}</div>
+      {formatAwardPeriodRange(award) ? <p className="vault-award-featured__period">{formatAwardPeriodRange(award)}</p> : null}
+      <p className="vault-award-featured__quote">{award.quote || 'Name in the Vault.'}</p>
+      <p className="vault-award-featured__source">{formatAwardSourceLabel(award)}</p>
+      <div className="vault-award-card__actions">
+        <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
+          View
+        </Link>
+        <button className="button vault-award-card__button" type="button" onClick={onShare}>
+          Share
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function PreviousAwardRow({ award, onPreviewWinner, onShare }) {
+  return (
+    <article className="vault-award-row">
+      <div className="stack">
+        <strong className="vault-award-row__headline">
+          {award.title} <span aria-hidden="true">·</span>{' '}
+          <button className="profile-link-button" type="button" onClick={onPreviewWinner}>
+            {award.actorName}
+          </button>{' '}
+          <span aria-hidden="true">·</span> {formatAwardMetricLine(award)}
+        </strong>
+        {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
+      </div>
+      <div className="vault-award-card__actions">
+        <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
+          View
+        </Link>
+        <button className="button vault-award-card__button" type="button" onClick={onShare}>
+          Share
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function VaultAwardsSection({ awards, error, onPreviewWinner, onShareAward }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  if (error) {
+    return null
+  }
+
+  return (
+    <Card title="AWARDS" body="Final wins are written into the Vault.">
+      <div className="stack">
+        {awards.length > 0 ? (
+          <>
+            <FeaturedAwardCard
+              award={awards[0]}
+              onPreviewWinner={() => onPreviewWinner(awards[0])}
+              onShare={() => onShareAward(awards[0])}
+            />
+            {awards.length > 1 ? (
+              <div className="vault-awards-history">
+                <button
+                  className="vault-awards-history__toggle"
+                  type="button"
+                  onClick={() => setIsExpanded((current) => !current)}
+                  aria-expanded={isExpanded}
+                >
+                  Previous awards {isExpanded ? '▴' : '▾'}
+                </button>
+                {isExpanded ? (
+                  <div className="stack">
+                    {awards.slice(1).map((award) => (
+                      <PreviousAwardRow
+                        key={award.id}
+                        award={award}
+                        onPreviewWinner={() => onPreviewWinner(award)}
+                        onShare={() => onShareAward(award)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div className="stack">
+            <strong>No final wins stored yet.</strong>
+            <p className="muted">Finalise a week or month to write names into the Vault.</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor, onPreviewHolder }) {
   if (record && isPublicVisitor) {
     return (
@@ -196,41 +298,12 @@ export default function VaultScreen() {
           isPublicVisitor ? (
             <>
               {!awardsQuery.error ? (
-                <Card title="AWARDS" body="Final wins are written into the Vault.">
-                  <div className="stack">
-                    {awards.length > 0 ? (
-                      awards.map((award) => (
-                        <article key={award.id} className="vault-card">
-                          <strong>{award.title}</strong>
-                          <button
-                            className="profile-link-button vault-card__holder"
-                            type="button"
-                            onClick={() => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
-                          >
-                            {award.actorName}
-                          </button>
-                          <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
-                          {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
-                          {award.quote ? <p className="muted">{award.quote}</p> : null}
-                          <p className="muted">{formatAwardSourceLabel(award)}</p>
-                          <div className="vault-award-card__actions">
-                            <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
-                              View
-                            </Link>
-                            <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
-                              Share
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    ) : (
-                      <div className="stack">
-                        <strong>No final wins stored yet.</strong>
-                        <p className="muted">Finalise a week or month to write names into the Vault.</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                <VaultAwardsSection
+                  awards={awards}
+                  error={awardsQuery.error}
+                  onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+                  onShareAward={handleShareAward}
+                />
               ) : null}
 
               <Card title="APP-TRACKED" body="Earned through live submissions.">
@@ -339,41 +412,12 @@ export default function VaultScreen() {
               </Card>
 
               {!awardsQuery.error ? (
-                <Card title="AWARDS" body="Final wins are written into the Vault.">
-                  <div className="stack">
-                    {awards.length > 0 ? (
-                      awards.map((award) => (
-                        <article key={award.id} className="vault-card">
-                          <strong>{award.title}</strong>
-                          <button
-                            className="profile-link-button vault-card__holder"
-                            type="button"
-                            onClick={() => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
-                          >
-                            {award.actorName}
-                          </button>
-                          <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
-                          {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
-                          {award.quote ? <p className="muted">{award.quote}</p> : null}
-                          <p className="muted">{formatAwardSourceLabel(award)}</p>
-                          <div className="vault-award-card__actions">
-                            <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
-                              View
-                            </Link>
-                            <button className="button vault-award-card__button" type="button" onClick={() => handleShareAward(award)}>
-                              Share
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    ) : (
-                      <div className="stack">
-                        <strong>No final wins stored yet.</strong>
-                        <p className="muted">Finalise a week or month to write names into the Vault.</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
+                <VaultAwardsSection
+                  awards={awards}
+                  error={awardsQuery.error}
+                  onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+                  onShareAward={handleShareAward}
+                />
               ) : null}
             </>
           )
