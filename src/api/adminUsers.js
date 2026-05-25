@@ -1,14 +1,30 @@
 import { supabase } from '../lib/supabase'
 
+function buildAdminUserIdCandidates(userId) {
+  const normalized = String(userId || '').trim()
+
+  if (!normalized) {
+    return []
+  }
+
+  if (normalized.startsWith('user-')) {
+    return [normalized, normalized.slice(5)].filter(Boolean)
+  }
+
+  return [normalized, `user-${normalized}`]
+}
+
 export async function fetchIsAdmin(userId) {
-  if (!supabase || !userId) {
+  const userIds = buildAdminUserIdCandidates(userId)
+
+  if (!supabase || userIds.length === 0) {
     return false
   }
 
   const { data, error } = await supabase
     .from('admin_users')
     .select('user_id')
-    .eq('user_id', userId)
+    .in('user_id', userIds)
     .maybeSingle()
 
   if (error) {
