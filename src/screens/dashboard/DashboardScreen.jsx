@@ -6,7 +6,6 @@ import {
   LogActivityCard,
   PressureCard,
   PressupLeaderboardCard,
-  ProfileReadinessCard,
   RecentActivityCard,
   RemoveEntryModal,
   WeeklyLeaderMessageCard,
@@ -53,7 +52,6 @@ function AuthenticatedDashboard() {
   const { circleId } = useBoardMeta()
   const profileQuery = useCurrentProfile()
   const recentActivityQuery = useRecentSubmissions(circleId, 5)
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState('weekly')
   const [manualValue, setManualValue] = useState('')
   const [activityType, setActivityType] = useState('pressups')
   const [manualError, setManualError] = useState('')
@@ -68,14 +66,13 @@ function AuthenticatedDashboard() {
   })
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
-    period: leaderboardPeriod,
+    period: 'weekly',
     currentUserId: session.user.id,
     activityType: activityType === 'km' ? 'km' : 'pressups',
   })
   const isPressupWeeklyLeader =
     !leaderboardQuery.isLoading &&
     activityType === 'pressups' &&
-    leaderboardPeriod === 'weekly' &&
     leaderboardQuery.currentUserRow?.rank === 1
   const weeklyLeaderMessageQuery = useWeeklyLeaderMessage({
     circleId,
@@ -183,20 +180,7 @@ function AuthenticatedDashboard() {
 
   return (
     <>
-      <div className="activity-toggle" style={{display: 'flex', gap: '0.4rem', alignItems: 'center'}}>
-        <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
-        <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
-      </div>
-
       <div className="stack-lg">
-        <WeeklyLeaderMessageCard
-          messageRow={weeklyLeaderMessageQuery.messageRow}
-          leaderName={leaderMessageOwnerName}
-          isLeader={isPressupWeeklyLeader}
-          isLoading={weeklyLeaderMessageQuery.isLoading}
-          saveMessage={weeklyLeaderMessageQuery.save}
-        />
-
         <HeroStatus
           profile={profileQuery.data}
           currentUserRow={leaderboardQuery.currentUserRow}
@@ -214,6 +198,7 @@ function AuthenticatedDashboard() {
           onManualSubmit={handleManualSubmit}
           isSaving={logger.isPending}
           activityType={activityType}
+          onActivityTypeChange={setActivityType}
         />
 
         <PressureCard
@@ -222,9 +207,17 @@ function AuthenticatedDashboard() {
           activityType={activityType}
         />
 
+        <WeeklyLeaderMessageCard
+          messageRow={weeklyLeaderMessageQuery.messageRow}
+          leaderName={leaderMessageOwnerName}
+          isLeader={isPressupWeeklyLeader}
+          isLoading={weeklyLeaderMessageQuery.isLoading}
+          saveMessage={weeklyLeaderMessageQuery.save}
+        />
+
         <PressupLeaderboardCard
-          period={leaderboardPeriod}
-          onPeriodChange={setLeaderboardPeriod}
+          period="weekly"
+          onPeriodChange={() => {}}
           rows={leaderboardQuery.rows}
           currentUserRow={leaderboardQuery.currentUserRow}
           isLoading={leaderboardQuery.isLoading}
@@ -257,7 +250,7 @@ function AuthenticatedDashboard() {
 
 export default function DashboardScreen() {
   return (
-    <div className="screen">
+    <div className="screen screen--dashboard">
       <AuthGate>
         <AuthenticatedDashboard />
       </AuthGate>

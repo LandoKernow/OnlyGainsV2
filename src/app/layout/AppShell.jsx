@@ -14,8 +14,10 @@ export function AppShell({ children }) {
   const location = useLocation()
   const userLabel = session?.user?.email ? session.user.email.split('@')[0] : null
   const isAwardRoute = location.pathname.startsWith('/award/')
+  const isDashboardRoute = location.pathname === '/dashboard'
   const showBottomNav = status === 'authenticated' && !isAwardRoute
   const showSessionPill = status !== 'unauthenticated'
+  const headerTitle = isDashboardRoute && status === 'authenticated' ? 'Who folds first.' : 'Show up. Log it. Get better.'
 
   return (
     <div className={isAwardRoute ? 'app-shell app-shell--immersive' : 'app-shell'}>
@@ -23,7 +25,7 @@ export function AppShell({ children }) {
         <header className="app-header">
           <div>
             <p className="eyebrow">ONLY GAINS</p>
-            <h1>Show up. Log it. Get better.</h1>
+            <h1>{headerTitle}</h1>
           </div>
           {showSessionPill ? (
             <div className="session-pill" title={session?.user?.email} aria-live="polite">

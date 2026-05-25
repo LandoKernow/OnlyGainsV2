@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
-import { getLeaderboardComment, getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
+import { getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
@@ -143,8 +144,89 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
   )
 }
 
+function getFightActionCopy({ state, gapToCatch, gapToDefend, activityType }) {
+  if (state === 'crown') {
+    return activityType === 'km' ? 'Make them chase distance.' : 'Make them bleed reps.'
+  }
+
+  if (state === 'hunted') {
+    return 'Defend the spot.'
+  }
+
+  if (activityType === 'km') {
+    if (gapToCatch != null && gapToCatch <= 5) {
+      return 'One more run breaks them.'
+    }
+
+    return 'Distance breaks the line.'
+  }
+
+  if (gapToCatch != null && gapToCatch <= 25) {
+    return 'One more set breaks them.'
+  }
+
+  if (gapToCatch != null && gapToCatch <= 50) {
+    return 'Fifty takes the spot.'
+  }
+
+  return 'Add pressure. Move the board.'
+}
+
+function getFightHero(currentUserRow, chase, activityType) {
+  if (!currentUserRow) {
+    return {
+      eyebrow: 'THE BOARD REMEMBERS',
+      title: 'Log first. Make yourself visible.',
+      body: 'No rank yet. No pressure yet.',
+      action: 'The next log puts your name on it.',
+    }
+  }
+
+  if (currentUserRow.rank === 1) {
+    const rivalName = getSafeName(chase?.rowBelow?.actorName)
+    const gapBehind = chase?.gapToDefend != null ? formatActivityGap(chase.gapToDefend, activityType) : null
+
+    return {
+      eyebrow: 'YOU HOLD THE CROWN',
+      title: gapBehind ? `${rivalName} is ${gapBehind} behind.` : 'No one above. No one close.',
+      body: gapBehind ? getFightActionCopy({ state: 'crown', gapToDefend: chase?.gapToDefend, activityType }) : 'Hold the line.',
+      action: currentUserRow ? `${formatActivityValue(currentUserRow.total, activityType)} this week` : '',
+    }
+  }
+
+  if (
+    chase?.rowBelow &&
+    chase?.gapToDefend != null &&
+    (chase?.gapToCatch == null || chase.gapToDefend < chase.gapToCatch)
+  ) {
+    return {
+      eyebrow: 'YOU ARE BEING HUNTED',
+      title: `${getSafeName(chase.rowBelow.actorName)} is ${formatActivityGap(chase.gapToDefend, activityType)} behind.`,
+      body: getFightActionCopy({ state: 'hunted', gapToDefend: chase.gapToDefend, activityType }),
+      action: `#${currentUserRow.rank} this week`,
+    }
+  }
+
+  if (chase?.rowAbove && chase?.gapToCatch != null) {
+    return {
+      eyebrow: `#${currentUserRow.rank} THIS WEEK`,
+      title: `${formatActivityGap(chase.gapToCatch, activityType)} from ${getSafeName(chase.rowAbove.actorName).toUpperCase()}.`,
+      body: getFightActionCopy({ state: 'chasing', gapToCatch: chase.gapToCatch, activityType }),
+      action: `${formatActivityValue(currentUserRow.total, activityType)} on the board`,
+    }
+  }
+
+  return {
+    eyebrow: `#${currentUserRow.rank} THIS WEEK`,
+    title: `${formatActivityValue(currentUserRow.total, activityType)} visible.`,
+    body: 'Stay active. Keep pressure on the board.',
+    action: 'One more log changes the table.',
+  }
+}
+
 export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups' }) {
   const statusLabel = currentUserRow ? getRowStatus(currentUserRow, rows, activityType) : 'QUIET'
+  const hero = getFightHero(currentUserRow, chase, activityType)
   const chips = currentUserRow
     ? [
         buildStatusChip(statusLabel),
@@ -158,14 +240,15 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
     : [buildStatusChip('QUIET')]
 
   return (
-    <Card title={`${profile?.name || 'Warrior'}`} body="The board remembers.">
-      <div className="stack">
+    <Card title={hero.eyebrow} body={hero.title}>
+      <div className="stack hero-fight-card">
         <div className="hero-status-grid">
           <div className="hero-status-grid__main">
-            <strong>{currentUserRow ? `#${currentUserRow.rank} this week` : 'Not ranked this week'}</strong>
-            <span>{currentUserRow ? formatActivityValue(currentUserRow.total, activityType) : 'Visible discipline starts with one log.'}</span>
+            <strong>{hero.body}</strong>
+            <span>{hero.action}</span>
           </div>
           <div className="hero-status-grid__meta">
+            <span>{profile?.name || 'Warrior'}</span>
             <span>{getStatusLine(currentUserRow, chase, activityType)}</span>
           </div>
         </div>
@@ -210,13 +293,30 @@ export function LogActivityCard({
   onManualSubmit,
   isSaving,
   activityType = 'pressups',
+  onActivityTypeChange,
 }) {
   const isKm = activityType === 'km'
 
   return (
-    <Card title={isKm ? 'Log KM' : 'Log Press-Ups'} body="Move now. The board is watching.">
+    <Card title="LOG THE HIT" body="Move the board. Make it public.">
+      <div className="dashboard-activity-toggle">
+        <button
+          className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'}
+          type="button"
+          onClick={() => onActivityTypeChange?.('pressups')}
+        >
+          Press Ups
+        </button>
+        <button
+          className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'}
+          type="button"
+          onClick={() => onActivityTypeChange?.('km')}
+        >
+          KM Ran
+        </button>
+      </div>
       {!isKm ? (
-        <div className="quick-actions">
+        <div className="quick-actions quick-actions--board">
           {quickValues.map((quickValue) => (
             <button
               key={quickValue}
@@ -278,12 +378,19 @@ export function WeeklyLeaderMessageCard({
 }) {
   const [draftMessage, setDraftMessage] = useState('')
   const [validationError, setValidationError] = useState('')
+  const [isExpanded, setIsExpanded] = useState(false)
 
   useEffect(() => {
     if (messageRow?.message) {
       setDraftMessage(messageRow.message)
     }
   }, [messageRow?.message])
+
+  useEffect(() => {
+    if (!isLeader) {
+      setIsExpanded(false)
+    }
+  }, [isLeader])
 
   const hasMessage = Boolean(messageRow?.message)
   const isSaving = saveMessage?.isLoading
@@ -308,28 +415,35 @@ export function WeeklyLeaderMessageCard({
   }
 
   return (
-    <Card title="Leader message" body="Weekly press-up leader attention.">
+    <Card title="LEADER MESSAGE" body={hasMessage ? `${leaderName}: "${messageRow.message}"` : 'The current weekly leader holds the mic.'}>
       {isLoading ? (
         <p className="muted">Checking the weekly leader message.</p>
       ) : (
-        <div className="stack">
-          {hasMessage ? (
-            <>
-              <span className="muted">{leaderName}</span>
-              <blockquote className="leader-message">{messageRow.message}</blockquote>
-            </>
-          ) : (
-            <div className="stack">
-              <strong>{isLeader ? 'The board is waiting.' : 'No message set yet.'}</strong>
-              <span>
-                {isLeader
-                  ? 'Write the weekly press-up leader message that everyone sees.'
-                  : 'The weekly press-up leader can set a short message for the board.'}
-              </span>
-            </div>
-          )}
+        <div className="stack board-leader-message">
+          <div className="board-leader-message__summary">
+            <strong>{hasMessage ? leaderName : isLeader ? 'The board is waiting.' : 'No message set yet.'}</strong>
+            <span>
+              {hasMessage
+                ? messageRow.message
+                : isLeader
+                ? 'Take the mic. Set the tone.'
+                : 'The weekly leader can set the tone.'}
+            </span>
+          </div>
 
           {isLeader ? (
+            <div className="board-leader-message__actions">
+              <button
+                className="button button--ghost"
+                type="button"
+                onClick={() => setIsExpanded((current) => !current)}
+              >
+                {isExpanded ? 'Close mic' : hasMessage ? 'Edit' : 'Take the mic'}
+              </button>
+            </div>
+          ) : null}
+
+          {isLeader && isExpanded ? (
             <form className="stack section-gap" onSubmit={handleSubmit}>
               <label className="stack">
                 <span>Message</span>
@@ -389,40 +503,57 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
     }
   }
 
+  const compactRows = useMemo(() => {
+    if (!compact) {
+      return rows
+    }
+
+    const topThree = rows.slice(0, 3)
+
+    if (!currentUserRow || topThree.some((row) => row.userId === currentUserRow.userId)) {
+      return topThree
+    }
+
+    return [...topThree, currentUserRow]
+  }, [compact, currentUserRow, rows])
+
   return (
-    <Card title="Ranks" body={cardBody}>
-      <div className="placeholder-tabs">
-        <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
-        <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
-        {periods.map((item) => (
-          <button
-            key={item.key}
-            className={item.key === period ? 'pill-button pill-button--active' : 'pill-button'}
-            type="button"
-            onClick={() => onPeriodChange(item.key)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-      {currentUserRow ? (
+    <Card title={compact ? 'MINI RANKS' : 'Ranks'} body={compact ? 'Top 3 plus your spot.' : cardBody}>
+      {!compact ? (
+        <div className="placeholder-tabs">
+          <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
+          <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
+          {periods.map((item) => (
+            <button
+              key={item.key}
+              className={item.key === period ? 'pill-button pill-button--active' : 'pill-button'}
+              type="button"
+              onClick={() => onPeriodChange(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {currentUserRow && !compact ? (
         <div className="leaderboard-summary">
           <strong>Your rank: #{currentUserRow.rank}</strong>
           <span>{formatValue(currentUserRow.total)}</span>
           <span>{isKm ? `${formatKm(currentUserRow.todayTotal)} today` : `${currentUserRow.todayTotal} today`}</span>
         </div>
-      ) : (
+      ) : !compact ? (
         <div className="stack">
-          <strong>Not on the board yet.</strong>
+          <strong>{compact ? 'No rank yet.' : 'Not on the board yet.'}</strong>
           <p className="muted">Log first. Make them chase.</p>
         </div>
-      )}
+      ) : null}
       {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
-      {rows.length > 0 ? (
+      {!isLoading && compact && rows.length === 0 ? <p className="muted">Log first. Make yourself visible.</p> : null}
+      {(compact ? compactRows : rows).length > 0 ? (
         <>
-          <ol className={compact ? 'leaderboard-list leaderboard-list--compact' : 'leaderboard-list'}>
-            {rows.map((row) => {
+          <ol className={compact ? 'leaderboard-list leaderboard-list--board' : 'leaderboard-list'}>
+            {(compact ? compactRows : rows).map((row) => {
               const status = getRowStatus(row, rows, activityType)
               const pressureContext = getPressureContext(row, rows, activityType)
               const rowClassName = [
@@ -463,6 +594,13 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
               )
             })}
           </ol>
+          {compact ? (
+            <div className="section-gap">
+              <Link className="button button--ghost dashboard-link-button" to="/leaderboard">
+                View full ranks
+              </Link>
+            </div>
+          ) : null}
           <LeaderboardRowPreviewModal
             row={previewRow}
             activityType={activityType}
@@ -502,7 +640,7 @@ export function ChaseCard({ chase, isLoading, period, compact = false, activityT
 export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
   if (isLoading) {
     return (
-      <Card title="Pressure" body="Sizing the board gap.">
+      <Card title="PRESSURE" body="Sizing the gap.">
         <p className="muted">One moment...</p>
       </Card>
     )
@@ -510,7 +648,7 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
 
   if (!chase?.currentUserRow) {
     return (
-      <Card title="Pressure" body="Log effort to enter the fight.">
+      <Card title="PRESSURE" body="Log effort to enter the fight.">
         <p className="muted">Log effort to enter the fight.</p>
       </Card>
     )
@@ -534,10 +672,10 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
     : null
 
   return (
-    <Card title="Pressure" body="Who folds first.">
-      <div className="stack pressure-card-stack">
+    <Card title="PRESSURE" body="Who you are chasing. Who is chasing you.">
+      <div className="pressure-split-grid">
         <div className="pressure-row">
-          <strong>You&apos;re chasing</strong>
+          <strong>YOU&apos;RE CHASING</strong>
           {chasingCopy ? (
             <>
               <span className="pressure-row__meta">
@@ -547,13 +685,13 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
             </>
           ) : (
             <>
-              <span className="pressure-row__meta">You hold the line.</span>
-              <span>No one above you.</span>
+              <span className="pressure-row__meta">No one above you.</span>
+              <span>Hold the crown.</span>
             </>
           )}
         </div>
         <div className="pressure-row">
-          <strong>Chasing you</strong>
+          <strong>CHASING YOU</strong>
           {huntedCopy ? (
             <>
               <span className="pressure-row__meta">
@@ -563,8 +701,8 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
             </>
           ) : (
             <>
-              <span className="pressure-row__meta">Clear behind.</span>
-              <span>Stay active.</span>
+              <span className="pressure-row__meta">No one close.</span>
+              <span>Widen the gap.</span>
             </>
           )}
         </div>
@@ -582,16 +720,20 @@ export function ChasePlaceholder() {
 }
 
 export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (error && rows.length === 0) {
     return (
-      <Card title="Board live" body="Could not load recent activity.">
+      <Card title="BOARD LIVE" body="Could not load recent activity.">
         <p className="muted">Try again.</p>
       </Card>
     )
   }
 
+  const visibleRows = showAll ? rows : rows.slice(0, 3)
+
   return (
-    <Card title="Board live" body="The board is moving." aside={<span className="live-badge">LIVE</span>}>
+    <Card title="BOARD LIVE" body={`${rows.length} recent moves`} aside={<span className="live-badge">LIVE</span>}>
       {error && rows.length > 0 ? <p className="muted">Could not refresh. Try again.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
       {!isLoading && rows.length === 0 ? (
@@ -602,7 +744,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
       ) : null}
       {rows.length > 0 ? (
         <ul className="activity-feed">
-          {rows.map((row, index) => {
+          {visibleRows.map((row, index) => {
             const canRemove = row.userId === currentUserId && !row.pending
 
             return (
@@ -610,6 +752,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
                 key={row.id}
                 className={[
                   'activity-item',
+                  'activity-item--compact',
                   row.pending ? 'activity-item--pending' : '',
                   index === 0 ? 'activity-item--latest' : '',
                 ].filter(Boolean).join(' ')}
@@ -630,6 +773,13 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
             )
           })}
         </ul>
+      ) : null}
+      {rows.length > 3 ? (
+        <div className="section-gap">
+          <button className="button button--ghost dashboard-link-button" type="button" onClick={() => setShowAll((current) => !current)}>
+            {showAll ? 'Show less' : 'View more'}
+          </button>
+        </div>
       ) : null}
     </Card>
   )
