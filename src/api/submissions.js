@@ -101,48 +101,65 @@ export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {
   return fetchLeaderboardSubmissions({ circleId, year, activityType: 'pressups' })
 }
 
-export async function fetchVaultSubmissions({ circleId, year, activityType }) {
+function isMissingVaultRecordsRpc(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error?.code === 'PGRST202' ||
+    error?.code === '42883' ||
+    (message.includes('get_vault_app_tracked_records') && message.includes('could not find')) ||
+    (message.includes('function') && message.includes('does not exist'))
+  )
+}
+
+function mapVaultAppTrackedRecord(row) {
+  return {
+    recordKey: row.record_key,
+    activityType: row.activity_type,
+    periodType: row.period_type,
+    userId: row.user_id,
+    actorName: row.user_name || 'Unknown',
+    value: Number(row.value) || 0,
+    valueNumeric: Number(row.value) || 0,
+    unit: row.unit || (row.activity_type === 'km' ? 'km' : 'reps'),
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+    sourceLabel: row.source_type || 'app_tracked',
+    sourceType: row.source_type || 'app_tracked',
+    year: row.period_start ? new Date(`${row.period_start}T12:00:00.000Z`).getUTCFullYear() : null,
+  }
+}
+
+export async function fetchVaultAppTrackedRecords({ circleId, year }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
   const { data, error } = await supabase
-    .from('submissions')
-    .select('id, circle_id, user_id, activity_type, value, unit, source, activity_date, created_at, year')
-    .eq('circle_id', circleId)
-    .eq('year', year)
-    .eq('activity_type', activityType)
-    .order('activity_date', { ascending: true })
+    .rpc('get_vault_app_tracked_records', {
+      p_circle_id: circleId,
+      p_year: year,
+    })
 
   if (error) {
+    if (isMissingVaultRecordsRpc(error)) {
+      if (import.meta.env.DEV) {
+        console.warn('[Only Gains Vault] get_vault_app_tracked_records RPC not ready yet.')
+      }
+
+      return {
+        rows: [],
+        unavailable: true,
+      }
+    }
+
     throw error
   }
 
-  const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-  const profilesByUserId = await fetchProfilesByUserIds(userIds)
-
-  return (data ?? []).map((row) => ({
-    id: row.id,
-    circleId: row.circle_id,
-    userId: row.user_id,
-    activityType: row.activity_type,
-    value: Number(row.value),
-    unit: row.unit,
-    source: row.source,
-    activityDate: row.activity_date,
-    createdAt: row.created_at,
-    year: row.year,
-    actorName: profilesByUserId[row.user_id]?.name ?? 'Unknown',
-  }))
-}
-
-export async function fetchVaultRecords({ circleId, year }) {
-  const [pressups, km] = await Promise.all([
-    fetchVaultSubmissions({ circleId, year, activityType: 'pressups' }),
-    fetchVaultSubmissions({ circleId, year, activityType: 'km' }),
-  ])
-
-  return { pressups, km }
+  return {
+    rows: (data ?? []).map(mapVaultAppTrackedRecord),
+    unavailable: false,
+  }
 }
 
 export async function deleteSubmissionById(id, userId) {

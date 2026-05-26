@@ -1,10 +1,9 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchVaultRecords } from '../api/submissions'
+import { fetchVaultAppTrackedRecords } from '../api/submissions'
 import { fetchPublicProfileRecordEntries, getPublicProfileRecordEntriesQueryKey } from '../api/profileYearSetup'
 import { fetchVaultRecordExclusions, getVaultRecordExclusionsQueryKey } from '../api/vaultRecordExclusions'
 import { getLondonDateParts } from '../utils/dates'
-import { getBestDayRecord, getBestWeekRecord } from '../utils/recordAggregation'
 
 export function getVaultRecordsQueryKey(circleId, year) {
   return ['vault', circleId, year]
@@ -96,14 +95,15 @@ export function useVaultRecords({ circleId }) {
   const query = useQuery({
     queryKey: getVaultRecordsQueryKey(circleId, currentYear),
     queryFn: async () => {
-      const [appTrackedRecords, claimedRecords, exclusions] = await Promise.all([
-        fetchVaultRecords({ circleId, year: currentYear }),
+      const [appTrackedResult, claimedRecords, exclusions] = await Promise.all([
+        fetchVaultAppTrackedRecords({ circleId, year: currentYear }),
         fetchPublicProfileRecordEntries(currentYear),
         fetchVaultRecordExclusions(),
       ])
 
       return {
-        appTrackedRecords,
+        appTrackedRecords: appTrackedResult.rows,
+        appTrackedUnavailable: appTrackedResult.unavailable,
         claimedRecords,
         exclusions,
       }
@@ -114,21 +114,21 @@ export function useVaultRecords({ circleId }) {
 
   const records = useMemo(() => {
     const exclusionSet = createExclusionSet(query.data?.exclusions ?? [])
-    const pressups = (query.data?.appTrackedRecords?.pressups ?? []).filter(
-      (row) => !isExcluded(exclusionSet, 'submission', row.id),
-    )
-    const km = (query.data?.appTrackedRecords?.km ?? []).filter(
-      (row) => !isExcluded(exclusionSet, 'submission', row.id),
+    const appTrackedRows = (query.data?.appTrackedRecords ?? []).filter(
+      (row) => !isExcluded(exclusionSet, 'app_tracked', row.recordKey),
     )
     const claimedRows = (query.data?.claimedRecords ?? []).filter(
       (row) => !isExcluded(exclusionSet, 'profile_record_entry', row.id),
     )
 
+    const findAppTrackedRecord = (recordKey) =>
+      appTrackedRows.find((row) => row.recordKey === recordKey) ?? null
+
     return {
-      pressupsDay: normalizeSubmissionRecord(getBestDayRecord(pressups, 'pressups')),
-      pressupsWeek: normalizeSubmissionRecord(getBestWeekRecord(pressups, 'pressups')),
-      kmDay: normalizeSubmissionRecord(getBestDayRecord(km, 'km')),
-      kmWeek: normalizeSubmissionRecord(getBestWeekRecord(km, 'km')),
+      pressupsDay: normalizeSubmissionRecord(findAppTrackedRecord('most_pressups_day')),
+      pressupsWeek: normalizeSubmissionRecord(findAppTrackedRecord('most_pressups_week')),
+      kmDay: normalizeSubmissionRecord(findAppTrackedRecord('most_km_day')),
+      kmWeek: normalizeSubmissionRecord(findAppTrackedRecord('most_km_week')),
       claimed: Object.fromEntries(
         CLAIMED_RECORD_TYPES.map((recordType) => [recordType, findBestClaimedRecord(claimedRows, recordType)]),
       ),
@@ -138,6 +138,7 @@ export function useVaultRecords({ circleId }) {
   return {
     ...query,
     records,
+    appTrackedUnavailable: query.data?.appTrackedUnavailable === true,
     currentYear,
     publicRecordsQueryKey: getPublicProfileRecordEntriesQueryKey(currentYear),
     exclusionsQueryKey,

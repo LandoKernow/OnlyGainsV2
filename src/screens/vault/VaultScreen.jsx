@@ -219,7 +219,7 @@ export default function VaultScreen() {
   const { showToast } = useToast()
   const { status } = useAuth()
   const { circleId } = useBoardMeta()
-  const { records, isLoading, error, currentYear } = useVaultRecords({ circleId })
+  const { records, isLoading, error, currentYear, appTrackedUnavailable } = useVaultRecords({ circleId })
   const awardsQuery = useVaultAwards(circleId)
   const isPublicVisitor = status === 'unauthenticated'
 
@@ -229,6 +229,9 @@ export default function VaultScreen() {
   const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
   const awards = awardsQuery.awards
+  const appTrackedEmptyCopy = appTrackedUnavailable
+    ? 'App-tracked records are being rebuilt.'
+    : 'No holder yet. Log enough to leave a mark.'
 
   function openProfilePreview(userId, actorName, activityType = 'pressups') {
     if (!userId) {
@@ -307,33 +310,34 @@ export default function VaultScreen() {
               ) : null}
 
               <Card title="APP-TRACKED" body="Earned through live submissions.">
+                {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
                 <div className="vault-records">
                   <div id="vault-records" />
                   <VaultRecordCard
                     title="Most press-ups / day"
                     record={pressupsDay}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most press-ups / week"
                     record={pressupsWeek}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most KM / day"
                     record={kmDay}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
                   />
                   <VaultRecordCard
                     title="Most KM / week"
                     record={kmWeek}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
                   />
@@ -363,33 +367,34 @@ export default function VaultScreen() {
           ) : (
             <>
               <Card title="APP-TRACKED" body="Earned through live submissions.">
+                {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
                 <div className="vault-records">
                   <div id="vault-records" />
                   <VaultRecordCard
                     title="Most press-ups / day"
                     record={pressupsDay}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most press-ups / week"
                     record={pressupsWeek}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
                   />
                   <VaultRecordCard
                     title="Most KM / day"
                     record={kmDay}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
                   />
                   <VaultRecordCard
                     title="Most KM / week"
                     record={kmWeek}
-                    emptyCopy="No holder yet. Log enough to leave a mark."
+                    emptyCopy={appTrackedEmptyCopy}
                     isPublicVisitor={isPublicVisitor}
                     onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
                   />
