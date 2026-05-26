@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
 
-function buildAdminUserIdCandidates(userId) {
+export function getAdminUserIdCandidates(userId) {
   const normalized = String(userId || '').trim()
 
   if (!normalized) {
@@ -15,7 +15,7 @@ function buildAdminUserIdCandidates(userId) {
 }
 
 export async function fetchIsAdmin(userId) {
-  const userIds = buildAdminUserIdCandidates(userId)
+  const userIds = getAdminUserIdCandidates(userId)
 
   if (!supabase || userIds.length === 0) {
     return false
@@ -25,11 +25,11 @@ export async function fetchIsAdmin(userId) {
     .from('admin_users')
     .select('user_id')
     .in('user_id', userIds)
-    .maybeSingle()
+    .limit(1)
 
   if (error) {
     return false
   }
 
-  return Boolean(data?.user_id)
+  return Array.isArray(data) && data.length > 0
 }
