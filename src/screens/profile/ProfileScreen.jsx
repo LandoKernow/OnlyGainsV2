@@ -276,6 +276,89 @@ function AdminAwardControls() {
   )
 }
 
+function shouldShowAdminDebugCard() {
+  if (import.meta.env.DEV) {
+    return true
+  }
+
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return window.localStorage.getItem('only_gains_admin_debug') === 'true'
+  } catch {
+    return false
+  }
+}
+
+function AdminDebugCard() {
+  const { session } = useAuth()
+  const profileQuery = useCurrentProfile()
+  const adminQuery = useIsAdmin()
+
+  if (!shouldShowAdminDebugCard()) {
+    return null
+  }
+
+  const debugPayload = {
+    sessionUserId: session?.user?.id ?? null,
+    currentProfileId: profileQuery.data?.id ?? null,
+    currentProfileName: profileQuery.data?.name ?? null,
+    rpcLoading: adminQuery.isLoading,
+    rpcReturnedValue: adminQuery.rpcValue,
+    rpcErrorCode: adminQuery.rpcErrorCode,
+    rpcErrorMessage: adminQuery.rpcErrorMessage,
+    isAdmin: adminQuery.isAdmin,
+    queryKey: adminQuery.queryKey,
+  }
+
+  console.debug('[Only Gains Admin Debug]', debugPayload)
+
+  return (
+    <Card title="ADMIN DEBUG" body="Temporary admin diagnostics.">
+      <div className="profile-identity-grid">
+        <div className="profile-identity-grid__row">
+          <span className="muted">session.user.id</span>
+          <strong>{debugPayload.sessionUserId || 'null'}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">currentProfile.id</span>
+          <strong>{debugPayload.currentProfileId || 'null'}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">currentProfile.name</span>
+          <strong>{debugPayload.currentProfileName || 'null'}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">RPC loading</span>
+          <strong>{String(debugPayload.rpcLoading)}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">RPC returned value</span>
+          <strong>{String(debugPayload.rpcReturnedValue)}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">RPC error code</span>
+          <strong>{debugPayload.rpcErrorCode || 'null'}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">RPC error message</span>
+          <strong>{debugPayload.rpcErrorMessage || 'null'}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">final isAdmin</span>
+          <strong>{String(debugPayload.isAdmin)}</strong>
+        </div>
+        <div className="profile-identity-grid__row">
+          <span className="muted">query key</span>
+          <strong>{JSON.stringify(debugPayload.queryKey)}</strong>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 function FeedbackActions() {
   const { showToast } = useToast()
 
@@ -316,6 +399,7 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <AdminDebugCard />
           <AdminAwardControls />
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
