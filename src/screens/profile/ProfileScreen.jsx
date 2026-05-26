@@ -316,10 +316,10 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <AdminAwardControls />
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
           <VaultProfileCard />
-          <AdminAwardControls />
           <ProfileBasicsCard />
         </div>
       </AuthGate>

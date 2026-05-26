@@ -1,35 +1,22 @@
 import { supabase } from '../lib/supabase'
 
-export function getAdminUserIdCandidates(userId) {
-  const normalized = String(userId || '').trim()
-
-  if (!normalized) {
-    return []
-  }
-
-  if (normalized.startsWith('user-')) {
-    return [normalized, normalized.slice(5)].filter(Boolean)
-  }
-
-  return [normalized, `user-${normalized}`]
-}
-
-export async function fetchIsAdmin(userId) {
-  const userIds = getAdminUserIdCandidates(userId)
-
-  if (!supabase || userIds.length === 0) {
+export async function fetchIsAdmin() {
+  if (!supabase) {
     return false
   }
 
-  const { data, error } = await supabase
-    .from('admin_users')
-    .select('user_id')
-    .in('user_id', userIds)
-    .limit(1)
+  const { data, error } = await supabase.rpc('is_current_user_admin')
 
   if (error) {
+    if (import.meta.env.DEV) {
+      console.debug('[Only Gains Admin] is_current_user_admin failed', {
+        code: error.code ?? null,
+        message: error.message ?? null,
+      })
+    }
+
     return false
   }
 
-  return Array.isArray(data) && data.length > 0
+  return data === true
 }
