@@ -4,7 +4,8 @@ import { fetchLeaderboardSubmissions } from '../api/submissions'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useBoardMeta } from './useBoardMeta'
 import { useProfileYearSetup } from './useProfileYearSetup'
-import { getLondonDateParts, getSubmissionPeriodKeys } from '../utils/dates'
+import { getLondonDateParts } from '../utils/dates'
+import { aggregateEligibleSubmissionsByDay, aggregateEligibleSubmissionsByWeek } from '../utils/recordAggregation'
 
 const APP_TRACKED_RECORD_TYPES = new Set(['pressups_day', 'pressups_week', 'km_day', 'km_week'])
 const LOWER_IS_BETTER_RECORD_TYPES = new Set(['fastest_5k', 'fastest_10k', 'half_marathon', 'marathon'])
@@ -43,39 +44,6 @@ function compareRecordEntries(a, b) {
   }
 
   return String(b.sourceLabel).localeCompare(String(a.sourceLabel))
-}
-
-function groupSubmissionHistory(rows, recordType, periodKey) {
-  const grouped = {}
-
-  rows.forEach((row) => {
-    const period = getSubmissionPeriodKeys(row.activityDate)[periodKey]
-
-    if (!period) {
-      return
-    }
-
-    const existing = grouped[period] ?? createHistoryEntry({
-      recordType,
-      unit: row.activityType === 'km' ? 'km' : 'reps',
-      valueNumeric: 0,
-      sourceLabel: 'app_tracked',
-      year: row.year ?? null,
-      sourceType: 'submission',
-      sourceId: row.id,
-      note: period,
-    })
-
-    existing.valueNumeric += Number(row.value) || 0
-
-    if ((Number(row.value) || 0) >= Number(existing.valueNumeric || 0)) {
-      existing.sourceId = row.id
-    }
-
-    grouped[period] = existing
-  })
-
-  return Object.values(grouped).sort(compareRecordEntries)
 }
 
 export function usePersonalRecords(year = 2026) {
@@ -118,10 +86,10 @@ export function usePersonalRecords(year = 2026) {
     const ownKmRows = (kmQuery.data ?? []).filter((row) => row.userId === userId)
 
     const appTrackedEntries = [
-      ...groupSubmissionHistory(ownPressupsRows, 'pressups_day', 'todayKey'),
-      ...groupSubmissionHistory(ownPressupsRows, 'pressups_week', 'weekKey'),
-      ...groupSubmissionHistory(ownKmRows, 'km_day', 'todayKey'),
-      ...groupSubmissionHistory(ownKmRows, 'km_week', 'weekKey'),
+      ...aggregateEligibleSubmissionsByDay(ownPressupsRows, 'pressups'),
+      ...aggregateEligibleSubmissionsByWeek(ownPressupsRows, 'pressups'),
+      ...aggregateEligibleSubmissionsByDay(ownKmRows, 'km'),
+      ...aggregateEligibleSubmissionsByWeek(ownKmRows, 'km'),
     ]
 
     const allEntries = [...claimedEntries, ...appTrackedEntries]

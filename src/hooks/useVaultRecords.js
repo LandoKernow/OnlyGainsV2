@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchVaultRecords } from '../api/submissions'
 import { fetchPublicProfileRecordEntries, getPublicProfileRecordEntriesQueryKey } from '../api/profileYearSetup'
 import { fetchVaultRecordExclusions, getVaultRecordExclusionsQueryKey } from '../api/vaultRecordExclusions'
-import { getLondonDateParts, getSubmissionPeriodKeys } from '../utils/dates'
-import { isVaultEligibleSubmission } from '../utils/vaultEligibility'
+import { getLondonDateParts } from '../utils/dates'
+import { getBestDayRecord, getBestWeekRecord } from '../utils/recordAggregation'
 
 export function getVaultRecordsQueryKey(circleId, year) {
   return ['vault', circleId, year]
@@ -29,44 +29,6 @@ const SOURCE_PRIORITY = {
   self_reported: 1,
 }
 
-function findTopGroup(rows, periodKey) {
-  const groups = {}
-
-  rows.forEach((row) => {
-    const period = getSubmissionPeriodKeys(row.activityDate)[periodKey]
-    if (!period) {
-      return
-    }
-
-    const key = `${row.userId}:${period}`
-    const value = Number(row.value) || 0
-
-    if (!groups[key]) {
-      groups[key] = {
-        userId: row.userId,
-        actorName: row.actorName || 'Unknown',
-        period,
-        value: 0,
-        year: row.year ?? null,
-        sourceType: 'submission',
-        sourceId: row.id,
-        sourceIds: [],
-        topSubmissionValue: Number(row.value) || 0,
-      }
-    }
-
-    groups[key].value += value
-    groups[key].sourceIds.push(row.id)
-
-    if (value >= groups[key].topSubmissionValue) {
-      groups[key].topSubmissionValue = value
-      groups[key].sourceId = row.id
-    }
-  })
-
-  return Object.values(groups).sort((a, b) => b.value - a.value)[0] || null
-}
-
 function normalizeSubmissionRecord(record, sourceLabel = 'app_tracked') {
   if (!record) {
     return null
@@ -74,6 +36,7 @@ function normalizeSubmissionRecord(record, sourceLabel = 'app_tracked') {
 
   return {
     ...record,
+    value: record.valueNumeric ?? 0,
     sourceLabel,
     year: record.year ?? null,
     claimedAt: record.claimedAt ?? null,
@@ -152,20 +115,20 @@ export function useVaultRecords({ circleId }) {
   const records = useMemo(() => {
     const exclusionSet = createExclusionSet(query.data?.exclusions ?? [])
     const pressups = (query.data?.appTrackedRecords?.pressups ?? []).filter(
-      (row) => isVaultEligibleSubmission(row) && !isExcluded(exclusionSet, 'submission', row.id),
+      (row) => !isExcluded(exclusionSet, 'submission', row.id),
     )
     const km = (query.data?.appTrackedRecords?.km ?? []).filter(
-      (row) => isVaultEligibleSubmission(row) && !isExcluded(exclusionSet, 'submission', row.id),
+      (row) => !isExcluded(exclusionSet, 'submission', row.id),
     )
     const claimedRows = (query.data?.claimedRecords ?? []).filter(
       (row) => !isExcluded(exclusionSet, 'profile_record_entry', row.id),
     )
 
     return {
-      pressupsDay: normalizeSubmissionRecord(findTopGroup(pressups, 'todayKey')),
-      pressupsWeek: normalizeSubmissionRecord(findTopGroup(pressups, 'weekKey')),
-      kmDay: normalizeSubmissionRecord(findTopGroup(km, 'todayKey')),
-      kmWeek: normalizeSubmissionRecord(findTopGroup(km, 'weekKey')),
+      pressupsDay: normalizeSubmissionRecord(getBestDayRecord(pressups, 'pressups')),
+      pressupsWeek: normalizeSubmissionRecord(getBestWeekRecord(pressups, 'pressups')),
+      kmDay: normalizeSubmissionRecord(getBestDayRecord(km, 'km')),
+      kmWeek: normalizeSubmissionRecord(getBestWeekRecord(km, 'km')),
       claimed: Object.fromEntries(
         CLAIMED_RECORD_TYPES.map((recordType) => [recordType, findBestClaimedRecord(claimedRows, recordType)]),
       ),
