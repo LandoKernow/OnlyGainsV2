@@ -393,7 +393,7 @@ export function WeeklyLeaderMessageCard({
   }, [isLeader])
 
   const hasMessage = Boolean(messageRow?.message)
-  const isSaving = saveMessage?.isLoading
+  const isSaving = saveMessage?.isPending
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -415,30 +415,19 @@ export function WeeklyLeaderMessageCard({
   }
 
   return (
-    <Card title="LEADER MESSAGE" body={hasMessage ? `${leaderName}: "${messageRow.message}"` : 'The current weekly leader holds the mic.'}>
+    <Card title="LEADER MESSAGE" body={hasMessage ? `${leaderName}: "${messageRow.message}"` : 'The leader has not spoken.'}>
       {isLoading ? (
         <p className="muted">Checking the weekly leader message.</p>
       ) : (
         <div className="stack board-leader-message">
-          <div className="board-leader-message__summary">
-            <strong>{hasMessage ? leaderName : isLeader ? 'The board is waiting.' : 'No message set yet.'}</strong>
-            <span>
-              {hasMessage
-                ? messageRow.message
-                : isLeader
-                ? 'Take the mic. Set the tone.'
-                : 'The weekly leader can set the tone.'}
-            </span>
-          </div>
-
-          {isLeader ? (
+          {isLeader && !isExpanded ? (
             <div className="board-leader-message__actions">
               <button
                 className="button button--ghost"
                 type="button"
                 onClick={() => setIsExpanded((current) => !current)}
               >
-                {isExpanded ? 'Close mic' : hasMessage ? 'Edit' : 'Take the mic'}
+                {hasMessage ? 'Edit' : 'Take the mic'}
               </button>
             </div>
           ) : null}
@@ -457,10 +446,24 @@ export function WeeklyLeaderMessageCard({
                   disabled={isSaving}
                 />
               </label>
-              <div className="stack">
+              <div className="profile-summary-actions">
                 <button className="button" type="submit" disabled={isSaving}>
-                  {isSaving ? 'Saving...' : 'Set message'}
+                  {isSaving ? 'Saving...' : 'Save'}
                 </button>
+                <button
+                  className="button button--ghost"
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setDraftMessage(messageRow?.message ?? '')
+                    setValidationError('')
+                    setIsExpanded(false)
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="stack">
                 {validationError ? <p className="muted">{validationError}</p> : null}
                 {saveMessage?.error ? (
                   <p className="muted">{getLeaderMessageErrorCopy(saveMessage.error)}</p>
