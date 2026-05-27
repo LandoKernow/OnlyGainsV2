@@ -278,6 +278,142 @@ button {
   color: #fff4ed;
 }
 
+.board-switcher-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.board-switcher-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.board-switcher-row--active {
+  border-color: rgba(213, 106, 44, 0.4);
+  background: rgba(213, 106, 44, 0.09);
+}
+
+.board-switcher-row__meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.board-switcher-row__meta strong {
+  font-size: 0.96rem;
+}
+
+.board-switcher-row__meta span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.board-switcher-row__button {
+  min-height: 2.2rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
+}
+
+.board-form {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.board-form__header {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.board-stage {
+  display: grid;
+  gap: 1rem;
+}
+
+.board-stage__card {
+  border: 1px solid rgba(213, 106, 44, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(213, 106, 44, 0.22), transparent 30%),
+    linear-gradient(180deg, rgba(30, 19, 14, 0.96), rgba(13, 10, 9, 0.96));
+  border-radius: 1.4rem;
+  padding: 1.15rem;
+  box-shadow: var(--shadow);
+}
+
+.board-stage__title {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.7rem, 6vw, 2.3rem);
+  line-height: 0.98;
+}
+
+.board-stage__name {
+  margin: 0.9rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.board-stage__meta,
+.board-stage__copy,
+.board-stage__microcopy {
+  margin: 0.4rem 0 0;
+}
+
+.board-stage__meta {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.8rem;
+}
+
+.board-stage__copy {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.board-stage__microcopy {
+  color: var(--text-muted);
+}
+
+.board-stage__url-shell {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+}
+
+.board-stage__url {
+  display: block;
+  width: 100%;
+  word-break: break-word;
+  font-size: 0.94rem;
+}
+
+.board-stage__actions {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.board-stage__actions--stacked .board-stage__primary {
+  width: 100%;
+}
+
+.board-stage__secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.board-stage__secondary-button {
+  width: 100%;
+}
+
 .stat-strip,
 .quick-actions,
 .placeholder-tabs {
@@ -1950,6 +2086,10 @@ button {
   .award-stage__actions .button {
     flex: 1 1 0;
     text-align: center;
+  }
+
+  .board-stage__secondary {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -1,9 +1,5 @@
-import { appEnv } from '../lib/env'
+import { useBoard } from '../features/boards/BoardProvider'
 
 export function useBoardMeta() {
-  return {
-    circleId: appEnv.defaultCircleId,
-    timezone: 'Europe/London',
-    appName: appEnv.appName,
-  }
+  return useBoard()
 }

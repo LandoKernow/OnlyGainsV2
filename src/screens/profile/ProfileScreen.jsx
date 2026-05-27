@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { Card } from '../../components/Card'
 import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
@@ -12,10 +12,21 @@ import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
+import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, useCreateBoard, useJoinBoard } from '../../hooks/useBoards'
 import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
 import { formatAwardPeriodRange } from '../../utils/awardShare'
+import { formatBoardTypeLabel } from '../../utils/boardInvites'
+
+const BOARD_TYPE_OPTIONS = [
+  { value: 'gym', label: 'Gym' },
+  { value: 'workplace', label: 'Workplace' },
+  { value: 'football_team', label: 'Football team' },
+  { value: 'team_club', label: 'Team / club' },
+  { value: 'group_chat', label: 'Group chat' },
+  { value: 'other', label: 'Other' },
+]
 
 function ProfileSummary() {
   const { session, signOut } = useAuth()
@@ -184,6 +195,203 @@ function ProfileYearEntryCard() {
   )
 }
 
+function BoardsCard() {
+  const navigate = useNavigate()
+  const { showToast } = useToast()
+  const {
+    activeBoard,
+    boards,
+    boardFeatureReady,
+    isBoardsLoading,
+    setActiveBoardId,
+  } = useBoardMeta()
+  const createBoardMutation = useCreateBoard()
+  const joinBoardMutation = useJoinBoard()
+  const [boardName, setBoardName] = useState('')
+  const [boardType, setBoardType] = useState('gym')
+  const [inviteCode, setInviteCode] = useState('')
+
+  async function handleCreateBoard(event) {
+    event.preventDefault()
+
+    const trimmedBoardName = boardName.trim()
+
+    if (!trimmedBoardName) {
+      showToast({ tone: 'error', message: 'Name the board.' })
+      return
+    }
+
+    try {
+      const createdBoard = await createBoardMutation.mutateAsync({
+        name: trimmedBoardName,
+        boardType,
+      })
+
+      if (createdBoard?.id) {
+        setActiveBoardId(createdBoard.id)
+      }
+
+      setBoardName('')
+      showToast({ tone: 'success', message: 'Board created.' })
+
+      if (createdBoard?.id) {
+        navigate(`/boards/${createdBoard.id}/invite`)
+      }
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        message: getBoardCreateErrorCopy(error),
+      })
+    }
+  }
+
+  async function handleJoinBoard(event) {
+    event.preventDefault()
+
+    const trimmedInviteCode = inviteCode.trim()
+
+    if (!trimmedInviteCode) {
+      showToast({ tone: 'error', message: 'Enter an invite code.' })
+      return
+    }
+
+    try {
+      const joinedBoard = await joinBoardMutation.mutateAsync(trimmedInviteCode)
+      const isExistingMember =
+        joinedBoard?.alreadyMember ||
+        joinedBoard?.membershipStatus === 'existing' ||
+        joinedBoard?.membershipStatus === 'already_member'
+
+      if (joinedBoard?.id) {
+        setActiveBoardId(joinedBoard.id)
+      }
+
+      setInviteCode('')
+      showToast({
+        tone: 'success',
+        message: isExistingMember ? 'Already on this board.' : "You're on the board.",
+      })
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        message: getBoardJoinErrorCopy(error),
+      })
+    }
+  }
+
+  function handleSwitchBoard(boardId) {
+    setActiveBoardId(boardId)
+    showToast({ tone: 'success', message: 'Board switched.' })
+  }
+
+  return (
+    <Card title="BOARDS" body="Your boards. Your wars.">
+      <div className="stack">
+        <div className="profile-identity-grid">
+          <div className="profile-identity-grid__row">
+            <span className="muted">Active board</span>
+            <strong>{activeBoard?.name || 'Only Gains Beta'}</strong>
+          </div>
+          <div className="profile-identity-grid__row">
+            <span className="muted">Board type</span>
+            <strong>{formatBoardTypeLabel(activeBoard?.boardType)}</strong>
+          </div>
+        </div>
+
+        {activeBoard?.id && boardFeatureReady ? (
+          <div className="profile-summary-actions">
+            <Link className="button button--ghost" to={`/boards/${activeBoard.id}/invite`}>
+              Share invite
+            </Link>
+          </div>
+        ) : null}
+
+        {isBoardsLoading ? <p className="muted">Loading boards...</p> : null}
+        {!boardFeatureReady ? <p className="muted">Board invites wake up when the new board SQL is live.</p> : null}
+
+        {boards.length > 1 ? (
+          <div className="board-switcher-list">
+            {boards.map((board) => {
+              const isActive = board.id === activeBoard?.id
+
+              return (
+                <div key={board.id} className={isActive ? 'board-switcher-row board-switcher-row--active' : 'board-switcher-row'}>
+                  <div className="board-switcher-row__meta">
+                    <strong>{board.name}</strong>
+                    <span>{formatBoardTypeLabel(board.boardType)}</span>
+                  </div>
+                  {isActive ? (
+                    <span className="row-chip row-chip--accent">LIVE</span>
+                  ) : (
+                    <button className="button button--ghost board-switcher-row__button" type="button" onClick={() => handleSwitchBoard(board.id)}>
+                      Set active
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="muted">Your current board stays live here. Create the next one or join another war below.</p>
+        )}
+
+        <form className="board-form" onSubmit={handleCreateBoard}>
+          <div className="board-form__header">
+            <strong>Create board</strong>
+            <span className="muted">Your gym. Your team. Your war.</span>
+          </div>
+          <label className="stack">
+            <span>Board name</span>
+            <input
+              className="input"
+              type="text"
+              value={boardName}
+              onChange={(event) => setBoardName(event.target.value)}
+              placeholder="Warehouse Warriors"
+              maxLength={80}
+            />
+          </label>
+          <label className="stack">
+            <span>Board type</span>
+            <select className="input" value={boardType} onChange={(event) => setBoardType(event.target.value)}>
+              {BOARD_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button className="button" type="submit" disabled={createBoardMutation.isPending}>
+            {createBoardMutation.isPending ? 'Creating...' : 'Create board'}
+          </button>
+        </form>
+
+        <form className="board-form" onSubmit={handleJoinBoard}>
+          <div className="board-form__header">
+            <strong>Join board</strong>
+            <span className="muted">Got a link or code? Step in.</span>
+          </div>
+          <label className="stack">
+            <span>Invite code</span>
+            <input
+              className="input"
+              type="text"
+              value={inviteCode}
+              onChange={(event) => setInviteCode(event.target.value)}
+              placeholder="OG-WAREHOUSE"
+              autoCapitalize="characters"
+              autoCorrect="off"
+            />
+          </label>
+          <button className="button button--ghost" type="submit" disabled={joinBoardMutation.isPending}>
+            {joinBoardMutation.isPending ? 'Joining...' : 'Join board'}
+          </button>
+        </form>
+      </div>
+    </Card>
+  )
+}
+
 function getLastCompletedWeekStart() {
   const { weekKey } = getLondonPeriodKeys(new Date())
   const weekStart = new Date(`${weekKey}T12:00:00.000Z`)
@@ -332,6 +540,7 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <BoardsCard />
           <AdminAwardControls />
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />

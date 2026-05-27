@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
+import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatcher'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
 import { ErrorBoundary } from '../components/ErrorBoundary'
@@ -13,6 +14,8 @@ const ChaseScreen = lazy(() => import('../screens/chase/ChaseScreen'))
 const ActivityScreen = lazy(() => import('../screens/activity/ActivityScreen'))
 const AdminAwardsScreen = lazy(() => import('../screens/admin/AdminAwardsScreen'))
 const AwardShareScreen = lazy(() => import('../screens/awards/AwardShareScreen'))
+const JoinBoardScreen = lazy(() => import('../screens/boards/JoinBoardScreen'))
+const BoardInviteScreen = lazy(() => import('../screens/boards/BoardInviteScreen'))
 const ProfileScreen = lazy(() => import('../screens/profile/ProfileScreen'))
 const PublicProfileScreen = lazy(() => import('../screens/profile/PublicProfileScreen'))
 const ProfileYearSetupScreen = lazy(() => import('../screens/profile/ProfileYearSetupScreen'))
@@ -33,6 +36,8 @@ export default function App() {
             <Route path="/activity" element={<ActivityScreen />} />
             <Route path="/admin/awards" element={<AdminAwardsScreen />} />
             <Route path="/award/:awardId" element={<AwardShareScreen />} />
+            <Route path="/join/:inviteCode" element={<JoinBoardScreen />} />
+            <Route path="/boards/:boardId/invite" element={<BoardInviteScreen />} />
             <Route path="/profile" element={<ProfileScreen />} />
             <Route path="/u/:userId" element={<PublicProfileScreen />} />
             <Route path="/profile/records" element={<PersonalRecordsScreen />} />
@@ -41,6 +46,7 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
           <AwardCelebrationWatcher />
+          <PendingBoardInviteWatcher />
           <ProfileBuildPrompt />
           <WeeklySharePrompt />
         </Suspense>
