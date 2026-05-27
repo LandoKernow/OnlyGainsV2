@@ -14,17 +14,6 @@ export function useIsAdmin() {
     staleTime: 60_000,
   })
 
-  if (import.meta.env.DEV) {
-    console.debug('[Only Gains Admin]', {
-      sessionUserId,
-      rpcValue: query.data?.rpcValue ?? null,
-      isAdmin: query.data?.isAdmin === true,
-      errorCode: query.data?.errorCode ?? null,
-      errorMessage: query.data?.errorMessage ?? query.error?.message ?? null,
-      queryKey,
-    })
-  }
-
   return {
     ...query,
     isLoading: query.isLoading,

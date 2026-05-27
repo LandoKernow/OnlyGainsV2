@@ -857,22 +857,22 @@ button {
 }
 
 .activity-remove {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text-muted);
-  min-height: 1.9rem;
-  padding: 0.25rem 0.58rem;
+  min-height: 1.75rem;
+  padding: 0.18rem 0.48rem;
   border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 600;
   line-height: 1;
 }
 
 .activity-remove:hover,
 .activity-remove:focus-visible {
   color: #f7f1eb;
-  border-color: rgba(213, 106, 44, 0.22);
-  background: rgba(213, 106, 44, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .live-badge {
@@ -1701,10 +1701,6 @@ button {
   gap: 0.55rem;
 }
 
-.profile-debug-card {
-  border-style: dashed;
-}
-
 .admin-tools-card {
   padding: 0.82rem 0.9rem;
 }
@@ -1723,6 +1719,41 @@ button {
 
 .admin-tools-card .button {
   min-height: 2.35rem;
+}
+
+.admin-tools-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #f7f1eb;
+  border-radius: 0.95rem;
+  min-height: 2.45rem;
+  padding: 0.58rem 0.82rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.pressure-split-grid--chase {
+  gap: 0.6rem;
+}
+
+.pressure-row--chase {
+  padding: 0.72rem 0.78rem;
+  gap: 0.2rem;
+}
+
+.pressure-row--chase strong {
+  margin-bottom: 0.18rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.pressure-row--chase span {
+  font-size: 0.84rem;
 }
 
 .screen--vault .stack-lg,

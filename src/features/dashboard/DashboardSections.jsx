@@ -679,8 +679,8 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups', vari
       title={variant === 'chase' ? 'CHASE' : 'PRESSURE'}
       body={variant === 'chase' ? 'Target above. Threat below.' : 'Who you are chasing. Who is chasing you.'}
     >
-      <div className="pressure-split-grid">
-        <div className="pressure-row">
+      <div className={variant === 'chase' ? 'pressure-split-grid pressure-split-grid--chase' : 'pressure-split-grid'}>
+        <div className={variant === 'chase' ? 'pressure-row pressure-row--chase' : 'pressure-row'}>
           <strong>{variant === 'chase' ? 'TARGET' : "YOU'RE CHASING"}</strong>
           {chasingCopy ? (
             <>
@@ -696,7 +696,7 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups', vari
             </>
           )}
         </div>
-        <div className="pressure-row">
+        <div className={variant === 'chase' ? 'pressure-row pressure-row--chase' : 'pressure-row'}>
           <strong>{variant === 'chase' ? 'DEFEND' : 'CHASING YOU'}</strong>
           {huntedCopy ? (
             <>

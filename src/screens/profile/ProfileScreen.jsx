@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { Card } from '../../components/Card'
@@ -198,6 +199,7 @@ function getLastCompletedMonthStart() {
 }
 
 function AdminAwardControls() {
+  const [isExpanded, setIsExpanded] = useState(false)
   const { circleId } = useBoardMeta()
   const { showToast } = useToast()
   const isAdminQuery = useIsAdmin()
@@ -242,120 +244,49 @@ function AdminAwardControls() {
   return (
     <Card title="ADMIN" body="Finalise awards." className="admin-tools-card">
       <div className="stack">
-        <div className="profile-identity-grid">
-          <div className="profile-identity-grid__row">
-            <span className="muted">Last completed week</span>
-            <strong>{lastWeekLabel}</strong>
+        <button
+          className="admin-tools-toggle"
+          type="button"
+          aria-expanded={isExpanded}
+          onClick={() => setIsExpanded((current) => !current)}
+        >
+          <span>ADMIN TOOLS</span>
+          <span aria-hidden="true">{isExpanded ? '▴' : '▾'}</span>
+        </button>
+        {isExpanded ? (
+          <div className="stack">
+            <p className="muted">Finalise awards.</p>
+            <div className="profile-identity-grid">
+              <div className="profile-identity-grid__row">
+                <span className="muted">Last completed week</span>
+                <strong>{lastWeekLabel}</strong>
+              </div>
+              <button
+                className="button"
+                type="button"
+                disabled={finalizeMutation.isPending}
+                onClick={() => handleFinalize('weekly', lastWeekStart)}
+              >
+                {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last week'}
+              </button>
+              <div className="profile-identity-grid__row">
+                <span className="muted">Last completed month</span>
+                <strong>{lastMonthLabel}</strong>
+              </div>
+              <button
+                className="button"
+                type="button"
+                disabled={finalizeMutation.isPending}
+                onClick={() => handleFinalize('monthly', lastMonthStart)}
+              >
+                {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last month'}
+              </button>
+            </div>
+            <Link className="button button--ghost" to="/admin/awards">
+              Manual SQL helper
+            </Link>
           </div>
-          <div className="profile-identity-grid__row">
-            <span className="muted">Last completed month</span>
-            <strong>{lastMonthLabel}</strong>
-          </div>
-        </div>
-        <div className="profile-year-actions">
-          <button
-            className="button"
-            type="button"
-            disabled={finalizeMutation.isPending}
-            onClick={() => handleFinalize('weekly', lastWeekStart)}
-          >
-            {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last week'}
-          </button>
-          <button
-            className="button"
-            type="button"
-            disabled={finalizeMutation.isPending}
-            onClick={() => handleFinalize('monthly', lastMonthStart)}
-          >
-            {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last month'}
-          </button>
-        </div>
-        <Link className="button button--ghost" to="/admin/awards">
-          Manual SQL helper
-        </Link>
-      </div>
-    </Card>
-  )
-}
-
-function shouldShowAdminDebugCard() {
-  if (import.meta.env.DEV) {
-    return true
-  }
-
-  if (typeof window === 'undefined') {
-    return false
-  }
-
-  try {
-    return window.localStorage.getItem('only_gains_admin_debug') === 'true'
-  } catch {
-    return false
-  }
-}
-
-function AdminDebugCard() {
-  const { session } = useAuth()
-  const profileQuery = useCurrentProfile()
-  const adminQuery = useIsAdmin()
-
-  if (!shouldShowAdminDebugCard()) {
-    return null
-  }
-
-  const debugPayload = {
-    sessionUserId: session?.user?.id ?? null,
-    currentProfileId: profileQuery.data?.id ?? null,
-    currentProfileName: profileQuery.data?.name ?? null,
-    rpcLoading: adminQuery.isLoading,
-    rpcReturnedValue: adminQuery.rpcValue,
-    rpcErrorCode: adminQuery.rpcErrorCode,
-    rpcErrorMessage: adminQuery.rpcErrorMessage,
-    isAdmin: adminQuery.isAdmin,
-    queryKey: adminQuery.queryKey,
-  }
-
-  console.debug('[Only Gains Admin Debug]', debugPayload)
-
-  return (
-    <Card title="ADMIN DEBUG" body="Temporary admin diagnostics." className="profile-debug-card">
-      <div className="profile-identity-grid">
-        <div className="profile-identity-grid__row">
-          <span className="muted">session.user.id</span>
-          <strong>{debugPayload.sessionUserId || 'null'}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">currentProfile.id</span>
-          <strong>{debugPayload.currentProfileId || 'null'}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">currentProfile.name</span>
-          <strong>{debugPayload.currentProfileName || 'null'}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">RPC loading</span>
-          <strong>{String(debugPayload.rpcLoading)}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">RPC returned value</span>
-          <strong>{String(debugPayload.rpcReturnedValue)}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">RPC error code</span>
-          <strong>{debugPayload.rpcErrorCode || 'null'}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">RPC error message</span>
-          <strong>{debugPayload.rpcErrorMessage || 'null'}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">final isAdmin</span>
-          <strong>{String(debugPayload.isAdmin)}</strong>
-        </div>
-        <div className="profile-identity-grid__row">
-          <span className="muted">query key</span>
-          <strong>{JSON.stringify(debugPayload.queryKey)}</strong>
-        </div>
+        ) : null}
       </div>
     </Card>
   )
@@ -401,7 +332,6 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
-          <AdminDebugCard />
           <AdminAwardControls />
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
