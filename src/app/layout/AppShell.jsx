@@ -15,14 +15,31 @@ export function AppShell({ children }) {
   const userLabel = session?.user?.email ? session.user.email.split('@')[0] : null
   const isAwardRoute = location.pathname.startsWith('/award/')
   const isDashboardRoute = location.pathname === '/dashboard'
+  const isLeaderboardRoute = location.pathname.startsWith('/leaderboard')
+  const isChaseRoute = location.pathname.startsWith('/chase')
+  const isVaultRoute = location.pathname.startsWith('/vault')
+  const isProfileRoute = location.pathname.startsWith('/profile')
   const showBottomNav = status === 'authenticated' && !isAwardRoute
   const showSessionPill = status !== 'unauthenticated'
-  const headerTitle = isDashboardRoute && status === 'authenticated' ? 'Who folds first.' : 'Show up. Log it. Get better.'
+  const headerTitle = isDashboardRoute && status === 'authenticated'
+    ? 'Who folds first.'
+    : isLeaderboardRoute
+      ? 'Who owns the board.'
+      : isChaseRoute
+        ? 'Close the gap.'
+        : isVaultRoute
+          ? 'Records are remembered.'
+          : isProfileRoute
+            ? "Who you're becoming."
+            : 'Only Gains.'
+  const headerClassName = isDashboardRoute && status === 'authenticated'
+    ? 'app-header app-header--primary'
+    : 'app-header app-header--secondary'
 
   return (
     <div className={isAwardRoute ? 'app-shell app-shell--immersive' : 'app-shell'}>
       {!isAwardRoute ? (
-        <header className="app-header">
+        <header className={headerClassName}>
           <div>
             <p className="eyebrow">ONLY GAINS</p>
             <h1>{headerTitle}</h1>

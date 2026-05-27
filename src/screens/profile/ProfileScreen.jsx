@@ -240,7 +240,7 @@ function AdminAwardControls() {
   }
 
   return (
-    <Card title="ADMIN" body="Finalise awards.">
+    <Card title="ADMIN" body="Finalise awards." className="admin-tools-card">
       <div className="stack">
         <div className="profile-identity-grid">
           <div className="profile-identity-grid__row">

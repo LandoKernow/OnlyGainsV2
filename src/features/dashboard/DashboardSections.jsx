@@ -640,10 +640,10 @@ export function ChaseCard({ chase, isLoading, period, compact = false, activityT
   )
 }
 
-export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
+export function PressureCard({ chase, isLoading, activityType = 'pressups', variant = 'board' }) {
   if (isLoading) {
     return (
-      <Card title="PRESSURE" body="Sizing the gap.">
+      <Card title={variant === 'chase' ? 'CHASE' : 'PRESSURE'} body="Sizing the gap.">
         <p className="muted">One moment...</p>
       </Card>
     )
@@ -651,7 +651,7 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
 
   if (!chase?.currentUserRow) {
     return (
-      <Card title="PRESSURE" body="Log effort to enter the fight.">
+      <Card title={variant === 'chase' ? 'CHASE' : 'PRESSURE'} body="Log effort to enter the fight.">
         <p className="muted">Log effort to enter the fight.</p>
       </Card>
     )
@@ -675,16 +675,19 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
     : null
 
   return (
-    <Card title="PRESSURE" body="Who you are chasing. Who is chasing you.">
+    <Card
+      title={variant === 'chase' ? 'CHASE' : 'PRESSURE'}
+      body={variant === 'chase' ? 'Target above. Threat below.' : 'Who you are chasing. Who is chasing you.'}
+    >
       <div className="pressure-split-grid">
         <div className="pressure-row">
-          <strong>YOU&apos;RE CHASING</strong>
+          <strong>{variant === 'chase' ? 'TARGET' : "YOU'RE CHASING"}</strong>
           {chasingCopy ? (
             <>
               <span className="pressure-row__meta">
-                {chasingCopy.name} <span aria-hidden="true">·</span> {chasingCopy.rank}
+                {chasingCopy.name} <span aria-hidden="true">&middot;</span> {chasingCopy.rank}
               </span>
-              <span>{chasingCopy.gap}</span>
+              <span>{variant === 'chase' ? `${chasingCopy.gap} to take the spot` : chasingCopy.gap}</span>
             </>
           ) : (
             <>
@@ -694,13 +697,13 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups' }) {
           )}
         </div>
         <div className="pressure-row">
-          <strong>CHASING YOU</strong>
+          <strong>{variant === 'chase' ? 'DEFEND' : 'CHASING YOU'}</strong>
           {huntedCopy ? (
             <>
               <span className="pressure-row__meta">
-                {huntedCopy.name} <span aria-hidden="true">·</span> {huntedCopy.rank}
+                {huntedCopy.name} <span aria-hidden="true">&middot;</span> {huntedCopy.rank}
               </span>
-              <span>{huntedCopy.gap}</span>
+              <span>{variant === 'chase' ? `${huntedCopy.gap} behind` : huntedCopy.gap}</span>
             </>
           ) : (
             <>
