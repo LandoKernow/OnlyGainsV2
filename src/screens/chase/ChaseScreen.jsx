@@ -21,8 +21,8 @@ function ChaseContent() {
   const chase = useChase(leaderboardQuery.rows, session.user.id, activityType)
 
   return (
-    <div className="stack-lg">
-      <div style={{display: 'flex', gap: '0.5rem'}}>
+    <div className="stack-lg screen--profile">
+      <div className="segmented-toggle">
         <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
         <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
       </div>

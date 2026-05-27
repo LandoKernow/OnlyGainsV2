@@ -1,6 +1,6 @@
-export function Card({ title, body, aside, children }) {
+export function Card({ title, body, aside, children, className = '' }) {
   return (
-    <section className="card">
+    <section className={className ? `card ${className}` : 'card'}>
       {(title || aside) && (
         <header className="card__header">
           <div>

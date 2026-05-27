@@ -77,11 +77,11 @@ function PreviousAwardRow({ award, onPreviewWinner, onShare }) {
     <article className="vault-award-row">
       <div className="stack">
         <strong className="vault-award-row__headline">
-          {award.title} <span aria-hidden="true">·</span>{' '}
+          {award.title} <span aria-hidden="true">&middot;</span>{' '}
           <button className="profile-link-button" type="button" onClick={onPreviewWinner}>
             {award.actorName}
           </button>{' '}
-          <span aria-hidden="true">·</span> {formatAwardMetricLine(award)}
+          <span aria-hidden="true">&middot;</span> {formatAwardMetricLine(award)}
         </strong>
         {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
       </div>
@@ -122,7 +122,7 @@ function VaultAwardsSection({ awards, error, onPreviewWinner, onShareAward }) {
                   onClick={() => setIsExpanded((current) => !current)}
                   aria-expanded={isExpanded}
                 >
-                  Previous awards {isExpanded ? '▴' : '▾'}
+                  {isExpanded ? 'Hide previous awards' : 'Show previous awards'}
                 </button>
                 {isExpanded ? (
                   <div className="stack">
@@ -156,7 +156,9 @@ function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor, onPreviewH
       <article className="vault-card vault-record-card vault-record-card--public">
         <strong>{title}</strong>
         <div className="vault-record-card__inline">
-          <span className="vault-card__value">{formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}</span>
+          <span className="vault-card__value">
+            {formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}
+          </span>
           <span className="vault-card__inline-dot" aria-hidden="true">
             &middot;
           </span>
@@ -281,8 +283,9 @@ export default function VaultScreen() {
           </Card>
         ) : (
           <Card title="THE VAULT" body="Records are remembered.">
-            <div className="stack">
-              <p className="muted">Claimed records are visible. Verified records are coming.</p>
+            <div className="page-kicker">
+              <p className="page-kicker__eyebrow">STATUS KEPT</p>
+              <p className="page-kicker__copy">Claimed records are visible. Verified records are coming.</p>
               <p className="muted">The Vault remembers what the Board forgets.</p>
               <Link className="button button--ghost" to="/profile/records">
                 View your records

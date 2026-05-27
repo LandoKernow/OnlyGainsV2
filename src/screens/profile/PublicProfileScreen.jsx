@@ -5,19 +5,19 @@ import { useAuth } from '../../features/auth/AuthProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { usePublicProfileSummary } from '../../hooks/usePublicProfileSummary'
 import { formatActivityValue } from '../../utils/activity'
-import { formatAwardMetricLine, formatAwardLandingCopy, formatAwardPeriodRange } from '../../utils/awardShare'
+import { formatAwardLandingCopy, formatAwardMetricLine, formatAwardPeriodRange } from '../../utils/awardShare'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
 
 function formatRecordLine(record) {
   if (record.unit === 'seconds') {
-    return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} · ${formatDurationFromSeconds(record.valueSeconds)}`
+    return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} - ${formatDurationFromSeconds(record.valueSeconds)}`
   }
 
   if (record.unit === 'km') {
-    return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} · ${formatActivityValue(record.valueNumeric, 'km')}`
+    return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} - ${formatActivityValue(record.valueNumeric, 'km')}`
   }
 
-  return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} · ${formatActivityValue(record.valueNumeric, 'pressups')}`
+  return `${PROFILE_YEAR_RECORD_LABELS[record.recordType]} - ${formatActivityValue(record.valueNumeric, 'pressups')}`
 }
 
 function getBoardStatus(summary, activityType) {
@@ -51,10 +51,10 @@ export default function PublicProfileScreen() {
   const joinedYear = profile?.createdAt ? new Date(profile.createdAt).getFullYear() : null
 
   return (
-    <div className="screen">
+    <div className="screen screen--profile">
       <div className="stack-lg">
         <Card title={profile?.name || 'Board member'} body="Discipline made public.">
-          <div className="stack">
+          <div className="stack public-profile-hero">
             <div className="modal-summary">
               <span>{getBoardStatus(summary, activityType)}</span>
               {joinedYear ? <span>Joined {joinedYear}</span> : <span>Public profile</span>}
@@ -115,10 +115,10 @@ export default function PublicProfileScreen() {
         </Card>
 
         <Card title="AWARDS" body="Final wins written into the Vault.">
-          <div className="stack">
+          <div className="public-profile-awards">
             <strong>{summary?.awardsCount ?? 0} wins written into the Vault</strong>
             {(summary?.awards ?? []).slice(0, 4).map((award) => (
-              <article key={award.id} className="vault-card">
+              <article key={award.id} className="public-profile-award">
                 <strong>{award.title}</strong>
                 <div className="vault-card__value">{formatAwardMetricLine(award)}</div>
                 {formatAwardPeriodRange(award) ? <p className="muted">{formatAwardPeriodRange(award)}</p> : null}
@@ -130,11 +130,13 @@ export default function PublicProfileScreen() {
         </Card>
 
         <Card title="VAULT MARKS" body="Proof that stays on the wall.">
-          <div className="stack">
+          <div className="public-profile-records">
             {(summary?.topPublicRecords ?? []).map((record) => (
               <div key={record.id} className="records-wall-row">
                 <strong>{formatRecordLine(record)}</strong>
-                <span className="muted">{String(record.sourceLabel || '').replace(/_/g, '-').toUpperCase()} · {record.year}</span>
+                <span className="muted">
+                  {String(record.sourceLabel || '').replace(/_/g, '-').toUpperCase()} - {record.year}
+                </span>
               </div>
             ))}
             {!summary?.topPublicRecords?.length ? (

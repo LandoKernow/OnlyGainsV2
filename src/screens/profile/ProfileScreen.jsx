@@ -39,9 +39,9 @@ function ProfileSummary() {
       ? 'CLAIMED'
       : 'IN PROGRESS'
   const rivalCopy = chase.rowAbove && chase.gapToCatch != null
-    ? `${rivalRow?.actorName || 'Unknown'} · ${formatActivityGap(chase.gapToCatch, 'pressups')} to take the spot`
+    ? `${rivalRow?.actorName || 'Unknown'} - ${formatActivityGap(chase.gapToCatch, 'pressups')} to take the spot`
     : chase.rowBelow && chase.gapToDefend != null
-      ? `${rivalRow?.actorName || 'Unknown'} · ${formatActivityGap(chase.gapToDefend, 'pressups')} off your back`
+      ? `${rivalRow?.actorName || 'Unknown'} - ${formatActivityGap(chase.gapToDefend, 'pressups')} off your back`
       : 'No immediate rival.'
 
   return (
@@ -88,10 +88,12 @@ function ProfileSummary() {
           )}
 
           <p className="muted">Arena returning. Profiles expanding. The year is being written.</p>
-          <button className="button button--ghost" type="button" onClick={() => signOut()}>
-            Sign out
-          </button>
-          <FeedbackActions />
+          <div className="profile-summary-actions">
+            <button className="button button--ghost" type="button" onClick={() => signOut()}>
+              Sign out
+            </button>
+            <FeedbackActions />
+          </div>
         </div>
       </Card>
       {import.meta.env.DEV ? (
@@ -316,7 +318,7 @@ function AdminDebugCard() {
   console.debug('[Only Gains Admin Debug]', debugPayload)
 
   return (
-    <Card title="ADMIN DEBUG" body="Temporary admin diagnostics.">
+    <Card title="ADMIN DEBUG" body="Temporary admin diagnostics." className="profile-debug-card">
       <div className="profile-identity-grid">
         <div className="profile-identity-grid__row">
           <span className="muted">session.user.id</span>
@@ -363,29 +365,29 @@ function FeedbackActions() {
   const { showToast } = useToast()
 
   function copyTemplate() {
-    const template = `Only Gains 2.0 feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No`
+    const template = 'Only Gains 2.0 feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No'
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(template).then(() => {
         showToast({ tone: 'success', message: 'Feedback template copied.' })
       })
     } else {
-      const t = document.createElement('textarea')
-      t.value = template
-      document.body.appendChild(t)
-      t.select()
+      const textarea = document.createElement('textarea')
+      textarea.value = template
+      document.body.appendChild(textarea)
+      textarea.select()
       try {
         document.execCommand('copy')
         showToast({ tone: 'success', message: 'Feedback template copied.' })
-      } catch (e) {
+      } catch {
         showToast({ tone: 'error', message: 'Could not copy feedback template.' })
       }
-      document.body.removeChild(t)
+      document.body.removeChild(textarea)
     }
   }
 
   return (
-    <div style={{marginTop: '0.6rem'}}>
+    <div>
       <button className="button button--ghost" type="button" onClick={copyTemplate}>
         Report issue
       </button>
@@ -395,7 +397,7 @@ function FeedbackActions() {
 
 export default function ProfileScreen() {
   return (
-    <div className="screen">
+    <div className="screen screen--profile">
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
