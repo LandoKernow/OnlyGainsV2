@@ -12,7 +12,7 @@ import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
-import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, useCreateBoard, useJoinBoard } from '../../hooks/useBoards'
+import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
 import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
@@ -204,12 +204,15 @@ function BoardsCard() {
     boardFeatureReady,
     isBoardsLoading,
     setActiveBoardId,
+    resolveFallbackBoardId,
   } = useBoardMeta()
   const createBoardMutation = useCreateBoard()
   const joinBoardMutation = useJoinBoard()
+  const leaveBoardMutation = useLeaveBoard()
   const [boardName, setBoardName] = useState('')
   const [boardType, setBoardType] = useState('gym')
   const [inviteCode, setInviteCode] = useState('')
+  const [leaveTargetBoard, setLeaveTargetBoard] = useState(null)
 
   async function handleCreateBoard(event) {
     event.preventDefault()
@@ -284,6 +287,43 @@ function BoardsCard() {
     showToast({ tone: 'success', message: 'Board switched.' })
   }
 
+  function handleRequestLeave(board) {
+    if (board.id === 'c769af17-6d63-41aa-8293-a4fd74d586f8') {
+      showToast({ tone: 'error', message: 'The Beta board stays with you for now.' })
+      return
+    }
+
+    setLeaveTargetBoard(board)
+  }
+
+  async function handleConfirmLeaveBoard() {
+    if (!leaveTargetBoard?.id) {
+      return
+    }
+
+    try {
+      const result = await leaveBoardMutation.mutateAsync(leaveTargetBoard.id)
+      const status = String(result?.status || '').toLowerCase()
+      const fallbackBoardId = String(result?.fallback_board_id || '').trim()
+      const nextBoardId = fallbackBoardId || resolveFallbackBoardId(leaveTargetBoard.id)
+
+      if (activeBoard?.id === leaveTargetBoard.id && nextBoardId) {
+        setActiveBoardId(nextBoardId)
+      }
+
+      setLeaveTargetBoard(null)
+      showToast({
+        tone: 'success',
+        message: status === 'deleted' ? 'Board deleted.' : 'Board left.',
+      })
+    } catch (error) {
+      showToast({
+        tone: 'error',
+        message: getBoardLeaveErrorCopy(error),
+      })
+    }
+  }
+
   return (
     <Card title="BOARDS" body="Your boards. Your wars.">
       <div className="stack">
@@ -320,13 +360,20 @@ function BoardsCard() {
                     <strong>{board.name}</strong>
                     <span>{formatBoardTypeLabel(board.boardType)}</span>
                   </div>
-                  {isActive ? (
-                    <span className="row-chip row-chip--accent">LIVE</span>
-                  ) : (
-                    <button className="button button--ghost board-switcher-row__button" type="button" onClick={() => handleSwitchBoard(board.id)}>
-                      Set active
-                    </button>
-                  )}
+                  <div className="board-switcher-row__actions">
+                    {isActive ? (
+                      <span className="row-chip row-chip--accent">LIVE</span>
+                    ) : (
+                      <button className="button button--ghost board-switcher-row__button" type="button" onClick={() => handleSwitchBoard(board.id)}>
+                        Set active
+                      </button>
+                    )}
+                    {board.id !== 'c769af17-6d63-41aa-8293-a4fd74d586f8' ? (
+                      <button className="board-switcher-row__leave" type="button" onClick={() => handleRequestLeave(board)}>
+                        Leave
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               )
             })}
@@ -387,6 +434,22 @@ function BoardsCard() {
             {joinBoardMutation.isPending ? 'Joining...' : 'Join board'}
           </button>
         </form>
+
+        {leaveTargetBoard ? (
+          <div className="board-leave-confirm">
+            <strong>LEAVE BOARD?</strong>
+            <p className="muted">This board stops counting for you. Your work stays where it was written.</p>
+            <p className="muted">If you are the last one here, leaving now deletes the board.</p>
+            <div className="profile-summary-actions">
+              <button className="button button--ghost" type="button" onClick={() => setLeaveTargetBoard(null)}>
+                Stay
+              </button>
+              <button className="button board-leave-confirm__button" type="button" disabled={leaveBoardMutation.isPending} onClick={handleConfirmLeaveBoard}>
+                {leaveBoardMutation.isPending ? 'Leaving...' : 'Leave board'}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </Card>
   )

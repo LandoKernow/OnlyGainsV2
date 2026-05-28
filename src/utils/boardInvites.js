@@ -43,6 +43,11 @@ export function buildBoardInviteUrl(inviteCode) {
   return `${getShareOrigin()}/join/${encodeURIComponent(String(inviteCode || '').trim())}`
 }
 
+export function buildBoardInviteQrUrl(inviteCode) {
+  const inviteUrl = buildBoardInviteUrl(inviteCode)
+  return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(inviteUrl)}`
+}
+
 export function buildBoardInviteSharePayload(board) {
   const inviteUrl = buildBoardInviteUrl(board?.inviteCode)
   const boardName = board?.name || 'This board'

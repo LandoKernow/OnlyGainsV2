@@ -187,3 +187,29 @@ export async function fetchBoardInviteDetails(boardId) {
   const rows = normalizeBoardResult(data)
   return rows[0] ?? null
 }
+
+export async function leaveBoard(boardId) {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured.')
+  }
+
+  const normalizedBoardId = String(boardId || '').trim()
+
+  if (!normalizedBoardId) {
+    throw new Error('Board id required.')
+  }
+
+  const { data, error } = await supabase.rpc('leave_board', {
+    p_board_id: normalizedBoardId,
+  })
+
+  if (error) {
+    if (isMissingBoardFeature(error)) {
+      throw createBoardFeatureError('Leave board not ready.')
+    }
+
+    throw error
+  }
+
+  return Array.isArray(data) ? data[0] ?? null : data ?? null
+}

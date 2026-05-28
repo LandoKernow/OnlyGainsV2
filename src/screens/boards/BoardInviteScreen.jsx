@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardInviteDetails } from '../../hooks/useBoards'
-import { buildBoardInviteUrl, formatBoardTypeLabel, shareBoardInvite } from '../../utils/boardInvites'
+import { buildBoardInviteQrUrl, buildBoardInviteUrl, formatBoardTypeLabel, shareBoardInvite } from '../../utils/boardInvites'
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) {
@@ -29,6 +29,7 @@ function BoardInviteContent() {
   const boardQuery = useBoardInviteDetails(boardId)
   const board = boardQuery.board
   const inviteUrl = board?.inviteCode ? buildBoardInviteUrl(board.inviteCode) : ''
+  const qrUrl = board?.inviteCode ? buildBoardInviteQrUrl(board.inviteCode) : ''
 
   async function handleShare() {
     if (!board?.inviteCode) {
@@ -85,7 +86,14 @@ function BoardInviteContent() {
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
             <p className="board-stage__name">{board.name}</p>
             <p className="board-stage__meta">{formatBoardTypeLabel(board.boardType)}</p>
+            {board.memberCount > 0 ? <p className="board-stage__member-count">{board.memberCount} on this board</p> : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
+            <p className="board-stage__microcopy">No hiding now.</p>
+            {qrUrl ? (
+              <div className="board-stage__qr-shell">
+                <img className="board-stage__qr" src={qrUrl} alt={`QR code for ${inviteUrl}`} />
+              </div>
+            ) : null}
             {inviteUrl ? (
               <div className="board-stage__url-shell">
                 <span className="muted">Invite link</span>

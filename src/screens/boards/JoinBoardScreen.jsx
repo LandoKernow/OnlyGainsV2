@@ -107,6 +107,9 @@ function JoinBoardContent() {
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
             <p className="board-stage__name">{previewQuery.board.name}</p>
             <p className="board-stage__meta">{formatBoardTypeLabel(previewQuery.board.boardType)}</p>
+            {previewQuery.board.memberCount > 0 ? (
+              <p className="board-stage__member-count">{previewQuery.board.memberCount} on this board</p>
+            ) : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now. Log first. Talk later.</p>
           </article>
@@ -132,13 +135,11 @@ function JoinBoardContent() {
                 disabled={joinMutation.isPending}
                 onClick={handleJoinClick}
               >
-                {joinMutation.isPending ? 'Joining...' : 'Join this board'}
+                {joinMutation.isPending ? 'Joining...' : status === 'authenticated' ? 'Join this board' : 'Join the board'}
               </button>
-              <div className="board-stage__secondary">
-                <Link className="button button--ghost board-stage__secondary-button" to="/leaderboard">
-                  View Board
-                </Link>
-              </div>
+              {status !== 'authenticated' ? (
+                <p className="muted board-stage__auth-copy">See the proof first. Sign in only when you are ready to step on the board.</p>
+              ) : null}
             </div>
           )}
         </div>

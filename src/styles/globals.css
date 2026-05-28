@@ -313,10 +313,25 @@ button {
   font-size: 0.82rem;
 }
 
+.board-switcher-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
 .board-switcher-row__button {
   min-height: 2.2rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.82rem;
+}
+
+.board-switcher-row__leave {
+  min-height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.25rem 0.4rem;
+  font-size: 0.78rem;
 }
 
 .board-form {
@@ -361,6 +376,7 @@ button {
 }
 
 .board-stage__meta,
+.board-stage__member-count,
 .board-stage__copy,
 .board-stage__microcopy {
   margin: 0.4rem 0 0;
@@ -378,14 +394,37 @@ button {
   font-weight: 600;
 }
 
+.board-stage__member-count {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
 .board-stage__microcopy {
   color: var(--text-muted);
+}
+
+.board-stage__auth-copy {
+  text-align: center;
 }
 
 .board-stage__url-shell {
   display: grid;
   gap: 0.35rem;
   margin-top: 1rem;
+}
+
+.board-stage__qr-shell {
+  display: grid;
+  place-items: center;
+  margin-top: 1rem;
+}
+
+.board-stage__qr {
+  width: min(14rem, 100%);
+  max-width: 14rem;
+  border-radius: 1rem;
+  background: #fff;
+  padding: 0.6rem;
 }
 
 .board-stage__url {
@@ -412,6 +451,20 @@ button {
 
 .board-stage__secondary-button {
   width: 100%;
+}
+
+.board-leave-confirm {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(234, 95, 95, 0.24);
+  background: rgba(234, 95, 95, 0.08);
+}
+
+.board-leave-confirm__button {
+  background: linear-gradient(135deg, #a74835, #d56a2c);
+  color: #fff4ed;
 }
 
 .stat-strip,

@@ -96,6 +96,17 @@ export function BoardProvider({ children }) {
     writeStoredBoardId(session?.user?.id, normalizedBoardId)
   }
 
+  function resolveFallbackBoardId(excludedBoardId = '') {
+    const normalizedExcludedBoardId = String(excludedBoardId || '').trim()
+    const nextBoards = boards.filter((board) => board.id !== normalizedExcludedBoardId)
+
+    if (appEnv.defaultCircleId && nextBoards.some((board) => board.id === appEnv.defaultCircleId)) {
+      return appEnv.defaultCircleId
+    }
+
+    return nextBoards[0]?.id || fallbackBoard?.id || appEnv.defaultCircleId || ''
+  }
+
   const activeBoard =
     boards.find((board) => board.id === activeBoardId) ||
     boards[0] ||
@@ -111,10 +122,11 @@ export function BoardProvider({ children }) {
       isBoardsLoading: myBoardsQuery.isLoading,
       isBoardsError: Boolean(myBoardsQuery.error),
       setActiveBoardId,
+      resolveFallbackBoardId,
       timezone: 'Europe/London',
       appName: appEnv.appName,
     }),
-    [activeBoard, boards, myBoardsQuery.error, myBoardsQuery.featureReady, myBoardsQuery.isLoading],
+    [activeBoard, boards, myBoardsQuery.error, myBoardsQuery.featureReady, myBoardsQuery.isLoading, resolveFallbackBoardId],
   )
 
   return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>
@@ -132,6 +144,7 @@ export function useBoard() {
       isBoardsLoading: false,
       isBoardsError: false,
       setActiveBoardId: () => {},
+      resolveFallbackBoardId: () => appEnv.defaultCircleId || '',
       timezone: 'Europe/London',
       appName: appEnv.appName,
     }

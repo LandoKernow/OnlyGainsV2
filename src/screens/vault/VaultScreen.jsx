@@ -312,7 +312,7 @@ export default function VaultScreen() {
                 />
               ) : null}
 
-              <Card title="APP-TRACKED" body="Earned through live submissions.">
+              <Card title="APP-TRACKED" body="Earned on this board.">
                 {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
                 <div className="vault-records">
                   <div id="vault-records" />
@@ -347,7 +347,7 @@ export default function VaultScreen() {
                 </div>
               </Card>
 
-              <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
+              <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
                 <div className="vault-records">
                   {CLAIMED_RECORD_TYPES.map((recordType) => (
                     <VaultRecordCard
@@ -369,7 +369,7 @@ export default function VaultScreen() {
             </>
           ) : (
             <>
-              <Card title="APP-TRACKED" body="Earned through live submissions.">
+              <Card title="APP-TRACKED" body="Earned on this board.">
                 {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
                 <div className="vault-records">
                   <div id="vault-records" />
@@ -404,7 +404,7 @@ export default function VaultScreen() {
                 </div>
               </Card>
 
-              <Card title="CLAIMED RECORDS" body="Self-reported until verified.">
+              <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
                 <div className="vault-records">
                   {CLAIMED_RECORD_TYPES.map((recordType) => (
                     <VaultRecordCard

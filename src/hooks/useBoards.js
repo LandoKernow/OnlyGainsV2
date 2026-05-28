@@ -6,6 +6,7 @@ import {
   fetchMyBoards,
   isBoardFeatureNotReadyError,
   joinBoardByInvite,
+  leaveBoard,
 } from '../api/boards'
 import { useAuth } from '../features/auth/AuthProvider'
 
@@ -93,6 +94,18 @@ export function useJoinBoard() {
   })
 }
 
+export function useLeaveBoard() {
+  const { session } = useAuth()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: leaveBoard,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getMyBoardsQueryKey(session?.user?.id) })
+    },
+  })
+}
+
 export function getBoardCreateErrorCopy(error) {
   if (isBoardFeatureNotReadyError(error)) {
     return 'Board tools not ready yet.'
@@ -119,4 +132,22 @@ export function getBoardJoinErrorCopy(error) {
   }
 
   return "Couldn't join this board."
+}
+
+export function getBoardLeaveErrorCopy(error) {
+  if (isBoardFeatureNotReadyError(error)) {
+    return 'Leave board not ready yet.'
+  }
+
+  const message = String(error?.message || '').toLowerCase()
+
+  if (message.includes('beta board')) {
+    return 'The Beta board stays with you for now.'
+  }
+
+  if (message.includes('owner transfer') || message.includes('transfer tools are coming') || message.includes('remove everyone else first')) {
+    return 'You hold this board. Transfer tools are coming.'
+  }
+
+  return "Couldn't leave board."
 }
