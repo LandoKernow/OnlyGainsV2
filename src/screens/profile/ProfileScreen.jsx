@@ -212,6 +212,7 @@ function ProfileYearEntryCard() {
 function BoardsCard() {
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const isAdminQuery = useIsAdmin()
   const {
     activeBoard,
     boards,
@@ -228,7 +229,9 @@ function BoardsCard() {
   const [inviteCode, setInviteCode] = useState('')
   const [leaveTargetBoard, setLeaveTargetBoard] = useState(null)
   const nonGlobalBoardCount = countNonGlobalBoards(boards)
-  const hasReachedBoardLimit = nonGlobalBoardCount >= BASIC_NON_GLOBAL_BOARD_LIMIT
+  const isBoardLimitCheckPending = isAdminQuery.isLoading && !isAdminQuery.isAdmin
+  const hasUnlimitedBoards = isAdminQuery.isAdmin
+  const hasReachedBoardLimit = !isBoardLimitCheckPending && !hasUnlimitedBoards && nonGlobalBoardCount >= BASIC_NON_GLOBAL_BOARD_LIMIT
 
   async function handleCreateBoard(event) {
     event.preventDefault()
@@ -399,7 +402,7 @@ function BoardsCard() {
         </div>
 
         <div className="stat-strip">
-          <span>{nonGlobalBoardCount}/{BASIC_NON_GLOBAL_BOARD_LIMIT} boards used</span>
+          <span>{hasUnlimitedBoards ? 'Admin: unlimited boards' : isBoardLimitCheckPending ? 'Checking board access...' : `${nonGlobalBoardCount}/${BASIC_NON_GLOBAL_BOARD_LIMIT} boards used`}</span>
           <span>Global Board stays open</span>
         </div>
 
@@ -480,7 +483,7 @@ function BoardsCard() {
               ))}
             </select>
           </label>
-          <button className="button" type="submit" disabled={createBoardMutation.isPending}>
+          <button className="button" type="submit" disabled={createBoardMutation.isPending || hasReachedBoardLimit}>
             {createBoardMutation.isPending ? 'Creating...' : hasReachedBoardLimit ? 'Board limit hit' : 'Create board'}
           </button>
         </form>

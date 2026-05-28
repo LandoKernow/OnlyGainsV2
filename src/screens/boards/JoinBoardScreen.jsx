@@ -4,6 +4,7 @@ import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
+import { useIsAdmin } from '../../hooks/useIsAdmin'
 import { getBoardJoinErrorCopy, useBoardInvitePreview, useJoinBoard } from '../../hooks/useBoards'
 import {
   clearPendingBoardInviteCode,
@@ -24,13 +25,17 @@ function JoinBoardContent() {
   const { status } = useAuth()
   const { boards, setActiveBoardId } = useBoardMeta()
   const { showToast } = useToast()
+  const isAdminQuery = useIsAdmin()
   const previewQuery = useBoardInvitePreview(normalizedInviteCode)
   const joinMutation = useJoinBoard()
   const [joinState, setJoinState] = useState('')
 
   const isAlreadyMember = previewQuery.board ? boards.some((board) => board.id === previewQuery.board.id) : false
   const nonGlobalBoardCount = countNonGlobalBoards(boards)
+  const hasUnlimitedBoards = isAdminQuery.isAdmin
   const hasReachedBoardLimit =
+    !isAdminQuery.isLoading &&
+    !hasUnlimitedBoards &&
     !isAlreadyMember &&
     !isGlobalBoard(previewQuery.board) &&
     nonGlobalBoardCount >= BASIC_NON_GLOBAL_BOARD_LIMIT

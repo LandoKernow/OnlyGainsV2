@@ -1,6 +1,7 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
+import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useBoardInviteDetails } from '../../hooks/useBoards'
 import { buildBoardInviteQrUrl, buildBoardInviteUrl, shareBoardInvite } from '../../utils/boardInvites'
 import { getBoardDisplayName, getBoardDisplayTypeLabel, isGlobalBoard } from '../../utils/boards'
@@ -26,11 +27,26 @@ function copyText(text) {
 
 function BoardInviteContent() {
   const { boardId = '' } = useParams()
+  const navigate = useNavigate()
   const { showToast } = useToast()
+  const { boards, setActiveBoardId } = useBoardMeta()
   const boardQuery = useBoardInviteDetails(boardId)
   const board = boardQuery.board
   const inviteUrl = board?.inviteCode ? buildBoardInviteUrl(board.inviteCode) : ''
   const qrUrl = board?.inviteCode ? buildBoardInviteQrUrl(board.inviteCode) : ''
+  const isBoardMember = board ? boards.some((candidateBoard) => candidateBoard.id === board.id) : false
+
+  function handleGoToBoard() {
+    if (!board?.id) {
+      return
+    }
+
+    if (isBoardMember) {
+      setActiveBoardId(board.id)
+    }
+
+    navigate('/dashboard')
+  }
 
   async function handleShare() {
     if (!board?.inviteCode) {
@@ -91,6 +107,7 @@ function BoardInviteContent() {
             {!isGlobalBoard(board) && board.memberCount > 0 ? <p className="board-stage__member-count">{board.memberCount} on this board</p> : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now.</p>
+            <p className="board-stage__microcopy">Your board is live. Now bring better enemies.</p>
             {qrUrl ? (
               <div className="board-stage__qr-shell">
                 <img className="board-stage__qr" src={qrUrl} alt={`QR code for ${inviteUrl}`} />
@@ -105,6 +122,12 @@ function BoardInviteContent() {
           </article>
 
           <div className="board-stage__actions board-stage__actions--stacked">
+            <button className="button board-stage__primary" type="button" onClick={handleGoToBoard}>
+              Go to Board
+            </button>
+            <Link className="button button--ghost board-stage__secondary-button" to="/profile">
+              Manage boards
+            </Link>
             <button className="button board-stage__primary" type="button" onClick={handleShare}>
               Share invite
             </button>
