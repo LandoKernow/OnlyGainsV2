@@ -139,7 +139,8 @@ export function getBoardLeaveErrorCopy(error) {
     return 'Leave board not ready yet.'
   }
 
-  const message = String(error?.message || '').toLowerCase()
+  const rawMessage = String(error?.message || '').trim()
+  const message = rawMessage.toLowerCase()
 
   if (message.includes('beta board')) {
     return 'The Beta board stays with you for now.'
@@ -147,6 +148,14 @@ export function getBoardLeaveErrorCopy(error) {
 
   if (message.includes('owner transfer') || message.includes('transfer tools are coming') || message.includes('remove everyone else first')) {
     return 'You hold this board. Transfer tools are coming.'
+  }
+
+  if (message.includes('board membership required')) {
+    return "Couldn't leave board."
+  }
+
+  if (rawMessage) {
+    return rawMessage
   }
 
   return "Couldn't leave board."

@@ -326,12 +326,11 @@ button {
 }
 
 .board-switcher-row__leave {
-  min-height: 2rem;
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  padding: 0.25rem 0.4rem;
+  min-height: 2.1rem;
+  padding: 0.38rem 0.62rem;
   font-size: 0.78rem;
+  border-color: rgba(234, 95, 95, 0.18);
+  color: #f2c8c8;
 }
 
 .board-form {
@@ -465,6 +464,34 @@ button {
 .board-leave-confirm__button {
   background: linear-gradient(135deg, #a74835, #d56a2c);
   color: #fff4ed;
+}
+
+.board-leave-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.board-leave-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 7, 0.72);
+}
+
+.board-leave-modal__card {
+  position: relative;
+  z-index: 1;
+  width: min(28rem, 100%);
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(234, 95, 95, 0.24);
+  background: linear-gradient(180deg, rgba(40, 18, 18, 0.98), rgba(20, 12, 12, 0.98));
+  box-shadow: var(--shadow);
 }
 
 .stat-strip,

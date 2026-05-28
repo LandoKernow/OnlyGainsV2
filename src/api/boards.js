@@ -1,6 +1,15 @@
 import { supabase } from '../lib/supabase'
 
 const BOARD_FEATURE_NOT_READY = 'BOARD_FEATURE_NOT_READY'
+const BETA_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
+
+function boardDebug(step, details) {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.debug('[Only Gains Boards]', step, details)
+}
 
 function createBoardFeatureError(message = 'Board tools not ready.') {
   const error = new Error(message)
@@ -199,11 +208,24 @@ export async function leaveBoard(boardId) {
     throw new Error('Board id required.')
   }
 
+  boardDebug('leaveBoard rpc start', {
+    boardId: normalizedBoardId,
+    rpc: 'leave_board',
+    argName: 'p_board_id',
+    isBetaBoard: normalizedBoardId === BETA_BOARD_ID,
+  })
+
   const { data, error } = await supabase.rpc('leave_board', {
     p_board_id: normalizedBoardId,
   })
 
   if (error) {
+    boardDebug('leaveBoard rpc error', {
+      boardId: normalizedBoardId,
+      code: error.code ?? null,
+      message: error.message ?? null,
+    })
+
     if (isMissingBoardFeature(error)) {
       throw createBoardFeatureError('Leave board not ready.')
     }
@@ -211,5 +233,12 @@ export async function leaveBoard(boardId) {
     throw error
   }
 
-  return Array.isArray(data) ? data[0] ?? null : data ?? null
+  const normalizedResult = Array.isArray(data) ? data[0] ?? null : data ?? null
+
+  boardDebug('leaveBoard rpc success', {
+    boardId: normalizedBoardId,
+    result: normalizedResult,
+  })
+
+  return normalizedResult
 }

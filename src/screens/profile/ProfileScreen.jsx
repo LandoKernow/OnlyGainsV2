@@ -27,6 +27,15 @@ const BOARD_TYPE_OPTIONS = [
   { value: 'group_chat', label: 'Group chat' },
   { value: 'other', label: 'Other' },
 ]
+const BETA_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
+
+function boardDebug(step, details) {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.debug('[Only Gains Board Debug]', step, details)
+}
 
 function ProfileSummary() {
   const { session, signOut } = useAuth()
@@ -288,24 +297,46 @@ function BoardsCard() {
   }
 
   function handleRequestLeave(board) {
-    if (board.id === 'c769af17-6d63-41aa-8293-a4fd74d586f8') {
+    boardDebug('leave clicked', {
+      boardId: board?.id ?? null,
+      boardName: board?.name ?? null,
+      isBetaBoard: board?.id === BETA_BOARD_ID,
+    })
+
+    if (board.id === BETA_BOARD_ID) {
       showToast({ tone: 'error', message: 'The Beta board stays with you for now.' })
       return
     }
 
     setLeaveTargetBoard(board)
+    boardDebug('leave confirmation opened', {
+      boardId: board?.id ?? null,
+      boardName: board?.name ?? null,
+    })
   }
 
   async function handleConfirmLeaveBoard() {
     if (!leaveTargetBoard?.id) {
+      boardDebug('confirm leave clicked without target', {})
       return
     }
+
+    boardDebug('confirm leave clicked', {
+      boardId: leaveTargetBoard.id,
+      boardName: leaveTargetBoard.name,
+    })
 
     try {
       const result = await leaveBoardMutation.mutateAsync(leaveTargetBoard.id)
       const status = String(result?.status || '').toLowerCase()
       const fallbackBoardId = String(result?.fallback_board_id || '').trim()
       const nextBoardId = fallbackBoardId || resolveFallbackBoardId(leaveTargetBoard.id)
+
+      boardDebug('leave response received', {
+        boardId: leaveTargetBoard.id,
+        result,
+        nextBoardId,
+      })
 
       if (activeBoard?.id === leaveTargetBoard.id && nextBoardId) {
         setActiveBoardId(nextBoardId)
@@ -317,6 +348,12 @@ function BoardsCard() {
         message: status === 'deleted' ? 'Board deleted.' : 'Board left.',
       })
     } catch (error) {
+      boardDebug('leave error surfaced', {
+        boardId: leaveTargetBoard.id,
+        code: error?.code ?? null,
+        message: error?.message ?? null,
+      })
+
       showToast({
         tone: 'error',
         message: getBoardLeaveErrorCopy(error),
@@ -368,8 +405,8 @@ function BoardsCard() {
                         Set active
                       </button>
                     )}
-                    {board.id !== 'c769af17-6d63-41aa-8293-a4fd74d586f8' ? (
-                      <button className="board-switcher-row__leave" type="button" onClick={() => handleRequestLeave(board)}>
+                    {board.id !== BETA_BOARD_ID ? (
+                      <button className="board-switcher-row__leave button button--ghost" type="button" onClick={() => handleRequestLeave(board)}>
                         Leave
                       </button>
                     ) : null}
@@ -435,13 +472,26 @@ function BoardsCard() {
           </button>
         </form>
 
-        {leaveTargetBoard ? (
-          <div className="board-leave-confirm">
-            <strong>LEAVE BOARD?</strong>
+      </div>
+      {leaveTargetBoard ? (
+        <div className="board-leave-modal" role="dialog" aria-modal="true" aria-labelledby="leave-board-title">
+          <div className="board-leave-modal__backdrop" onClick={() => setLeaveTargetBoard(null)} />
+          <div className="board-leave-modal__card">
+            <strong id="leave-board-title">LEAVE BOARD?</strong>
             <p className="muted">This board stops counting for you. Your work stays where it was written.</p>
-            <p className="muted">If you are the last one here, leaving now deletes the board.</p>
+            <p className="muted">You are leaving {leaveTargetBoard.name}. If you are the last one here, this board dies with you.</p>
             <div className="profile-summary-actions">
-              <button className="button button--ghost" type="button" onClick={() => setLeaveTargetBoard(null)}>
+              <button
+                className="button button--ghost"
+                type="button"
+                onClick={() => {
+                  boardDebug('leave confirmation closed', {
+                    boardId: leaveTargetBoard.id,
+                    reason: 'stay',
+                  })
+                  setLeaveTargetBoard(null)
+                }}
+              >
                 Stay
               </button>
               <button className="button board-leave-confirm__button" type="button" disabled={leaveBoardMutation.isPending} onClick={handleConfirmLeaveBoard}>
@@ -449,8 +499,8 @@ function BoardsCard() {
               </button>
             </div>
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </Card>
   )
 }
