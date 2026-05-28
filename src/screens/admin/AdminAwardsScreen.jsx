@@ -3,12 +3,12 @@ import { useToast } from '../../components/ToastProvider'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { getLondonPeriodKeys } from '../../utils/dates'
 
-const BETA_CIRCLE_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
+const GLOBAL_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
 
 function buildWeeklySql() {
   return `select *
 from public.admin_finalize_period_awards_all(
-  '${BETA_CIRCLE_ID}'::uuid,
+  '${GLOBAL_BOARD_ID}'::uuid,
   'weekly',
   (date_trunc('week', timezone('Europe/London', now()))::date - 7)
 );`
@@ -17,7 +17,7 @@ from public.admin_finalize_period_awards_all(
 function buildMonthlySql() {
   return `select *
 from public.admin_finalize_period_awards_all(
-  '${BETA_CIRCLE_ID}'::uuid,
+  '${GLOBAL_BOARD_ID}'::uuid,
   'monthly',
   (date_trunc('month', timezone('Europe/London', now()))::date - interval '1 month')::date
 );`
@@ -72,8 +72,8 @@ export default function AdminAwardsScreen() {
             <div className="stack">
               <div className="profile-identity-grid">
                 <div className="profile-identity-grid__row">
-                  <span className="muted">Circle</span>
-                  <strong>{BETA_CIRCLE_ID}</strong>
+                  <span className="muted">Global Board</span>
+                  <strong>{GLOBAL_BOARD_ID}</strong>
                 </div>
                 <div className="profile-identity-grid__row">
                   <span className="muted">Last completed week</span>

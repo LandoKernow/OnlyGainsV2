@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
@@ -7,22 +7,33 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { getBoardJoinErrorCopy, useBoardInvitePreview, useJoinBoard } from '../../hooks/useBoards'
 import {
   clearPendingBoardInviteCode,
-  formatBoardTypeLabel,
-  getPendingBoardInviteCode,
   setPendingBoardInviteCode,
 } from '../../utils/boardInvites'
+import {
+  BASIC_NON_GLOBAL_BOARD_LIMIT,
+  countNonGlobalBoards,
+  getBoardDisplayName,
+  getBoardDisplayTypeLabel,
+  isGlobalBoard,
+} from '../../utils/boards'
 
 function JoinBoardContent() {
   const { inviteCode = '' } = useParams()
   const normalizedInviteCode = String(inviteCode || '').trim()
   const navigate = useNavigate()
   const { status } = useAuth()
-  const { setActiveBoardId } = useBoardMeta()
+  const { boards, setActiveBoardId } = useBoardMeta()
   const { showToast } = useToast()
   const previewQuery = useBoardInvitePreview(normalizedInviteCode)
   const joinMutation = useJoinBoard()
   const [joinState, setJoinState] = useState('')
-  const autoJoinTriggeredRef = useRef(false)
+
+  const isAlreadyMember = previewQuery.board ? boards.some((board) => board.id === previewQuery.board.id) : false
+  const nonGlobalBoardCount = countNonGlobalBoards(boards)
+  const hasReachedBoardLimit =
+    !isAlreadyMember &&
+    !isGlobalBoard(previewQuery.board) &&
+    nonGlobalBoardCount >= BASIC_NON_GLOBAL_BOARD_LIMIT
 
   async function joinBoard() {
     const joinedBoard = await joinMutation.mutateAsync(normalizedInviteCode)
@@ -43,24 +54,6 @@ function JoinBoardContent() {
     })
   }
 
-  useEffect(() => {
-    if (status !== 'authenticated' || autoJoinTriggeredRef.current || !normalizedInviteCode || previewQuery.isLoading) {
-      return
-    }
-
-    if (getPendingBoardInviteCode() !== normalizedInviteCode) {
-      return
-    }
-
-    autoJoinTriggeredRef.current = true
-    joinBoard().catch((error) => {
-      showToast({
-        tone: 'error',
-        message: getBoardJoinErrorCopy(error),
-      })
-    })
-  }, [normalizedInviteCode, previewQuery.isLoading, showToast, status])
-
   async function handleJoinClick() {
     if (!normalizedInviteCode) {
       showToast({ tone: 'error', message: 'Invite code missing.' })
@@ -70,6 +63,14 @@ function JoinBoardContent() {
     if (status !== 'authenticated') {
       setPendingBoardInviteCode(normalizedInviteCode)
       navigate('/dashboard')
+      return
+    }
+
+    if (hasReachedBoardLimit) {
+      showToast({
+        tone: 'error',
+        message: 'Board limit hit. Global is always open. Choose your wars carefully.',
+      })
       return
     }
 
@@ -105,9 +106,12 @@ function JoinBoardContent() {
           <article className="board-stage__card">
             <p className="eyebrow">ONLY GAINS</p>
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
-            <p className="board-stage__name">{previewQuery.board.name}</p>
-            <p className="board-stage__meta">{formatBoardTypeLabel(previewQuery.board.boardType)}</p>
-            {previewQuery.board.memberCount > 0 ? (
+            <p className="board-stage__name">{getBoardDisplayName(previewQuery.board)}</p>
+            <p className="board-stage__meta">{getBoardDisplayTypeLabel(previewQuery.board)}</p>
+            {isGlobalBoard(previewQuery.board) ? (
+              <p className="board-stage__global-copy">Everyone on Only Gains. No hiding.</p>
+            ) : null}
+            {!isGlobalBoard(previewQuery.board) && previewQuery.board.memberCount > 0 ? (
               <p className="board-stage__member-count">{previewQuery.board.memberCount} on this board</p>
             ) : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
@@ -132,11 +136,14 @@ function JoinBoardContent() {
               <button
                 className="button board-stage__primary"
                 type="button"
-                disabled={joinMutation.isPending}
+                disabled={joinMutation.isPending || hasReachedBoardLimit}
                 onClick={handleJoinClick}
               >
                 {joinMutation.isPending ? 'Joining...' : status === 'authenticated' ? 'Join this board' : 'Join the board'}
               </button>
+              {hasReachedBoardLimit ? (
+                <p className="muted board-stage__auth-copy">Board limit hit. Global is always open. Choose your wars carefully.</p>
+              ) : null}
               {status !== 'authenticated' ? (
                 <p className="muted board-stage__auth-copy">See the proof first. Sign in only when you are ready to step on the board.</p>
               ) : null}

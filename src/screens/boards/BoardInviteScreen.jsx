@@ -2,7 +2,8 @@ import { Link, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardInviteDetails } from '../../hooks/useBoards'
-import { buildBoardInviteQrUrl, buildBoardInviteUrl, formatBoardTypeLabel, shareBoardInvite } from '../../utils/boardInvites'
+import { buildBoardInviteQrUrl, buildBoardInviteUrl, shareBoardInvite } from '../../utils/boardInvites'
+import { getBoardDisplayName, getBoardDisplayTypeLabel, isGlobalBoard } from '../../utils/boards'
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) {
@@ -84,9 +85,10 @@ function BoardInviteContent() {
           <article className="board-stage__card">
             <p className="eyebrow">ONLY GAINS</p>
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
-            <p className="board-stage__name">{board.name}</p>
-            <p className="board-stage__meta">{formatBoardTypeLabel(board.boardType)}</p>
-            {board.memberCount > 0 ? <p className="board-stage__member-count">{board.memberCount} on this board</p> : null}
+            <p className="board-stage__name">{getBoardDisplayName(board)}</p>
+            <p className="board-stage__meta">{getBoardDisplayTypeLabel(board)}</p>
+            {isGlobalBoard(board) ? <p className="board-stage__global-copy">Everyone on Only Gains.</p> : null}
+            {!isGlobalBoard(board) && board.memberCount > 0 ? <p className="board-stage__member-count">{board.memberCount} on this board</p> : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now.</p>
             {qrUrl ? (

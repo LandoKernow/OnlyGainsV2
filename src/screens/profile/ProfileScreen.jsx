@@ -17,7 +17,14 @@ import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
 import { formatAwardPeriodRange } from '../../utils/awardShare'
-import { formatBoardTypeLabel } from '../../utils/boardInvites'
+import {
+  BASIC_NON_GLOBAL_BOARD_LIMIT,
+  countNonGlobalBoards,
+  getBoardDisplayName,
+  getBoardDisplayTypeLabel,
+  GLOBAL_BOARD_ID,
+  isGlobalBoard,
+} from '../../utils/boards'
 
 const BOARD_TYPE_OPTIONS = [
   { value: 'gym', label: 'Gym' },
@@ -27,8 +34,6 @@ const BOARD_TYPE_OPTIONS = [
   { value: 'group_chat', label: 'Group chat' },
   { value: 'other', label: 'Other' },
 ]
-const BETA_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
-
 function boardDebug(step, details) {
   if (!import.meta.env.DEV) {
     return
@@ -222,6 +227,8 @@ function BoardsCard() {
   const [boardType, setBoardType] = useState('gym')
   const [inviteCode, setInviteCode] = useState('')
   const [leaveTargetBoard, setLeaveTargetBoard] = useState(null)
+  const nonGlobalBoardCount = countNonGlobalBoards(boards)
+  const hasReachedBoardLimit = nonGlobalBoardCount >= BASIC_NON_GLOBAL_BOARD_LIMIT
 
   async function handleCreateBoard(event) {
     event.preventDefault()
@@ -230,6 +237,14 @@ function BoardsCard() {
 
     if (!trimmedBoardName) {
       showToast({ tone: 'error', message: 'Name the board.' })
+      return
+    }
+
+    if (hasReachedBoardLimit) {
+      showToast({
+        tone: 'error',
+        message: 'Board limit hit. Global is always open. Choose your wars carefully.',
+      })
       return
     }
 
@@ -267,6 +282,14 @@ function BoardsCard() {
       return
     }
 
+    if (hasReachedBoardLimit && trimmedInviteCode.toUpperCase() !== 'GLOBAL') {
+      showToast({
+        tone: 'error',
+        message: 'Board limit hit. Global is always open. Choose your wars carefully.',
+      })
+      return
+    }
+
     try {
       const joinedBoard = await joinBoardMutation.mutateAsync(trimmedInviteCode)
       const isExistingMember =
@@ -297,14 +320,14 @@ function BoardsCard() {
   }
 
   function handleRequestLeave(board) {
-    boardDebug('leave clicked', {
-      boardId: board?.id ?? null,
-      boardName: board?.name ?? null,
-      isBetaBoard: board?.id === BETA_BOARD_ID,
-    })
+      boardDebug('leave clicked', {
+        boardId: board?.id ?? null,
+        boardName: board?.name ?? null,
+        isGlobalBoard: board?.id === GLOBAL_BOARD_ID,
+      })
 
-    if (board.id === BETA_BOARD_ID) {
-      showToast({ tone: 'error', message: 'The Beta board stays with you for now.' })
+    if (board.id === GLOBAL_BOARD_ID) {
+      showToast({ tone: 'error', message: 'The Global Board stays with you.' })
       return
     }
 
@@ -367,13 +390,25 @@ function BoardsCard() {
         <div className="profile-identity-grid">
           <div className="profile-identity-grid__row">
             <span className="muted">Active board</span>
-            <strong>{activeBoard?.name || 'Only Gains Beta'}</strong>
+            <strong>{getBoardDisplayName(activeBoard)}</strong>
           </div>
           <div className="profile-identity-grid__row">
             <span className="muted">Board type</span>
-            <strong>{formatBoardTypeLabel(activeBoard?.boardType)}</strong>
+            <strong>{getBoardDisplayTypeLabel(activeBoard)}</strong>
           </div>
         </div>
+
+        <div className="stat-strip">
+          <span>{nonGlobalBoardCount}/{BASIC_NON_GLOBAL_BOARD_LIMIT} boards used</span>
+          <span>Global Board stays open</span>
+        </div>
+
+        {hasReachedBoardLimit ? (
+          <div className="board-limit-note">
+            <strong>TWO WARS IS ENOUGH FOR NOW.</strong>
+            <p className="muted">You have Global plus 2 boards. Finish what you started.</p>
+          </div>
+        ) : null}
 
         {activeBoard?.id && boardFeatureReady ? (
           <div className="profile-summary-actions">
@@ -394,8 +429,8 @@ function BoardsCard() {
               return (
                 <div key={board.id} className={isActive ? 'board-switcher-row board-switcher-row--active' : 'board-switcher-row'}>
                   <div className="board-switcher-row__meta">
-                    <strong>{board.name}</strong>
-                    <span>{formatBoardTypeLabel(board.boardType)}</span>
+                    <strong>{getBoardDisplayName(board)}</strong>
+                    <span>{getBoardDisplayTypeLabel(board)}</span>
                   </div>
                   <div className="board-switcher-row__actions">
                     {isActive ? (
@@ -405,7 +440,7 @@ function BoardsCard() {
                         Set active
                       </button>
                     )}
-                    {board.id !== BETA_BOARD_ID ? (
+                    {!isGlobalBoard(board) ? (
                       <button className="board-switcher-row__leave button button--ghost" type="button" onClick={() => handleRequestLeave(board)}>
                         Leave
                       </button>
@@ -446,7 +481,7 @@ function BoardsCard() {
             </select>
           </label>
           <button className="button" type="submit" disabled={createBoardMutation.isPending}>
-            {createBoardMutation.isPending ? 'Creating...' : 'Create board'}
+            {createBoardMutation.isPending ? 'Creating...' : hasReachedBoardLimit ? 'Board limit hit' : 'Create board'}
           </button>
         </form>
 
@@ -467,8 +502,8 @@ function BoardsCard() {
               autoCorrect="off"
             />
           </label>
-          <button className="button button--ghost" type="submit" disabled={joinBoardMutation.isPending}>
-            {joinBoardMutation.isPending ? 'Joining...' : 'Join board'}
+          <button className="button button--ghost" type="submit" disabled={joinBoardMutation.isPending || hasReachedBoardLimit}>
+            {joinBoardMutation.isPending ? 'Joining...' : hasReachedBoardLimit ? 'Board limit hit' : 'Join board'}
           </button>
         </form>
 

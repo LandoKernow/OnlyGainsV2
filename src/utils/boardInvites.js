@@ -1,3 +1,5 @@
+import { getBoardDisplayName } from './boards'
+
 const PENDING_BOARD_INVITE_KEY = 'only_gains_pending_board_invite'
 
 function getShareOrigin() {
@@ -50,7 +52,7 @@ export function buildBoardInviteQrUrl(inviteCode) {
 
 export function buildBoardInviteSharePayload(board) {
   const inviteUrl = buildBoardInviteUrl(board?.inviteCode)
-  const boardName = board?.name || 'This board'
+  const boardName = getBoardDisplayName(board)
   const text = `This board is live.\n\nJoin ${boardName} on Only Gains:`
 
   return {

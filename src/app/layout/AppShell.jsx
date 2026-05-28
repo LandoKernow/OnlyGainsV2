@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
+import { BoardSwitcher } from '../../components/BoardSwitcher'
 
 const navItems = [
   { to: '/dashboard', label: 'Board' },
@@ -24,6 +25,7 @@ export function AppShell({ children }) {
   const isImmersiveRoute = isAwardRoute || isJoinRoute || isBoardInviteRoute
   const showBottomNav = status === 'authenticated' && !isImmersiveRoute
   const showSessionPill = status !== 'unauthenticated'
+  const showBoardSwitcher = status === 'authenticated' && (isDashboardRoute || isLeaderboardRoute || isChaseRoute || isVaultRoute)
   const headerTitle = isDashboardRoute && status === 'authenticated'
     ? 'Who folds first.'
     : isLeaderboardRoute
@@ -42,19 +44,22 @@ export function AppShell({ children }) {
   return (
     <div className={isImmersiveRoute ? 'app-shell app-shell--immersive' : 'app-shell'}>
       {!isImmersiveRoute ? (
-        <header className={headerClassName}>
-          <div>
-            <p className="eyebrow">ONLY GAINS</p>
-            <h1>{headerTitle}</h1>
-          </div>
-          {showSessionPill ? (
-            <div className="session-pill" title={session?.user?.email} aria-live="polite">
-              {status === 'loading' && 'Session loading'}
-              {status === 'authenticated' && userLabel}
-              {status === 'setup-error' && (authError || 'Setup error')}
+        <>
+          <header className={headerClassName}>
+            <div>
+              <p className="eyebrow">ONLY GAINS</p>
+              <h1>{headerTitle}</h1>
             </div>
-          ) : null}
-        </header>
+            {showSessionPill ? (
+              <div className="session-pill" title={session?.user?.email} aria-live="polite">
+                {status === 'loading' && 'Session loading'}
+                {status === 'authenticated' && userLabel}
+                {status === 'setup-error' && (authError || 'Setup error')}
+              </div>
+            ) : null}
+          </header>
+          {showBoardSwitcher ? <BoardSwitcher /> : null}
+        </>
       ) : null}
 
       <main className="app-main">{children}</main>

@@ -143,7 +143,7 @@ export function getBoardLeaveErrorCopy(error) {
   const message = rawMessage.toLowerCase()
 
   if (message.includes('beta board')) {
-    return 'The Beta board stays with you for now.'
+    return 'The Global Board stays with you.'
   }
 
   if (message.includes('owner transfer') || message.includes('transfer tools are coming') || message.includes('remove everyone else first')) {

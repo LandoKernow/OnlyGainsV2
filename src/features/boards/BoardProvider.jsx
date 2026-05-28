@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { appEnv } from '../../lib/env'
 import { useAuth } from '../auth/AuthProvider'
 import { useMyBoards } from '../../hooks/useBoards'
+import { GLOBAL_BOARD_ID, GLOBAL_BOARD_NAME } from '../../utils/boards'
 
 const BoardContext = createContext(null)
 
@@ -12,9 +13,9 @@ function getFallbackBoard() {
 
   return {
     id: appEnv.defaultCircleId,
-    name: 'Only Gains Beta',
+    name: GLOBAL_BOARD_NAME,
     slug: 'only-gains-beta',
-    inviteCode: '',
+    inviteCode: 'GLOBAL',
     createdBy: '',
     createdAt: '',
     boardType: 'group',
@@ -82,8 +83,8 @@ export function BoardProvider({ children }) {
       return
     }
 
-    if (appEnv.defaultCircleId && boardIds.includes(appEnv.defaultCircleId)) {
-      setActiveBoardIdState(appEnv.defaultCircleId)
+    if (GLOBAL_BOARD_ID && boardIds.includes(GLOBAL_BOARD_ID)) {
+      setActiveBoardIdState(GLOBAL_BOARD_ID)
       return
     }
 
@@ -100,8 +101,8 @@ export function BoardProvider({ children }) {
     const normalizedExcludedBoardId = String(excludedBoardId || '').trim()
     const nextBoards = boards.filter((board) => board.id !== normalizedExcludedBoardId)
 
-    if (appEnv.defaultCircleId && nextBoards.some((board) => board.id === appEnv.defaultCircleId)) {
-      return appEnv.defaultCircleId
+    if (GLOBAL_BOARD_ID && nextBoards.some((board) => board.id === GLOBAL_BOARD_ID)) {
+      return GLOBAL_BOARD_ID
     }
 
     return nextBoards[0]?.id || fallbackBoard?.id || appEnv.defaultCircleId || ''

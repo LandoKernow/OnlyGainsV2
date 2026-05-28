@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase'
 
 const BOARD_FEATURE_NOT_READY = 'BOARD_FEATURE_NOT_READY'
-const BETA_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
+const GLOBAL_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
 
 function boardDebug(step, details) {
   if (!import.meta.env.DEV) {
@@ -212,7 +212,7 @@ export async function leaveBoard(boardId) {
     boardId: normalizedBoardId,
     rpc: 'leave_board',
     argName: 'p_board_id',
-    isBetaBoard: normalizedBoardId === BETA_BOARD_ID,
+    isGlobalBoard: normalizedBoardId === GLOBAL_BOARD_ID,
   })
 
   const { data, error } = await supabase.rpc('leave_board', {
