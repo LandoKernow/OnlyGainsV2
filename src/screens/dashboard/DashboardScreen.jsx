@@ -169,7 +169,7 @@ function AuthenticatedDashboard() {
     }
 
     deleteSubmission.mutate(
-      { submissionId: entryToRemove.id },
+      { submissionId: entryToRemove.legacySubmissionId || entryToRemove.id },
       {
         onSettled: () => {
           setEntryToRemove(null)

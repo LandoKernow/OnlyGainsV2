@@ -751,7 +751,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
       {rows.length > 0 ? (
         <ul className="activity-feed">
           {visibleRows.map((row, index) => {
-            const canRemove = row.userId === currentUserId && !row.pending
+            const canRemove = row.userId === currentUserId && !row.pending && Boolean(row.legacySubmissionId)
 
             return (
               <li

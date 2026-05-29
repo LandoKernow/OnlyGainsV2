@@ -17,6 +17,24 @@ function mapSubmission(row, profilesByUserId = {}) {
   }
 }
 
+function mapBoardActivityFeedRow(row) {
+  return {
+    id: row.id,
+    circleId: row.circle_id || '',
+    userId: row.user_id,
+    activityType: row.activity_type,
+    value: Number(row.value),
+    unit: row.unit,
+    source: row.source,
+    activityDate: row.activity_date,
+    createdAt: row.created_at,
+    note: row.note ?? '',
+    actorName: row.user_name || '',
+    legacySubmissionId: row.legacy_submission_id || '',
+    pending: false,
+  }
+}
+
 async function fetchProfilesByUserIds(userIds) {
   if (userIds.length === 0) {
     return {}
@@ -72,6 +90,48 @@ export async function fetchRecentSubmissions({ circleId, limit }) {
   const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
   return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
+}
+
+function isMissingBoardFeedRpc(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error?.code === 'PGRST202' ||
+    error?.code === '42883' ||
+    (message.includes('get_board_activity_feed') && message.includes('could not find')) ||
+    (message.includes('function') && message.includes('does not exist'))
+  )
+}
+
+export async function fetchBoardActivityFeed({ boardId, limit }) {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured.')
+  }
+
+  const normalizedBoardId = String(boardId || '').trim()
+
+  if (!normalizedBoardId) {
+    return []
+  }
+
+  const { data, error } = await supabase.rpc('get_board_activity_feed', {
+    p_board_id: normalizedBoardId,
+    p_limit: limit,
+  })
+
+  if (error) {
+    if (isMissingBoardFeedRpc(error)) {
+      if (import.meta.env.DEV) {
+        console.warn('[Only Gains Board] get_board_activity_feed RPC not ready yet.')
+      }
+
+      return fetchRecentSubmissions({ circleId: normalizedBoardId, limit })
+    }
+
+    throw error
+  }
+
+  return (data ?? []).map(mapBoardActivityFeedRow)
 }
 
 export async function fetchLeaderboardSubmissions({ circleId, year, activityType = 'pressups' }) {

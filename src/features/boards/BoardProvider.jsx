@@ -65,7 +65,21 @@ export function BoardProvider({ children }) {
   const [activeBoardId, setActiveBoardIdState] = useState('')
 
   const boards = useMemo(() => {
-    const nextBoards = [...myBoardsQuery.boards]
+    const dedupedBoards = []
+    const seenBoardIds = new Set()
+
+    for (const board of myBoardsQuery.boards) {
+      const boardId = String(board?.id || '').trim()
+
+      if (!boardId || seenBoardIds.has(boardId)) {
+        continue
+      }
+
+      seenBoardIds.add(boardId)
+      dedupedBoards.push(board)
+    }
+
+    const nextBoards = [...dedupedBoards]
 
     if (fallbackBoard && !nextBoards.some((board) => board.id === fallbackBoard.id)) {
       nextBoards.unshift(fallbackBoard)

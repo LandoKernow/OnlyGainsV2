@@ -43,7 +43,7 @@ export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
       const previousLeaderboardRowsKm = queryClient.getQueryData(leaderboardQueryKeyKm) ?? []
 
       queryClient.setQueryData(recentQueryKey, (currentRows = []) =>
-        currentRows.filter((row) => row.id !== submissionId),
+        currentRows.filter((row) => (row.legacySubmissionId || row.id) !== submissionId),
       )
       queryClient.setQueryData(leaderboardQueryKey, (currentRows = []) => currentRows.filter((row) => row.id !== submissionId))
       queryClient.setQueryData(leaderboardQueryKeyKm, (currentRows = []) => currentRows.filter((row) => row.id !== submissionId))
