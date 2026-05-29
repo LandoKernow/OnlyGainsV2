@@ -35,6 +35,18 @@ function mapBoardActivityFeedRow(row) {
   }
 }
 
+function mapBoardLeaderboardRow(row) {
+  return {
+    userId: row.user_id,
+    actorName: row.user_name || 'Unnamed warrior',
+    total: Number(row.total) || 0,
+    todayTotal: Number(row.today_total) || 0,
+    lastCreatedAt: row.last_created_at,
+    rank: Number(row.rank) || 0,
+    pending: false,
+  }
+}
+
 async function fetchProfilesByUserIds(userIds) {
   if (userIds.length === 0) {
     return {}
@@ -103,6 +115,17 @@ function isMissingBoardFeedRpc(error) {
   )
 }
 
+export function isMissingBoardLeaderboardRpc(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error?.code === 'PGRST202' ||
+    error?.code === '42883' ||
+    (message.includes('get_board_leaderboard') && message.includes('could not find')) ||
+    (message.includes('function') && message.includes('does not exist'))
+  )
+}
+
 export async function fetchBoardActivityFeed({ boardId, limit }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
@@ -132,6 +155,31 @@ export async function fetchBoardActivityFeed({ boardId, limit }) {
   }
 
   return (data ?? []).map(mapBoardActivityFeedRow)
+}
+
+export async function fetchBoardLeaderboard({ boardId, period, year, activityType = 'pressups' }) {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured.')
+  }
+
+  const normalizedBoardId = String(boardId || '').trim()
+
+  if (!normalizedBoardId) {
+    return []
+  }
+
+  const { data, error } = await supabase.rpc('get_board_leaderboard', {
+    p_board_id: normalizedBoardId,
+    p_period: period,
+    p_year: year,
+    p_activity_type: activityType,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  return (data ?? []).map(mapBoardLeaderboardRow)
 }
 
 export async function fetchLeaderboardSubmissions({ circleId, year, activityType = 'pressups' }) {

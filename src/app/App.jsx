@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
 import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatcher'
+import { AddToHomeScreenPrompt } from '../components/AddToHomeScreenPrompt'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
 import { ErrorBoundary } from '../components/ErrorBoundary'
@@ -48,6 +49,7 @@ export default function App() {
           <AwardCelebrationWatcher />
           <PendingBoardInviteWatcher />
           <ProfileBuildPrompt />
+          <AddToHomeScreenPrompt />
           <WeeklySharePrompt />
         </Suspense>
       </ErrorBoundary>

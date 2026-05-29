@@ -15,6 +15,7 @@ import {
   shareAward,
 } from '../../utils/awardShare'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
+import { TELEGRAM_URL } from '../../utils/community'
 
 const CLAIMED_RECORD_TYPES = [
   'pressups_set',
@@ -298,6 +299,12 @@ export default function VaultScreen() {
           <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
           <p className="vault-intro__copy">App-tracked live. Claimed records clearly labelled.</p>
           {isPublicVisitor ? <p className="vault-intro__copy">Think you can beat one? Join the board.</p> : null}
+          <p className="vault-intro__copy">
+            <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+              Enter the Telegram.
+            </a>{' '}
+            The board talks there.
+          </p>
         </div>
 
         {!isLoading && !error ? (

@@ -17,6 +17,7 @@ import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
 import { formatAwardPeriodRange } from '../../utils/awardShare'
+import { copyReportIssueTemplate, openAddToHomeScreenPrompt, TELEGRAM_URL } from '../../utils/community'
 import {
   BASIC_NON_GLOBAL_BOARD_LIMIT,
   countNonGlobalBoards,
@@ -118,7 +119,6 @@ function ProfileSummary() {
             <button className="button button--ghost" type="button" onClick={() => signOut()}>
               Sign out
             </button>
-            <FeedbackActions />
           </div>
         </div>
       </Card>
@@ -651,37 +651,52 @@ function AdminAwardControls() {
   )
 }
 
-function FeedbackActions() {
+function HelpCommunityCard() {
   const { showToast } = useToast()
 
-  function copyTemplate() {
-    const template = 'Only Gains 2.0 feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No'
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(template).then(() => {
-        showToast({ tone: 'success', message: 'Feedback template copied.' })
-      })
-    } else {
-      const textarea = document.createElement('textarea')
-      textarea.value = template
-      document.body.appendChild(textarea)
-      textarea.select()
-      try {
-        document.execCommand('copy')
-        showToast({ tone: 'success', message: 'Feedback template copied.' })
-      } catch {
-        showToast({ tone: 'error', message: 'Could not copy feedback template.' })
-      }
-      document.body.removeChild(textarea)
+  async function handleReportIssue() {
+    try {
+      await copyReportIssueTemplate()
+      showToast({ tone: 'success', message: 'Feedback template copied.' })
+    } catch {
+      showToast({ tone: 'error', message: 'Could not copy feedback template.' })
     }
   }
 
   return (
-    <div>
-      <button className="button button--ghost" type="button" onClick={copyTemplate}>
-        Report issue
-      </button>
-    </div>
+    <Card title="Help / Community" body="Quiet tools. Useful exits.">
+      <div className="community-links">
+        <div className="community-link-row">
+          <div>
+            <strong>Add to Home Screen</strong>
+            <p className="muted">Keep the Board one tap away.</p>
+          </div>
+          <button className="button button--ghost" type="button" onClick={() => openAddToHomeScreenPrompt()}>
+            Open guide
+          </button>
+        </div>
+
+        <div className="community-link-row">
+          <div>
+            <strong>ENTER THE TELEGRAM</strong>
+            <p className="muted">The board talks there.</p>
+          </div>
+          <a className="button button--ghost" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+            Join Telegram
+          </a>
+        </div>
+
+        <div className="community-link-row">
+          <div>
+            <strong>Report issue</strong>
+            <p className="muted">Copy the bug template and send it with a screenshot.</p>
+          </div>
+          <button className="button button--ghost" type="button" onClick={handleReportIssue}>
+            Copy report
+          </button>
+        </div>
+      </div>
+    </Card>
   )
 }
 
@@ -696,6 +711,7 @@ export default function ProfileScreen() {
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
           <VaultProfileCard />
+          <HelpCommunityCard />
           <ProfileBasicsCard />
         </div>
       </AuthGate>

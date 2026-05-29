@@ -21,6 +21,7 @@ export const appEnv = {
   defaultCircleId: readOptional('VITE_DEFAULT_CIRCLE_ID'),
   appName: readOptional('VITE_APP_NAME') || 'Only Gains 2.0',
   appEnv: readOptional('VITE_APP_ENV') || 'development',
+  telegramUrl: readOptional('VITE_TELEGRAM_URL'),
 }
 
 export const envIssues = [

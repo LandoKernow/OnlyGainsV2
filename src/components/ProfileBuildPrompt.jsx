@@ -42,22 +42,25 @@ export function ProfileBuildPrompt() {
   const userId = session?.user?.id ?? ''
   const dismissKey = useMemo(() => (userId ? getProfileBuildPromptDismissKey(userId) : ''), [userId])
   const [isDismissed, setIsDismissed] = useState(true)
+  const [isDismissStateReady, setIsDismissStateReady] = useState(false)
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
   const isProfileYearRoute = location.pathname === `/profile/year/${PROFILE_YEAR}`
 
   useEffect(() => {
     if (!isAuthenticated || !dismissKey) {
       setIsDismissed(true)
+      setIsDismissStateReady(false)
       return
     }
 
     setIsDismissed(hasDismissedProfileBuildPrompt(dismissKey))
+    setIsDismissStateReady(true)
   }, [dismissKey, isAuthenticated])
 
   const profileYearQuery = useQuery({
     queryKey: getProfileYearQueryKey(userId, PROFILE_YEAR),
     queryFn: () => fetchProfileYear(userId, PROFILE_YEAR),
-    enabled: isAuthenticated && !isDismissed && !isProfileYearRoute,
+    enabled: isAuthenticated && isDismissStateReady && !isDismissed && !isProfileYearRoute,
     staleTime: 60_000,
   })
 
@@ -95,8 +98,12 @@ export function ProfileBuildPrompt() {
 
   const shouldShow =
     isAuthenticated &&
+    isDismissStateReady &&
     !isDismissed &&
     !isProfileYearRoute &&
+    !profileYearQuery.isLoading &&
+    !profileYearQuery.isFetching &&
+    !profileYearQuery.error &&
     !profileYearQuery.data
 
   if (!shouldShow) {

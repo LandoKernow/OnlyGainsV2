@@ -4,23 +4,18 @@ import { useLocation } from 'react-router-dom'
 import { fetchProfileYear, getProfileYearQueryKey } from '../api/profileYearSetup'
 import { useToast } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
-import { getLondonPeriodKeys } from '../utils/dates'
-import { shareOnlyGains } from '../utils/shareApp'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
-import {
-  getAddToHomeScreenPromptDismissKey,
-  hasDismissedAddToHomeScreenPrompt,
-} from './AddToHomeScreenPrompt'
+import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
 import { getProfileBuildPromptDismissKey, hasDismissedProfileBuildPrompt } from './ProfileBuildPrompt'
 
 const PROFILE_YEAR = 2026
-const WEEKLY_SHARE_PROMPT_KEY_PREFIX = 'only_gains_weekly_share_prompt_seen'
+const DISMISS_KEY_PREFIX = 'only_gains_add_to_home_screen_prompt_seen_v1'
 
-function getWeeklySharePromptKey(userId, weekKey) {
-  return `${WEEKLY_SHARE_PROMPT_KEY_PREFIX}_${userId}_${weekKey}`
+export function getAddToHomeScreenPromptDismissKey(userId) {
+  return `${DISMISS_KEY_PREFIX}_${userId}`
 }
 
-function hasSeenWeeklySharePrompt(key) {
+export function hasDismissedAddToHomeScreenPrompt(key) {
   if (!key) {
     return false
   }
@@ -32,7 +27,7 @@ function hasSeenWeeklySharePrompt(key) {
   }
 }
 
-function markWeeklySharePromptSeen(key) {
+function markDismissed(key) {
   if (!key) {
     return
   }
@@ -44,37 +39,42 @@ function markWeeklySharePromptSeen(key) {
   }
 }
 
-export function WeeklySharePrompt() {
+export function AddToHomeScreenPrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
-  const { showToast, activeToastCount, activeMachoToastCount } = useToast()
+  const { activeToastCount, activeMachoToastCount } = useToast()
   const userId = session?.user?.id ?? ''
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
-  const weekKey = getLondonPeriodKeys(new Date()).weekKey
-  const promptKey = useMemo(() => (userId ? getWeeklySharePromptKey(userId, weekKey) : ''), [userId, weekKey])
+  const dismissKey = useMemo(
+    () => (userId ? getAddToHomeScreenPromptDismissKey(userId) : ''),
+    [userId],
+  )
   const profilePromptKey = useMemo(
     () => (userId ? getProfileBuildPromptDismissKey(userId) : ''),
     [userId],
   )
-  const addToHomeScreenPromptKey = useMemo(
-    () => (userId ? getAddToHomeScreenPromptDismissKey(userId) : ''),
-    [userId],
-  )
-  const [isSeen, setIsSeen] = useState(true)
+  const [isDismissed, setIsDismissed] = useState(true)
+  const [isDismissStateReady, setIsDismissStateReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const isAwardRoute = location.pathname.startsWith('/award/')
+  const isJoinRoute = location.pathname.startsWith('/join/')
+  const isBoardInviteRoute = /^\/boards\/[^/]+\/invite$/.test(location.pathname)
   const isProfileYearRoute = location.pathname === `/profile/year/${PROFILE_YEAR}`
+  const isResetPasswordRoute = location.pathname.startsWith('/reset-password')
+  const isBlockedRoute = isAwardRoute || isJoinRoute || isBoardInviteRoute || isResetPasswordRoute
   const hasPendingInviteJoin = Boolean(getPendingBoardInviteCode())
 
   useEffect(() => {
-    if (!isAuthenticated || !promptKey) {
-      setIsSeen(true)
+    if (!isAuthenticated || !dismissKey) {
+      setIsDismissed(true)
+      setIsDismissStateReady(false)
       setIsOpen(false)
       return
     }
 
-    setIsSeen(hasSeenWeeklySharePrompt(promptKey))
-  }, [isAuthenticated, promptKey])
+    setIsDismissed(hasDismissedAddToHomeScreenPrompt(dismissKey))
+    setIsDismissStateReady(true)
+  }, [dismissKey, isAuthenticated])
 
   const profileYearQuery = useQuery({
     queryKey: getProfileYearQueryKey(userId, PROFILE_YEAR),
@@ -87,28 +87,23 @@ export function WeeklySharePrompt() {
     isAuthenticated &&
     !isProfileYearRoute &&
     !profileYearQuery.isLoading &&
+    !profileYearQuery.isFetching &&
     !profileYearQuery.error &&
     !profileYearQuery.data &&
     !hasDismissedProfileBuildPrompt(profilePromptKey)
-  const addToHomeScreenPromptBlocks =
-    isAuthenticated &&
-    !isAwardRoute &&
-    !isProfileYearRoute &&
-    !hasPendingInviteJoin &&
-    !profilePromptBlocks &&
-    !hasDismissedAddToHomeScreenPrompt(addToHomeScreenPromptKey)
 
   useEffect(() => {
     if (
       !isAuthenticated ||
-      isSeen ||
+      !isDismissStateReady ||
+      isDismissed ||
       isOpen ||
-      isAwardRoute ||
+      isBlockedRoute ||
       isProfileYearRoute ||
       hasPendingInviteJoin ||
       profileYearQuery.isLoading ||
+      profileYearQuery.isFetching ||
       profilePromptBlocks ||
-      addToHomeScreenPromptBlocks ||
       activeMachoToastCount > 0 ||
       activeToastCount > 0
     ) {
@@ -117,7 +112,7 @@ export function WeeklySharePrompt() {
 
     const timer = window.setTimeout(() => {
       setIsOpen(true)
-    }, 2600)
+    }, 1800)
 
     return () => {
       window.clearTimeout(timer)
@@ -125,39 +120,38 @@ export function WeeklySharePrompt() {
   }, [
     activeMachoToastCount,
     activeToastCount,
+    hasPendingInviteJoin,
     isAuthenticated,
-    isAwardRoute,
-    addToHomeScreenPromptBlocks,
+    isBlockedRoute,
+    isDismissStateReady,
+    isDismissed,
     isOpen,
     isProfileYearRoute,
-    isSeen,
-    hasPendingInviteJoin,
     profilePromptBlocks,
+    profileYearQuery.isFetching,
     profileYearQuery.isLoading,
   ])
 
-  function dismissPrompt() {
-    markWeeklySharePromptSeen(promptKey)
-    setIsSeen(true)
-    setIsOpen(false)
-  }
-
-  async function handleShare() {
-    try {
-      const result = await shareOnlyGains()
-      dismissPrompt()
-
-      if (result === 'cancelled') {
+  useEffect(() => {
+    function handleOpenPrompt() {
+      if (!isAuthenticated || isBlockedRoute || hasPendingInviteJoin) {
         return
       }
 
-      showToast({
-        tone: 'success',
-        message: result === 'shared' ? 'Only Gains shared.' : 'Share link copied.',
-      })
-    } catch {
-      showToast({ tone: 'error', message: 'Could not share Only Gains.' })
+      setIsOpen(true)
     }
+
+    window.addEventListener(OPEN_ADD_TO_HOME_SCREEN_EVENT, handleOpenPrompt)
+
+    return () => {
+      window.removeEventListener(OPEN_ADD_TO_HOME_SCREEN_EVENT, handleOpenPrompt)
+    }
+  }, [hasPendingInviteJoin, isAuthenticated, isBlockedRoute])
+
+  function dismissPrompt() {
+    markDismissed(dismissKey)
+    setIsDismissed(true)
+    setIsOpen(false)
   }
 
   if (!isOpen) {
@@ -167,46 +161,45 @@ export function WeeklySharePrompt() {
   return (
     <div className="prompt-backdrop" role="presentation">
       <div
-        className="prompt-modal prompt-modal--share"
+        className="prompt-modal prompt-modal--home-screen"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="weekly-share-prompt-title"
-        aria-describedby="weekly-share-prompt-body"
+        aria-labelledby="add-to-home-screen-title"
+        aria-describedby="add-to-home-screen-body"
       >
         <div className="prompt-modal__image-shell">
           <img
             className="prompt-modal__image"
             src="/images/macho-toasts/vault-rocky.webp"
-            alt="Only Gains share prompt"
+            alt="Only Gains home screen guidance"
           />
         </div>
         <div className="stack prompt-modal__content">
           <div>
-            <p className="eyebrow prompt-modal__eyebrow">RAISE THE BAR</p>
-            <h2 id="weekly-share-prompt-title" className="prompt-modal__title">
-              KNOW A
+            <p className="eyebrow prompt-modal__eyebrow">ONLY GAINS</p>
+            <h2 id="add-to-home-screen-title" className="prompt-modal__title">
+              ADD ONLY GAINS
               <br />
-              WARRIOR?
+              TO YOUR HOME SCREEN
             </h2>
-            <p id="weekly-share-prompt-body" className="prompt-modal__body">
-              The board needs stronger enemies. Send it to someone who can raise the standard.
+            <p id="add-to-home-screen-body" className="prompt-modal__body">
+              This works best like an app.
             </p>
           </div>
 
-          <div className="stack prompt-modal__copy">
-            <p>Bring better enemies.</p>
-            <p>Iron sharpens iron.</p>
-            <p>Send the link.</p>
+          <div className="stack prompt-modal__copy prompt-modal__copy--compact">
+            <p>iPhone: Tap Share -&gt; Add to Home Screen.</p>
+            <p>Android: Tap menu -&gt; Add to Home screen.</p>
           </div>
 
-          <p className="muted prompt-modal__microcopy">Know someone who thinks they train? Put them on the board.</p>
+          <p className="muted prompt-modal__microcopy">Keep the Board one tap away.</p>
 
           <div className="prompt-modal__actions">
-            <button className="button" type="button" onClick={handleShare}>
-              Share Only Gains
+            <button className="button" type="button" onClick={dismissPrompt}>
+              Got it
             </button>
             <button className="button button--ghost" type="button" onClick={dismissPrompt}>
-              Not now
+              Show me later
             </button>
           </div>
         </div>

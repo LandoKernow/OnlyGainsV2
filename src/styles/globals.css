@@ -1634,6 +1634,10 @@ button {
   font-size: 1.02rem;
 }
 
+.prompt-modal__copy--compact p {
+  font-size: 0.96rem;
+}
+
 .prompt-modal__microcopy {
   font-size: 0.84rem;
 }
@@ -2010,6 +2014,36 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.community-links {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.community-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.community-link-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.community-link-row p {
+  margin: 0.2rem 0 0;
+}
+
+.subtle-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .admin-tools-card {

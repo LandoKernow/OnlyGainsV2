@@ -17,6 +17,7 @@ function ChaseContent() {
     period,
     currentUserId: session.user.id,
     activityType,
+    source: 'canonical',
   })
   const chase = useChase(leaderboardQuery.rows, session.user.id, activityType)
 

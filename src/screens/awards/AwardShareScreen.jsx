@@ -11,6 +11,7 @@ import {
   getAwardImagePath,
   shareAward,
 } from '../../utils/awardShare'
+import { TELEGRAM_URL } from '../../utils/community'
 
 function AwardShareContent() {
   const { awardId = '' } = useParams()
@@ -103,6 +104,12 @@ function AwardShareContent() {
                 View Vault
               </Link>
             </div>
+            <p className="muted award-stage__tertiary">
+              <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+                Enter the Telegram.
+              </a>{' '}
+              The board talks there.
+            </p>
           </div>
         </div>
       )}

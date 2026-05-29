@@ -17,6 +17,7 @@ import {
   getBoardDisplayTypeLabel,
   isGlobalBoard,
 } from '../../utils/boards'
+import { TELEGRAM_URL } from '../../utils/community'
 
 function JoinBoardContent() {
   const { inviteCode = '' } = useParams()
@@ -121,6 +122,12 @@ function JoinBoardContent() {
             ) : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now. Log first. Talk later.</p>
+            <p className="board-stage__microcopy">
+              <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+                Enter the Telegram.
+              </a>{' '}
+              The board talks there.
+            </p>
           </article>
 
           {joinState ? (

@@ -15,6 +15,7 @@ function LeaderboardContent() {
     period,
     currentUserId: session.user.id,
     activityType,
+    source: 'canonical',
   })
 
   return (
