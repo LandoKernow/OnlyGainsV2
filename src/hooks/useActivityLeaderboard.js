@@ -24,17 +24,12 @@ export function useActivityLeaderboard({
     queryFn: async () => {
       if (source === 'canonical') {
         try {
-          const rows = await fetchBoardLeaderboard({
+          return await fetchBoardLeaderboard({
             boardId: circleId,
             period,
             year: currentYear,
             activityType,
           })
-
-          return {
-            mode: 'canonical',
-            rows,
-          }
         } catch (error) {
           if (!isMissingBoardLeaderboardRpc(error)) {
             throw error
@@ -46,31 +41,23 @@ export function useActivityLeaderboard({
         }
       }
 
-      const rows = await fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType })
-
-      return {
-        mode: source === 'canonical' ? 'legacy-fallback' : 'legacy',
-        rows,
-      }
+      return fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType })
     },
     enabled: Boolean(circleId),
     staleTime: 15_000,
   })
 
-  const queryMode = query.data?.mode ?? 'legacy'
-  const rawRows = query.data?.rows ?? []
-  const calculated = queryMode === 'canonical'
+  const rawRows = query.data ?? []
+  const calculated = source === 'canonical'
     ? {
         rows: rawRows.map((row) => ({
           ...row,
           isCurrentUser: row.userId === currentUserId,
         })),
-        currentUserRow: rawRows.find((row) => row.userId === currentUserId)
-          ? {
-              ...rawRows.find((row) => row.userId === currentUserId),
-              isCurrentUser: true,
-            }
-          : null,
+        currentUserRow: (() => {
+          const currentRow = rawRows.find((row) => row.userId === currentUserId)
+          return currentRow ? { ...currentRow, isCurrentUser: true } : null
+        })(),
       }
     : calculateLeaderboard(rawRows, {
         period,
@@ -82,7 +69,7 @@ export function useActivityLeaderboard({
     rows: calculated.rows,
     currentUserRow: calculated.currentUserRow,
     currentYear,
-    sourceMode: queryMode,
-    isCanonical: queryMode === 'canonical',
+    sourceMode: source,
+    isCanonical: source === 'canonical',
   }
 }

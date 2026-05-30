@@ -154,6 +154,21 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
         month: dateParts.month,
       }
 
+      if (import.meta.env.DEV) {
+        console.debug('[Only Gains Logging] mutation payload prepared', {
+          activityType,
+          keys: Object.keys(payload),
+          circle_id: payload.circle_id,
+          user_id: payload.user_id,
+          value: payload.value,
+          unit: payload.unit,
+          activity_date: payload.activity_date,
+          source: payload.source,
+          year: payload.year,
+          month: payload.month,
+        })
+      }
+
       return createSubmission(payload)
     },
     onMutate: async ({ value }) => {
@@ -222,7 +237,15 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
       }
     },
     onError: (error, _variables, context) => {
-      console.error('[Only Gains Logging] submission failed', error)
+      console.error('[Only Gains Logging] submission failed', {
+        code: error?.code ?? null,
+        message: error?.message ?? null,
+        details: error?.details ?? null,
+        hint: error?.hint ?? null,
+        activityType,
+        circleId,
+        userId,
+      })
       queryClient.setQueryData(queryKey, context?.previousRows ?? [])
       queryClient.setQueryData(leaderboardQueryKey, context?.previousLeaderboardRows ?? [])
       showToast({ tone: 'error', message: 'Could not save. Try again.' })

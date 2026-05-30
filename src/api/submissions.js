@@ -1,5 +1,13 @@
 import { supabase } from '../lib/supabase'
 
+function logSubmissionDebug(step, details) {
+  if (!import.meta.env.DEV) {
+    return
+  }
+
+  console.debug('[Only Gains Logging]', step, details)
+}
+
 function mapSubmission(row, profilesByUserId = {}) {
   return {
     id: row.id,
@@ -69,6 +77,20 @@ export async function createSubmission(payload) {
     throw new Error('Supabase client is not configured.')
   }
 
+  logSubmissionDebug('createSubmission payload', {
+    keys: Object.keys(payload ?? {}),
+    id: payload?.id ?? null,
+    circle_id: payload?.circle_id ?? null,
+    user_id: payload?.user_id ?? null,
+    activity_type: payload?.activity_type ?? null,
+    value: payload?.value ?? null,
+    unit: payload?.unit ?? null,
+    activity_date: payload?.activity_date ?? null,
+    source: payload?.source ?? null,
+    year: payload?.year ?? null,
+    month: payload?.month ?? null,
+  })
+
   const { data, error } = await supabase
     .from('submissions')
     .insert(payload)
@@ -76,8 +98,22 @@ export async function createSubmission(payload) {
     .single()
 
   if (error) {
+    logSubmissionDebug('createSubmission error', {
+      code: error.code ?? null,
+      message: error.message ?? null,
+      details: error.details ?? null,
+      hint: error.hint ?? null,
+    })
     throw error
   }
+
+  logSubmissionDebug('createSubmission success', {
+    id: data?.id ?? null,
+    user_id: data?.user_id ?? null,
+    circle_id: data?.circle_id ?? null,
+    activity_type: data?.activity_type ?? null,
+    value: data?.value ?? null,
+  })
 
   return mapSubmission(data)
 }
