@@ -1,4 +1,7 @@
 import { supabase } from '../lib/supabase'
+import { getLondonDateParts } from '../utils/dates'
+
+const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
 function logSubmissionDebug(step, details) {
   if (!import.meta.env.DEV) {
@@ -6,6 +9,22 @@ function logSubmissionDebug(step, details) {
   }
 
   console.debug('[Only Gains Logging]', step, details)
+}
+
+function canLogBoardLiveDiagnostics(userId) {
+  if (import.meta.env.DEV) {
+    return true
+  }
+
+  return String(userId || '').trim() === BOARD_LIVE_DIAGNOSTICS_USER_ID
+}
+
+function logBoardLiveDebug(step, details, userId) {
+  if (!canLogBoardLiveDiagnostics(userId)) {
+    return
+  }
+
+  console.debug('[Only Gains Board Live]', step, details)
 }
 
 function mapSubmission(row, profilesByUserId = {}) {
@@ -162,7 +181,7 @@ export function isMissingBoardLeaderboardRpc(error) {
   )
 }
 
-export async function fetchBoardActivityFeed({ boardId, limit }) {
+export async function fetchBoardActivityFeed({ boardId, limit, diagnosticsUserId = '', selectedBoardName = '' }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
@@ -170,8 +189,21 @@ export async function fetchBoardActivityFeed({ boardId, limit }) {
   const normalizedBoardId = String(boardId || '').trim()
 
   if (!normalizedBoardId) {
+    logBoardLiveDebug('fetchBoardActivityFeed skipped: missing board id', {
+      selectedBoardName: selectedBoardName || null,
+      requestedBoardId: boardId ?? null,
+      normalizedBoardId: normalizedBoardId || null,
+      limit,
+    }, diagnosticsUserId)
     return []
   }
+
+  logBoardLiveDebug('fetchBoardActivityFeed request', {
+    selectedBoardName: selectedBoardName || null,
+    requestedBoardId: boardId ?? null,
+    normalizedBoardId,
+    limit,
+  }, diagnosticsUserId)
 
   const { data, error } = await supabase.rpc('get_board_activity_feed', {
     p_board_id: normalizedBoardId,
@@ -190,7 +222,28 @@ export async function fetchBoardActivityFeed({ boardId, limit }) {
     throw error
   }
 
-  return (data ?? []).map(mapBoardActivityFeedRow)
+  const mappedRows = (data ?? [])
+    .map(mapBoardActivityFeedRow)
+    .sort((left, right) => {
+      const leftCreatedAt = Date.parse(left.createdAt || left.activityDate || 0)
+      const rightCreatedAt = Date.parse(right.createdAt || right.activityDate || 0)
+
+      if (Number.isNaN(leftCreatedAt) || Number.isNaN(rightCreatedAt)) {
+        return 0
+      }
+
+      return rightCreatedAt - leftCreatedAt
+    })
+
+  logBoardLiveDebug('fetchBoardActivityFeed response', {
+    selectedBoardName: selectedBoardName || null,
+    boardId: normalizedBoardId,
+    rowCount: mappedRows.length,
+    rowIds: mappedRows.map((row) => row.id),
+    legacySubmissionIds: mappedRows.map((row) => row.legacySubmissionId || null),
+  }, diagnosticsUserId)
+
+  return mappedRows
 }
 
 export async function fetchBoardLeaderboard({ boardId, period, year, activityType = 'pressups' }) {
@@ -216,6 +269,102 @@ export async function fetchBoardLeaderboard({ boardId, period, year, activityTyp
   }
 
   return (data ?? []).map(mapBoardLeaderboardRow)
+}
+
+export async function debugSubmissionPropagation({
+  submissionId,
+  userId,
+  activityType,
+  value,
+  activityDate,
+  circleId,
+  boardIds = [],
+  feedLimit = 20,
+}) {
+  if (!import.meta.env.DEV || !supabase || !submissionId) {
+    return null
+  }
+
+  const uniqueBoardIds = [...new Set((boardIds ?? []).map((boardId) => String(boardId || '').trim()).filter(Boolean))]
+  const currentYear = getLondonDateParts(new Date(activityDate || Date.now())).year
+
+  const { data: mirroredRows, error: mirroredError } = await supabase
+    .from('activity_events')
+    .select('id,user_id,activity_type,value,unit,source,activity_date,created_at,legacy_submission_id,deleted_at,deleted_by')
+    .eq('legacy_submission_id', submissionId)
+
+  const boardDiagnostics = await Promise.all(
+    uniqueBoardIds.map(async (boardId) => {
+      const [feedResult, leaderboardResult] = await Promise.all([
+        supabase.rpc('get_board_activity_feed', {
+          p_board_id: boardId,
+          p_limit: feedLimit,
+        }),
+        supabase.rpc('get_board_leaderboard', {
+          p_board_id: boardId,
+          p_period: 'weekly',
+          p_year: currentYear,
+          p_activity_type: activityType,
+        }),
+      ])
+
+      return {
+        boardId,
+        feedError: feedResult.error
+          ? {
+              code: feedResult.error.code ?? null,
+              message: feedResult.error.message ?? null,
+              details: feedResult.error.details ?? null,
+              hint: feedResult.error.hint ?? null,
+            }
+          : null,
+        feedCount: Array.isArray(feedResult.data) ? feedResult.data.length : 0,
+        feedContainsSubmission: Array.isArray(feedResult.data)
+          ? feedResult.data.some(
+              (row) =>
+                String(row?.legacy_submission_id || '').trim() === String(submissionId) ||
+                String(row?.user_id || '').trim() === String(userId || '').trim() &&
+                String(row?.activity_type || '').trim() === String(activityType || '').trim() &&
+                Number(row?.value) === Number(value) &&
+                String(row?.activity_date || '') === String(activityDate || ''),
+            )
+          : false,
+        leaderboardError: leaderboardResult.error
+          ? {
+              code: leaderboardResult.error.code ?? null,
+              message: leaderboardResult.error.message ?? null,
+              details: leaderboardResult.error.details ?? null,
+              hint: leaderboardResult.error.hint ?? null,
+            }
+          : null,
+        leaderboardUserRow: Array.isArray(leaderboardResult.data)
+          ? leaderboardResult.data.find((row) => String(row?.user_id || '').trim() === String(userId || '').trim()) ?? null
+          : null,
+      }
+    }),
+  )
+
+  return {
+    submission: {
+      id: submissionId,
+      userId,
+      circleId,
+      activityType,
+      value,
+      activityDate,
+    },
+    mirroredError: mirroredError
+      ? {
+          code: mirroredError.code ?? null,
+          message: mirroredError.message ?? null,
+          details: mirroredError.details ?? null,
+          hint: mirroredError.hint ?? null,
+        }
+      : null,
+    mirroredRows: mirroredRows ?? [],
+    eligibleBoardIds: boardDiagnostics.filter((board) => board.feedContainsSubmission).map((board) => board.boardId),
+    boardDiagnostics,
+  }
 }
 
 export async function fetchLeaderboardSubmissions({ circleId, year, activityType = 'pressups' }) {

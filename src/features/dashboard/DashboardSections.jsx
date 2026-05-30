@@ -7,6 +7,16 @@ import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
 
+const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
+
+function canLogBoardLiveDiagnostics(userId) {
+  if (import.meta.env.DEV) {
+    return true
+  }
+
+  return String(userId || '').trim() === BOARD_LIVE_DIAGNOSTICS_USER_ID
+}
+
 function getSafeName(name) {
   return name || 'Someone'
 }
@@ -736,7 +746,43 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
     )
   }
 
-  const visibleRows = showAll ? rows : rows.slice(0, 3)
+  let latestCurrentUserRowInjected = false
+
+  const visibleRows = useMemo(() => {
+    if (showAll) {
+      return rows
+    }
+
+    const topRows = rows.slice(0, 3)
+
+    if (!currentUserId || topRows.some((row) => row.userId === currentUserId)) {
+      return topRows
+    }
+
+    const latestCurrentUserRow = rows.find((row) => row.userId === currentUserId)
+
+    if (!latestCurrentUserRow) {
+      return topRows
+    }
+
+    latestCurrentUserRowInjected = true
+    return [...topRows, latestCurrentUserRow]
+  }, [currentUserId, rows, showAll])
+
+  if (canLogBoardLiveDiagnostics(currentUserId)) {
+    console.debug('[Only Gains Board Live]', 'RecentActivityCard render', {
+      isLoading,
+      hasError: Boolean(error),
+      totalRowCount: rows.length,
+      totalRowIds: rows.map((row) => row.id),
+      totalLegacySubmissionIds: rows.map((row) => row.legacySubmissionId || null),
+      renderedRowCount: visibleRows.length,
+      renderedRowIds: visibleRows.map((row) => row.id),
+      showAll,
+      latestCurrentUserRowInjected,
+      currentUserId: currentUserId ?? null,
+    })
+  }
 
   return (
     <Card title="BOARD LIVE" body={`${rows.length} recent moves`} aside={<span className="live-badge">LIVE</span>}>

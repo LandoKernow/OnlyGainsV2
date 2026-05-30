@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createSubmission } from '../api/submissions'
+import { createSubmission, debugSubmissionPropagation } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
 import { calculateLeaderboard } from '../logic/leaderboard/calculateLeaderboard'
 import { getLondonPeriodKeys, getLondonSubmissionParts, getSubmissionPeriodKeys } from '../utils/dates'
@@ -13,6 +13,7 @@ import {
 import { createClientId } from '../utils/uuid'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
+import { GLOBAL_BOARD_ID } from '../utils/boards'
 
 const PRESSUP_SUCCESS_MESSAGES = [
   'BOARD UPDATED.',
@@ -32,6 +33,8 @@ const KM_SUCCESS_MESSAGES = [
   'You moved. They noticed.',
   'Legs paid rent.',
 ]
+
+const CANONICAL_PROPAGATION_REFRESH_DELAYS = [350, 1400]
 
 function getStableIndex(seed, length) {
   let hash = 0
@@ -128,12 +131,39 @@ function maybeShowAchievementToast({ previousRows, currentRows, userId, activity
   return true
 }
 
-export function useActivityLogger({ circleId, userId, actorName, activityType = 'pressups', limit = 5 }) {
+function isRecentSubmissionsQuery(query) {
+  return Array.isArray(query.queryKey) && query.queryKey[0] === 'dashboard' && query.queryKey[1] === 'recent-submissions'
+}
+
+function isLeaderboardQueryForActivity(query, activityType) {
+  return (
+    Array.isArray(query.queryKey) &&
+    query.queryKey[0] === 'leaderboard' &&
+    (query.queryKey[1] === activityType || query.queryKey[1] === 'canonical')
+  )
+}
+
+function scheduleCanonicalPropagationRefresh({ queryClient, activityType }) {
+  for (const delayMs of CANONICAL_PROPAGATION_REFRESH_DELAYS) {
+    globalThis.setTimeout(() => {
+      void queryClient.invalidateQueries({
+        predicate: (query) => isRecentSubmissionsQuery(query),
+      })
+
+      void queryClient.invalidateQueries({
+        predicate: (query) => isLeaderboardQueryForActivity(query, activityType),
+      })
+    }, delayMs)
+  }
+}
+
+export function useActivityLogger({ circleId, userId, actorName, activityType = 'pressups', limit = 5, boardIds = [] }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const queryKey = getRecentSubmissionsQueryKey(circleId, limit)
   const currentYear = getLondonSubmissionParts().year
   const leaderboardQueryKey = getActivityLeaderboardQueryKey(circleId, currentYear, activityType)
+  const propagationBoardIds = [...new Set([GLOBAL_BOARD_ID, circleId, ...(boardIds ?? [])].filter(Boolean))]
 
   return useMutation({
     mutationFn: async ({ value }) => {
@@ -195,7 +225,7 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
         previousLeaderboardRows,
       }
     },
-    onSuccess: (savedSubmission, _variables, context) => {
+    onSuccess: async (savedSubmission, _variables, context) => {
       let nextLeaderboardRows = []
 
       queryClient.setQueryData(queryKey, (currentRows = []) =>
@@ -235,6 +265,27 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
           message: getSuccessMessage(activityType, Number(savedSubmission.value)),
         })
       }
+
+      scheduleCanonicalPropagationRefresh({
+        queryClient,
+        activityType,
+      })
+
+      if (import.meta.env.DEV) {
+        globalThis.setTimeout(async () => {
+          const propagation = await debugSubmissionPropagation({
+            submissionId: savedSubmission.id,
+            userId,
+            activityType,
+            value: savedSubmission.value,
+            activityDate: savedSubmission.activityDate,
+            circleId,
+            boardIds: propagationBoardIds,
+          })
+
+          console.debug('[Only Gains Logging] canonical propagation', propagation)
+        }, 900)
+      }
     },
     onError: (error, _variables, context) => {
       console.error('[Only Gains Logging] submission failed', {
@@ -251,7 +302,9 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
       showToast({ tone: 'error', message: 'Could not save. Try again.' })
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey })
+      globalThis.setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey })
+      }, CANONICAL_PROPAGATION_REFRESH_DELAYS[0])
       queryClient.invalidateQueries({ queryKey: leaderboardQueryKey })
     },
   })

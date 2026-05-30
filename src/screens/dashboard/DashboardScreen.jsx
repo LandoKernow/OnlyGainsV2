@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
 import {
@@ -22,6 +22,8 @@ import { useToast } from '../../components/ToastProvider'
 import { parseKmValue } from '../../utils/activity'
 
 const quickValues = [10, 20, 50]
+const BOARD_LIVE_FEED_LIMIT = 20
+const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
 function parseManualValue(value, activityType) {
   const trimmed = value.trim()
@@ -49,9 +51,13 @@ function parseManualValue(value, activityType) {
 
 function AuthenticatedDashboard() {
   const { session } = useAuth()
-  const { circleId } = useBoardMeta()
+  const { circleId, boards, activeBoard } = useBoardMeta()
   const profileQuery = useCurrentProfile()
-  const recentActivityQuery = useRecentSubmissions(circleId, 5)
+  const recentActivityQuery = useRecentSubmissions(circleId, BOARD_LIVE_FEED_LIMIT, {
+    userId: session.user.id,
+    selectedBoardId: activeBoard?.id,
+    selectedBoardName: activeBoard?.name,
+  })
   const [manualValue, setManualValue] = useState('')
   const [activityType, setActivityType] = useState('pressups')
   const [manualError, setManualError] = useState('')
@@ -59,10 +65,11 @@ function AuthenticatedDashboard() {
   const { showToast } = useToast()
   const logger = useActivityLogger({
     circleId,
+    boardIds: boards.map((board) => board.id),
     userId: session.user.id,
     actorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'You',
     activityType: activityType === 'km' ? 'km' : 'pressups',
-    limit: 5,
+    limit: BOARD_LIVE_FEED_LIMIT,
   })
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
@@ -86,8 +93,32 @@ function AuthenticatedDashboard() {
   const deleteSubmission = useDeleteSubmission({
     circleId,
     userId: session.user.id,
-    limit: 5,
+    limit: BOARD_LIVE_FEED_LIMIT,
   })
+  const diagnosticsEnabled = import.meta.env.DEV || session.user.id === BOARD_LIVE_DIAGNOSTICS_USER_ID
+
+  useEffect(() => {
+    console.info('[Only Gains Board Live] diagnostics active', {
+      currentUserId: session.user.id ?? null,
+      diagnosticsEnabled,
+      selectedBoardId: activeBoard?.id ?? null,
+      selectedBoardName: activeBoard?.name ?? null,
+      appEnv: import.meta.env.VITE_APP_ENV ?? null,
+      buildMode: import.meta.env.MODE ?? null,
+    })
+  }, [activeBoard?.id, activeBoard?.name, diagnosticsEnabled, session.user.id])
+
+  if (diagnosticsEnabled) {
+    console.debug('[Only Gains Board Live]', 'Dashboard board context', {
+      selectedBoardName: activeBoard?.name ?? null,
+      selectedBoardId: activeBoard?.id ?? null,
+      boardIdPassedToUseRecentSubmissions: circleId ?? null,
+      availableBoards: boards.map((board) => ({
+        id: board.id,
+        name: board.name,
+      })),
+    })
+  }
   const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
 
   function handleQuickLog(value) {

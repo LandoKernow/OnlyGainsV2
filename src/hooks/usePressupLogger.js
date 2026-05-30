@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createSubmission } from '../api/submissions'
+import { createSubmission, debugSubmissionPropagation } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
 import { getLondonSubmissionParts } from '../utils/dates'
 import { createClientId } from '../utils/uuid'
 import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
+import { GLOBAL_BOARD_ID } from '../utils/boards'
+
+const CANONICAL_PROPAGATION_REFRESH_DELAYS = [350, 1400]
 
 function buildPendingSubmission({ value, circleId, userId, actorName }) {
   const dateParts = getLondonSubmissionParts()
@@ -25,12 +28,39 @@ function buildPendingSubmission({ value, circleId, userId, actorName }) {
   }
 }
 
-export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
+function isRecentSubmissionsQuery(query) {
+  return Array.isArray(query.queryKey) && query.queryKey[0] === 'dashboard' && query.queryKey[1] === 'recent-submissions'
+}
+
+function isLeaderboardQueryForPressups(query) {
+  return (
+    Array.isArray(query.queryKey) &&
+    query.queryKey[0] === 'leaderboard' &&
+    (query.queryKey[1] === 'pressups' || query.queryKey[1] === 'canonical')
+  )
+}
+
+function scheduleCanonicalPropagationRefresh({ queryClient }) {
+  for (const delayMs of CANONICAL_PROPAGATION_REFRESH_DELAYS) {
+    globalThis.setTimeout(() => {
+      void queryClient.invalidateQueries({
+        predicate: (query) => isRecentSubmissionsQuery(query),
+      })
+
+      void queryClient.invalidateQueries({
+        predicate: (query) => isLeaderboardQueryForPressups(query),
+      })
+    }, delayMs)
+  }
+}
+
+export function usePressupLogger({ circleId, userId, actorName, limit = 5, boardIds = [] }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const queryKey = getRecentSubmissionsQueryKey(circleId, limit)
   const currentYear = getLondonSubmissionParts().year
   const leaderboardQueryKey = getPressupLeaderboardQueryKey(circleId, currentYear)
+  const propagationBoardIds = [...new Set([GLOBAL_BOARD_ID, circleId, ...(boardIds ?? [])].filter(Boolean))]
 
   return useMutation({
     mutationFn: async ({ value }) => {
@@ -90,7 +120,7 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
         previousLeaderboardRows,
       }
     },
-    onSuccess: (savedSubmission, _variables, context) => {
+    onSuccess: async (savedSubmission, _variables, context) => {
       queryClient.setQueryData(queryKey, (currentRows = []) =>
         currentRows.map((row) =>
           row.id === context.pendingId
@@ -113,6 +143,24 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
       )
 
       showToast({ tone: 'success', message: 'BOARD UPDATED.' })
+
+      scheduleCanonicalPropagationRefresh({ queryClient })
+
+      if (import.meta.env.DEV) {
+        globalThis.setTimeout(async () => {
+          const propagation = await debugSubmissionPropagation({
+            submissionId: savedSubmission.id,
+            userId,
+            activityType: 'pressups',
+            value: savedSubmission.value,
+            activityDate: savedSubmission.activityDate,
+            circleId,
+            boardIds: propagationBoardIds,
+          })
+
+          console.debug('[Only Gains Logging] canonical propagation', propagation)
+        }, 900)
+      }
     },
     onError: (error, _variables, context) => {
       console.error('[Only Gains Logging] submission failed', {
@@ -129,7 +177,9 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5 }) {
       showToast({ tone: 'error', message: 'Could not save. Try again.' })
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey })
+      globalThis.setTimeout(() => {
+        void queryClient.invalidateQueries({ queryKey })
+      }, CANONICAL_PROPAGATION_REFRESH_DELAYS[0])
       queryClient.invalidateQueries({ queryKey: leaderboardQueryKey })
     },
   })

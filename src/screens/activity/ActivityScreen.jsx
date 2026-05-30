@@ -6,15 +6,19 @@ import { useDeleteSubmission } from '../../hooks/useDeleteSubmission'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { RecentActivityCard, RemoveEntryModal } from '../../features/dashboard/DashboardSections'
 
+const BOARD_LIVE_FEED_LIMIT = 20
+
 export default function ActivityScreen() {
   const { session } = useAuth()
   const { circleId } = useBoardMeta()
   const [entryToRemove, setEntryToRemove] = useState(null)
-  const recentActivityQuery = useRecentSubmissions(circleId, 5)
+  const recentActivityQuery = useRecentSubmissions(circleId, BOARD_LIVE_FEED_LIMIT, {
+    userId: session.user.id,
+  })
   const deleteSubmission = useDeleteSubmission({
     circleId,
     userId: session.user.id,
-    limit: 5,
+    limit: BOARD_LIVE_FEED_LIMIT,
   })
 
   function handleConfirmRemove() {
