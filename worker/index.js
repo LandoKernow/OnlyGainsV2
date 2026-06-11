@@ -50,6 +50,47 @@ async function sbSelect(env, path) {
   return response.json()
 }
 
+// PostgREST silently caps responses (Supabase default: 1000 rows) — and with
+// no order clause that cap eats the NEWEST rows first. This walks Range
+// pages until a short page, so big boards never lose the current week.
+const PAGE_SIZE = 1000
+
+async function sbSelectAll(env, path) {
+  const rows = []
+
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const response = await sb(env, path, {
+      headers: { 'Range-Unit': 'items', Range: `${offset}-${offset + PAGE_SIZE - 1}` },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Supabase select failed (${response.status}): ${path}`)
+    }
+
+    const page = await response.json()
+    rows.push(...page)
+
+    if (page.length < PAGE_SIZE) {
+      return rows
+    }
+  }
+}
+
+// Permanent observability: every processed ping records an outcome. Failures
+// to log never fail the engine (table may not exist until migration runs).
+async function logOutcome(env, submissionId, outcome, detail = {}) {
+  console.log('[engine]', submissionId, outcome, JSON.stringify(detail))
+
+  try {
+    await sb(env, 'notification_engine_log', {
+      method: 'POST',
+      body: JSON.stringify([{ submission_id: submissionId, outcome, detail }]),
+    })
+  } catch {
+    // Observability must never take the engine down.
+  }
+}
+
 async function sbInsert(env, table, rows) {
   const response = await sb(env, table, {
     method: 'POST',
@@ -260,29 +301,33 @@ async function processSubmission(env, submissionId) {
   const submission = rows[0]
 
   if (!submission) {
-    return { processed: false, reason: 'submission not found' }
+    await logOutcome(env, submissionId, 'not_found')
+    return { processed: false, outcome: 'not_found', reason: 'submission not found' }
   }
 
   const { circle_id: circleId, user_id: actorId, activity_type: activityType, value } = submission
   const todayKey = londonDayKey()
   const weekStart = londonWeekStart(todayKey)
 
-  // Everything this board logged this year for this activity — one query
-  // powers weekly ranks, lifetime totals, and the before/after diff.
-  const boardRows = await sbSelect(
-    env,
-    `submissions?circle_id=eq.${circleId}&activity_type=eq.${activityType}&year=eq.${submission.year}&select=id,user_id,value,activity_date`,
-  )
+  // Two precise, paginated queries instead of one whole-year board dump
+  // (which Supabase capped at 1000 unordered rows — silently dropping the
+  // current week on big boards; the bug that made real overtakes invisible).
+  const [weekRows, actorYearRows] = await Promise.all([
+    sbSelectAll(
+      env,
+      `submissions?circle_id=eq.${circleId}&activity_type=eq.${activityType}&activity_date=gte.${weekStart}&select=user_id,value,activity_date&order=created_at.desc`,
+    ),
+    sbSelectAll(
+      env,
+      `submissions?user_id=eq.${actorId}&circle_id=eq.${circleId}&activity_type=eq.${activityType}&year=eq.${submission.year}&select=value&order=created_at.desc`,
+    ),
+  ])
 
   const weeklyTotals = new Map()
-  let actorLifetime = 0
+  const actorLifetime = actorYearRows.reduce((sum, row) => sum + (Number(row.value) || 0), 0)
 
-  for (const row of boardRows) {
+  for (const row of weekRows) {
     const dayKey = String(row.activity_date).slice(0, 10)
-
-    if (row.user_id === actorId) {
-      actorLifetime += Number(row.value) || 0
-    }
 
     if (dayKey >= weekStart && dayKey <= todayKey) {
       weeklyTotals.set(row.user_id, (weeklyTotals.get(row.user_id) ?? 0) + (Number(row.value) || 0))
@@ -392,7 +437,29 @@ async function processSubmission(env, submissionId) {
     }
   }
 
-  return { processed: true, eventsCreated: created.length, actorNewRank }
+  // Record the verdict — every ping leaves a readable trace.
+  const detail = {
+    activityType,
+    boardId: circleId,
+    weekRowsFetched: weekRows.length,
+    warriorsThisWeek: weeklyTotals.size,
+    actorBeforeTotal,
+    actorAfterTotal,
+    actorNewRank,
+    rivalsPassed: passed.length,
+    actorLifetime,
+    eventsCreated: created.map((event) => `${event.type}->${event.recipient_user_id}`),
+  }
+  const outcome =
+    created.length > 0
+      ? 'events_created'
+      : passed.length > 0
+        ? 'suppressed' // detection fired but cooldown/prefs gated every event
+        : 'no_rank_change'
+
+  await logOutcome(env, submissionId, outcome, detail)
+
+  return { processed: true, outcome, eventsCreated: created.length, actorNewRank, detail }
 }
 
 // ---------------------------------------------------------------------------
@@ -402,7 +469,10 @@ async function processSubmission(env, submissionId) {
 async function runStreakSweep(env) {
   const todayKey = londonDayKey()
   const year = Number(todayKey.slice(0, 4))
-  const rows = await sbSelect(env, `submissions?year=eq.${year}&select=user_id,activity_date`)
+  const rows = await sbSelectAll(
+    env,
+    `submissions?year=eq.${year}&select=user_id,activity_date&order=created_at.desc`,
+  )
 
   const daysByUser = new Map()
 
@@ -462,8 +532,11 @@ export default {
     }
 
     if (url.pathname === '/api/events/process' && request.method === 'POST') {
+      let submissionId = ''
+
       try {
-        const { submissionId } = await request.json()
+        const body = await request.json()
+        submissionId = body.submissionId || ''
 
         if (!submissionId) {
           return json({ error: 'submissionId required' }, 400)
@@ -471,6 +544,33 @@ export default {
 
         const result = await processSubmission(env, submissionId)
         return json(result)
+      } catch (error) {
+        // The ping is fire-and-forget client-side, so an unrecorded error
+        // here would vanish. Every failure leaves a trace.
+        await logOutcome(env, submissionId || 'unknown', 'error', {
+          message: String(error?.message || error),
+        })
+        return json({ outcome: 'error', error: String(error?.message || error) }, 500)
+      }
+    }
+
+    // Read the engine's recent verdicts without dashboard access:
+    // GET /api/events/log?limit=20 with the test-fire bearer token.
+    if (url.pathname === '/api/events/log' && request.method === 'GET') {
+      const auth = request.headers.get('Authorization') || ''
+
+      if (!env.TEST_FIRE_TOKEN || auth !== `Bearer ${env.TEST_FIRE_TOKEN}`) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+
+      const limit = Math.min(Number(url.searchParams.get('limit')) || 20, 100)
+
+      try {
+        const rows = await sbSelect(
+          env,
+          `notification_engine_log?select=submission_id,outcome,detail,created_at&order=created_at.desc&limit=${limit}`,
+        )
+        return json(rows)
       } catch (error) {
         return json({ error: String(error?.message || error) }, 500)
       }
