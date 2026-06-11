@@ -523,6 +523,16 @@ function json(data, status = 200) {
   })
 }
 
+// One auth path for every token-gated endpoint — no per-route drift.
+// Trims both sides so a stray newline pasted into the dashboard secret
+// can never cause a mystery 401.
+function isAuthorized(request, env) {
+  const token = String(env.TEST_FIRE_TOKEN || '').trim()
+  const header = String(request.headers.get('Authorization') || '').trim()
+
+  return Boolean(token) && header === `Bearer ${token}`
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
@@ -557,9 +567,7 @@ export default {
     // Read the engine's recent verdicts without dashboard access:
     // GET /api/events/log?limit=20 with the test-fire bearer token.
     if (url.pathname === '/api/events/log' && request.method === 'GET') {
-      const auth = request.headers.get('Authorization') || ''
-
-      if (!env.TEST_FIRE_TOKEN || auth !== `Bearer ${env.TEST_FIRE_TOKEN}`) {
+      if (!isAuthorized(request, env)) {
         return json({ error: 'unauthorized' }, 401)
       }
 
@@ -577,9 +585,7 @@ export default {
     }
 
     if (url.pathname === '/api/events/test-fire' && request.method === 'POST') {
-      const auth = request.headers.get('Authorization') || ''
-
-      if (!env.TEST_FIRE_TOKEN || auth !== `Bearer ${env.TEST_FIRE_TOKEN}`) {
+      if (!isAuthorized(request, env)) {
         return json({ error: 'unauthorized' }, 401)
       }
 
