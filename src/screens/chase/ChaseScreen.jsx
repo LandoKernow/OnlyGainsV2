@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
-import { PressureCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
+import { BattleReplayCard, PressureCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useChase } from '../../hooks/useChase'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
@@ -28,6 +28,7 @@ function ChaseContent() {
         <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
       </div>
 
+      <BattleReplayCard chase={chase} isLoading={leaderboardQuery.isLoading} activityType={activityType} />
       <PressureCard chase={chase} isLoading={leaderboardQuery.isLoading} activityType={activityType} variant="chase" />
       <PressupLeaderboardCard
         period={period}

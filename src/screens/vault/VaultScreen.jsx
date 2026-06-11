@@ -15,7 +15,7 @@ import {
   shareAward,
 } from '../../utils/awardShare'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
-import { TELEGRAM_URL } from '../../utils/community'
+import { IS_TELEGRAM_CONFIGURED, TELEGRAM_URL } from '../../utils/community'
 
 const CLAIMED_RECORD_TYPES = [
   'pressups_set',
@@ -264,6 +264,76 @@ export default function VaultScreen() {
     }
   }
 
+  const appTrackedCard = (
+    <Card title="APP-TRACKED" body="Earned on this board.">
+      {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
+      <div className="vault-records">
+        <div id="vault-records" />
+        <VaultRecordCard
+          title="Most press-ups / day"
+          record={pressupsDay}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
+        />
+        <VaultRecordCard
+          title="Most press-ups / week"
+          record={pressupsWeek}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
+        />
+        <VaultRecordCard
+          title="Most KM / day"
+          record={kmDay}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
+        />
+        <VaultRecordCard
+          title="Most KM / week"
+          record={kmWeek}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
+        />
+      </div>
+    </Card>
+  )
+
+  const claimedCard = (
+    <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
+      <div className="vault-records">
+        {CLAIMED_RECORD_TYPES.map((recordType) => (
+          <VaultRecordCard
+            key={recordType}
+            title={PROFILE_YEAR_RECORD_LABELS[recordType]}
+            record={claimedRecords[recordType] ?? null}
+            emptyCopy="No holder yet. Claim it from your 2026 profile."
+            isPublicVisitor={isPublicVisitor}
+            onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
+          />
+        ))}
+      </div>
+      {isPublicVisitor ? (
+        <div className="section-gap">
+          <Link className="button button--ghost" to="/dashboard">
+            Think you can beat one? Join the board.
+          </Link>
+        </div>
+      ) : null}
+    </Card>
+  )
+
+  const awardsSection = !awardsQuery.error ? (
+    <VaultAwardsSection
+      awards={awards}
+      error={awardsQuery.error}
+      onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+      onShareAward={handleShareAward}
+    />
+  ) : null
+
   return (
     <div className={isPublicVisitor ? 'screen screen--vault screen--vault-public' : 'screen screen--vault'}>
       <div className="stack-lg">
@@ -299,141 +369,28 @@ export default function VaultScreen() {
           <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
           <p className="vault-intro__copy">App-tracked live. Claimed records clearly labelled.</p>
           {isPublicVisitor ? <p className="vault-intro__copy">Think you can beat one? Join the board.</p> : null}
-          <p className="vault-intro__copy">
-            <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-              Enter the Telegram.
-            </a>{' '}
-            The board talks there.
-          </p>
+          {IS_TELEGRAM_CONFIGURED ? (
+            <p className="vault-intro__copy">
+              <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+                Enter the Telegram.
+              </a>{' '}
+              The board talks there.
+            </p>
+          ) : null}
         </div>
 
         {!isLoading && !error ? (
           isPublicVisitor ? (
             <>
-              {!awardsQuery.error ? (
-                <VaultAwardsSection
-                  awards={awards}
-                  error={awardsQuery.error}
-                  onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
-                  onShareAward={handleShareAward}
-                />
-              ) : null}
-
-              <Card title="APP-TRACKED" body="Earned on this board.">
-                {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
-                <div className="vault-records">
-                  <div id="vault-records" />
-                  <VaultRecordCard
-                    title="Most press-ups / day"
-                    record={pressupsDay}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
-                  />
-                  <VaultRecordCard
-                    title="Most press-ups / week"
-                    record={pressupsWeek}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
-                  />
-                  <VaultRecordCard
-                    title="Most KM / day"
-                    record={kmDay}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
-                  />
-                  <VaultRecordCard
-                    title="Most KM / week"
-                    record={kmWeek}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
-                  />
-                </div>
-              </Card>
-
-              <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
-                <div className="vault-records">
-                  {CLAIMED_RECORD_TYPES.map((recordType) => (
-                    <VaultRecordCard
-                      key={recordType}
-                      title={PROFILE_YEAR_RECORD_LABELS[recordType]}
-                      record={claimedRecords[recordType] ?? null}
-                      emptyCopy="No holder yet. Claim it from your 2026 profile."
-                      isPublicVisitor={isPublicVisitor}
-                      onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
-                    />
-                  ))}
-                </div>
-                <div className="section-gap">
-                  <Link className="button button--ghost" to="/dashboard">
-                    Think you can beat one? Join the board.
-                  </Link>
-                </div>
-              </Card>
+              {awardsSection}
+              {appTrackedCard}
+              {claimedCard}
             </>
           ) : (
             <>
-              <Card title="APP-TRACKED" body="Earned on this board.">
-                {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
-                <div className="vault-records">
-                  <div id="vault-records" />
-                  <VaultRecordCard
-                    title="Most press-ups / day"
-                    record={pressupsDay}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
-                  />
-                  <VaultRecordCard
-                    title="Most press-ups / week"
-                    record={pressupsWeek}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
-                  />
-                  <VaultRecordCard
-                    title="Most KM / day"
-                    record={kmDay}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
-                  />
-                  <VaultRecordCard
-                    title="Most KM / week"
-                    record={kmWeek}
-                    emptyCopy={appTrackedEmptyCopy}
-                    isPublicVisitor={isPublicVisitor}
-                    onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
-                  />
-                </div>
-              </Card>
-
-              <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
-                <div className="vault-records">
-                  {CLAIMED_RECORD_TYPES.map((recordType) => (
-                    <VaultRecordCard
-                      key={recordType}
-                      title={PROFILE_YEAR_RECORD_LABELS[recordType]}
-                      record={claimedRecords[recordType] ?? null}
-                      emptyCopy="No holder yet. Claim it from your 2026 profile."
-                      isPublicVisitor={isPublicVisitor}
-                      onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
-                    />
-                  ))}
-                </div>
-              </Card>
-
-              {!awardsQuery.error ? (
-                <VaultAwardsSection
-                  awards={awards}
-                  error={awardsQuery.error}
-                  onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
-                  onShareAward={handleShareAward}
-                />
-              ) : null}
+              {appTrackedCard}
+              {claimedCard}
+              {awardsSection}
             </>
           )
         ) : null}

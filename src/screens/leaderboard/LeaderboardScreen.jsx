@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
-import { PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
+import { HallOfShameCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 
@@ -34,6 +34,10 @@ function LeaderboardContent() {
         error={leaderboardQuery.error}
         activityType={activityType}
       />
+
+      {!leaderboardQuery.isLoading ? (
+        <HallOfShameCard rows={leaderboardQuery.rows} activityType={activityType} />
+      ) : null}
     </div>
   )
 }

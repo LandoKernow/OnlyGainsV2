@@ -2341,3 +2341,446 @@ button {
     height: 12.5rem;
   }
 }
+
+/* ============================================================
+   WAR LAYER — tier banner, streak, and the shareable war card
+   ============================================================ */
+
+.hero-war-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 0.6rem;
+  margin-bottom: 0.2rem;
+}
+
+.hero-war-banner__tier,
+.hero-war-banner__streak {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(213, 106, 44, 0.32);
+  background:
+    radial-gradient(circle at top left, rgba(213, 106, 44, 0.18), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.hero-war-banner__tier-label,
+.hero-war-banner__streak-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.hero-war-banner__tier-name {
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  color: #fff4ed;
+  line-height: 1;
+}
+
+.hero-war-banner__streak {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.5rem;
+  border-color: rgba(114, 211, 123, 0.28);
+  background:
+    radial-gradient(circle at top left, rgba(114, 211, 123, 0.16), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.hero-war-banner__streak--risk {
+  border-color: rgba(234, 95, 95, 0.45);
+  background:
+    radial-gradient(circle at top left, rgba(234, 95, 95, 0.2), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+  animation: war-pulse 1.6s ease-in-out infinite;
+}
+
+.hero-war-banner__streak-value {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@keyframes war-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(234, 95, 95, 0); }
+  50% { box-shadow: 0 0 0 3px rgba(234, 95, 95, 0.18); }
+}
+
+.war-card-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, var(--safe-top)) 1rem calc(2rem + var(--safe-bottom));
+  background: rgba(2, 2, 4, 0.86);
+  backdrop-filter: blur(10px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: war-fade 180ms ease-out both;
+}
+
+@keyframes war-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.war-card {
+  position: relative;
+  width: min(25rem, 100%);
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(213, 106, 44, 0.55);
+  padding: 1.35rem 1.25rem 1.25rem;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(213, 106, 44, 0.4), transparent 55%),
+    linear-gradient(180deg, #1c1310 0%, #0a0708 100%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  animation: war-card-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes war-card-in {
+  from { opacity: 0; transform: translateY(22px) scale(0.94); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.war-card__scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03) 0px,
+    rgba(255, 255, 255, 0.03) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+.war-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.war-card__brand {
+  font-size: 0.7rem;
+  letter-spacing: 0.28em;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.war-card__tier {
+  font-size: 0.74rem;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+  color: #140d0a;
+  background: linear-gradient(135deg, var(--accent), #f7a15c);
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+}
+
+.war-card__hit {
+  display: grid;
+  gap: 0.25rem;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.war-card__hit-eyebrow {
+  font-size: 0.66rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.war-card__hit-value {
+  font-size: clamp(3.4rem, 18vw, 4.8rem);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  color: #fff7f1;
+  text-shadow: 0 0 28px rgba(213, 106, 44, 0.55);
+}
+
+.war-card__warrior {
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: #f7f1eb;
+  text-transform: uppercase;
+}
+
+.war-card__milestone {
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffe8d4;
+  border: 1px solid rgba(213, 106, 44, 0.5);
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.7rem;
+  margin-bottom: 1rem;
+  background: rgba(213, 106, 44, 0.14);
+}
+
+.war-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.war-card__stat {
+  display: grid;
+  gap: 0.15rem;
+  text-align: center;
+  padding: 0.6rem 0.3rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.war-card__stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+.war-card__stat-value {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #fff4ed;
+}
+
+.war-card__tagline {
+  text-align: center;
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.war-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.war-card__actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.war-card__share {
+  min-height: 3rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+}
+
+.war-card__callout {
+  min-height: 2.7rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.05em;
+}
+
+.war-card__dismiss {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  min-height: 2.2rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.18);
+}
+
+/* War UI — tier badges, Hall of Shame, Battle Replay */
+
+.leaderboard-tier {
+  display: inline-block;
+  margin-left: 0.5rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent);
+  vertical-align: middle;
+}
+
+.leaderboard-tier--shame {
+  color: var(--text-muted);
+}
+
+.shame-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shame-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(234, 95, 95, 0.16);
+  background:
+    linear-gradient(90deg, rgba(234, 95, 95, 0.07), transparent 70%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.shame-row--current {
+  border-color: rgba(234, 95, 95, 0.42);
+  background:
+    linear-gradient(90deg, rgba(234, 95, 95, 0.16), transparent 70%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.shame-row__rank {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #e9b3b3;
+  min-width: 2rem;
+}
+
+.shame-row__copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.shame-row__copy strong {
+  font-size: 0.94rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shame-row__meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.shame-row__total {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f7f1eb;
+}
+
+.activity-intensity {
+  margin-right: 0.1rem;
+}
+
+.battle-replay {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.replay-side {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.85rem 0.7rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  text-align: center;
+  align-content: start;
+}
+
+.replay-side--you {
+  border-color: rgba(213, 106, 44, 0.5);
+  background:
+    radial-gradient(circle at top, rgba(213, 106, 44, 0.18), transparent 65%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.replay-side__role {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.replay-side__name {
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.replay-side__tier {
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.replay-side__stats {
+  display: grid;
+  gap: 0.1rem;
+  margin-top: 0.35rem;
+}
+
+.replay-side__rank {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.replay-side__total {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fff4ed;
+}
+
+.replay-side__today {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.replay-versus {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.2rem;
+  min-width: 3.4rem;
+}
+
+.replay-versus__vs {
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+
+.replay-versus__gap {
+  font-size: 0.72rem;
+  color: #fff4ed;
+  font-weight: 700;
+}
+
+.replay-versus__cry {
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.2;
+}

@@ -5,25 +5,8 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useBoardInviteDetails } from '../../hooks/useBoards'
 import { buildBoardInviteQrUrl, buildBoardInviteUrl, shareBoardInvite } from '../../utils/boardInvites'
 import { getBoardDisplayName, getBoardDisplayTypeLabel, isGlobalBoard } from '../../utils/boards'
-
-function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(text)
-  }
-
-  const textarea = document.createElement('textarea')
-  textarea.value = text
-  document.body.appendChild(textarea)
-  textarea.select()
-
-  try {
-    document.execCommand('copy')
-  } finally {
-    document.body.removeChild(textarea)
-  }
-
-  return Promise.resolve()
-}
+import { copyText } from '../../utils/community'
+import { getToastMessage } from '../../utils/toastCopy'
 
 function BoardInviteContent() {
   const { boardId = '' } = useParams()
@@ -62,7 +45,7 @@ function BoardInviteContent() {
 
       showToast({
         tone: 'success',
-        message: result === 'shared' ? 'Invite shared.' : 'Invite link copied.',
+        message: result === 'shared' ? getToastMessage('share_success') : getToastMessage('copy_success'),
       })
     } catch {
       showToast({ tone: 'error', message: 'Could not share board invite.' })
@@ -76,7 +59,7 @@ function BoardInviteContent() {
 
     try {
       await copyText(inviteUrl)
-      showToast({ tone: 'success', message: 'Invite link copied.' })
+      showToast({ tone: 'success', message: getToastMessage('copy_success') })
     } catch {
       showToast({ tone: 'error', message: 'Could not copy invite link.' })
     }

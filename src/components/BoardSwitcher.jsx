@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useToast } from './ToastProvider'
 import { useBoardMeta } from '../hooks/useBoardMeta'
 import { getBoardDisplayName, getBoardDisplayTypeLabel } from '../utils/boards'
+import { getToastMessage } from '../utils/toastCopy'
 
 export function BoardSwitcher() {
   const { activeBoard, boards, setActiveBoardId } = useBoardMeta()
@@ -16,7 +17,7 @@ export function BoardSwitcher() {
   function handleSelectBoard(boardId) {
     setActiveBoardId(boardId)
     setIsOpen(false)
-    showToast({ tone: 'success', message: 'Board switched.' })
+    showToast({ tone: 'success', message: getToastMessage('board_switched') })
   }
 
   return (

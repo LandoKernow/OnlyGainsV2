@@ -56,6 +56,8 @@ export function AddToHomeScreenPrompt() {
   const [isDismissed, setIsDismissed] = useState(true)
   const [isDismissStateReady, setIsDismissStateReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  // "Show me later" only snoozes for this session; "Got it" persists the dismissal.
+  const [isSnoozed, setIsSnoozed] = useState(false)
   const isAwardRoute = location.pathname.startsWith('/award/')
   const isJoinRoute = location.pathname.startsWith('/join/')
   const isBoardInviteRoute = /^\/boards\/[^/]+\/invite$/.test(location.pathname)
@@ -97,6 +99,7 @@ export function AddToHomeScreenPrompt() {
       !isAuthenticated ||
       !isDismissStateReady ||
       isDismissed ||
+      isSnoozed ||
       isOpen ||
       isBlockedRoute ||
       isProfileYearRoute ||
@@ -127,6 +130,7 @@ export function AddToHomeScreenPrompt() {
     isDismissed,
     isOpen,
     isProfileYearRoute,
+    isSnoozed,
     profilePromptBlocks,
     profileYearQuery.isFetching,
     profileYearQuery.isLoading,
@@ -151,6 +155,11 @@ export function AddToHomeScreenPrompt() {
   function dismissPrompt() {
     markDismissed(dismissKey)
     setIsDismissed(true)
+    setIsOpen(false)
+  }
+
+  function snoozePrompt() {
+    setIsSnoozed(true)
     setIsOpen(false)
   }
 
@@ -198,7 +207,7 @@ export function AddToHomeScreenPrompt() {
             <button className="button" type="button" onClick={dismissPrompt}>
               Got it
             </button>
-            <button className="button button--ghost" type="button" onClick={dismissPrompt}>
+            <button className="button button--ghost" type="button" onClick={snoozePrompt}>
               Show me later
             </button>
           </div>
