@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
 import {
@@ -19,9 +20,14 @@ import { useWeeklyLeaderMessage } from '../../hooks/useWeeklyLeaderMessage'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
+import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { parseKmValue, formatActivityGap } from '../../utils/activity'
 import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
+import { MACHO_TAKEOVER_CONFIG } from '../../config/machoTakeover'
+import { shareMachoCardImage } from '../../utils/machoCardImage'
+import { dealMachoImage, preloadNextMachoImage } from '../../utils/machoRotation'
+import { evaluateMachoTrigger, markMachoFired, resolveMachoPresentation } from '../../utils/machoTriggers'
 import { getToastMessage } from '../../utils/toastCopy'
 import { calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
 import { shareWarCardImage } from '../../utils/warCardImage'
@@ -57,6 +63,7 @@ function parseManualValue(value, activityType) {
 
 function AuthenticatedDashboard() {
   const { session } = useAuth()
+  const location = useLocation()
   const { circleId, boards, activeBoard } = useBoardMeta()
   const profileQuery = useCurrentProfile()
   const recentActivityQuery = useRecentSubmissions(circleId, BOARD_LIVE_FEED_LIMIT, {
@@ -69,6 +76,7 @@ function AuthenticatedDashboard() {
   const [manualError, setManualError] = useState('')
   const [entryToRemove, setEntryToRemove] = useState(null)
   const [warCard, setWarCard] = useState(null)
+  const [takeover, setTakeover] = useState(null)
   const { showToast } = useToast()
   const logger = useActivityLogger({
     circleId,
@@ -128,6 +136,110 @@ function AuthenticatedDashboard() {
   }
   const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
   const streak = calculateStreak(leaderboardQuery.data, session.user.id)
+
+  // Warm the next takeover image so the reveal never lags.
+  useEffect(() => {
+    void preloadNextMachoImage(session.user.id)
+  }, [session.user.id])
+
+  // Demo trigger: /dashboard?takeover=demo fires the full takeover + share
+  // flow with a rotation-dealt image. No cooldowns marked, nothing persisted.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+
+    if (params.get('takeover') !== 'demo') {
+      return
+    }
+
+    let cancelled = false
+
+    dealMachoImage(session.user.id).then((imageSrc) => {
+      if (cancelled || !imageSrc) {
+        return
+      }
+
+      setTakeover({
+        imageSrc,
+        stat: '+150',
+        sub: 'ONE SESSION · DEMO',
+        tagline: MACHO_TAKEOVER_CONFIG.triggers.bigSession.tagline,
+        warriorName: profileQuery.data?.name || 'WARRIOR',
+        boardName: activeBoard?.name || 'GLOBAL BOARD',
+        shareState: '',
+      })
+    })
+
+    return () => {
+      cancelled = true
+    }
+    // Re-fires when the ?takeover=demo param (re)appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search, session.user.id])
+
+  // Earned-moment check. Runs AFTER a successful save — read-only on
+  // leaderboard data, can never interfere with the write path.
+  async function maybeFireMachoTakeover({ value, pendingWarCard }) {
+    try {
+      const trigger = evaluateMachoTrigger({
+        userId: session.user.id,
+        activityType,
+        value,
+        submissionRows: leaderboardQuery.data ?? [],
+        previousRank: leaderboardQuery.currentUserRow?.rank ?? Number.POSITIVE_INFINITY,
+        newRank: pendingWarCard.rank,
+        streakDays: pendingWarCard.streakDays,
+        todayTotalBefore: leaderboardQuery.currentUserRow?.todayTotal ?? 0,
+      })
+
+      if (!trigger) {
+        return false
+      }
+
+      const presentation = resolveMachoPresentation(session.user.id, trigger.type)
+
+      if (!presentation) {
+        return false
+      }
+
+      const imageSrc = await dealMachoImage(session.user.id)
+
+      if (!imageSrc) {
+        return false
+      }
+
+      markMachoFired(session.user.id, trigger.type, presentation)
+
+      if (presentation === 'takeover') {
+        setTakeover({
+          imageSrc,
+          stat: trigger.stat,
+          sub: trigger.sub,
+          tagline: trigger.tagline,
+          warriorName: pendingWarCard.warriorName,
+          boardName: pendingWarCard.boardName,
+          shareState: '',
+        })
+        return true
+      }
+
+      showToast({
+        tone: 'success',
+        variant: 'macho',
+        eyebrow: 'EARNED',
+        title: trigger.stat === trigger.sub ? trigger.stat : `${trigger.stat} ${trigger.sub ?? ''}`.trim(),
+        message: trigger.tagline,
+        imagePath: imageSrc,
+        durationMs: 4200,
+      })
+      return false
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('[Only Gains Takeover] trigger evaluation failed', error)
+      }
+
+      return false
+    }
+  }
 
   function handleQuickLog(value) {
     if (logger.isPending) {
@@ -229,12 +341,18 @@ function AuthenticatedDashboard() {
             setManualError(detailedMessage)
           }
         },
-        onSuccess: () => {
+        onSuccess: async () => {
           if (activityType === 'km') {
             setManualError('')
           }
 
-          setWarCard(pendingWarCard)
+          // Earned moment? Full takeover replaces the standard war card so
+          // two reveals never stack. Toast-level repeats keep the war card.
+          const tookOver = await maybeFireMachoTakeover({ value, pendingWarCard })
+
+          if (!tookOver) {
+            setWarCard(pendingWarCard)
+          }
         },
       },
     )
@@ -258,6 +376,28 @@ function AuthenticatedDashboard() {
       }
     } catch {
       setWarCard((current) => (current ? { ...current, shareState: '' } : current))
+      showToast({ tone: 'error', message: getToastMessage('generic_error') })
+    }
+  }
+
+  async function handleTakeoverShare() {
+    setTakeover((current) => (current ? { ...current, shareState: 'pending' } : current))
+
+    try {
+      const result = await shareMachoCardImage(takeover)
+
+      if (result === 'cancelled') {
+        setTakeover((current) => (current ? { ...current, shareState: '' } : current))
+        return
+      }
+
+      setTakeover((current) => (current ? { ...current, shareState: result } : current))
+
+      if (result === 'downloaded') {
+        showToast({ tone: 'success', message: 'WAR CARD SAVED. POST IT.' })
+      }
+    } catch {
+      setTakeover((current) => (current ? { ...current, shareState: '' } : current))
       showToast({ tone: 'error', message: getToastMessage('generic_error') })
     }
   }
@@ -365,6 +505,11 @@ function AuthenticatedDashboard() {
         onShare={handleWarCardShare}
         onCallout={handleWarCardCallout}
         onClose={() => setWarCard(null)}
+      />
+      <MachoTakeover
+        takeover={takeover}
+        onShare={handleTakeoverShare}
+        onClose={() => setTakeover(null)}
       />
     </>
   )

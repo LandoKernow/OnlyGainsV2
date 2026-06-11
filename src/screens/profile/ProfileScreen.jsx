@@ -660,6 +660,9 @@ function AdminAwardControls() {
             <Link className="button button--ghost" to="/admin/awards">
               Manual SQL helper
             </Link>
+            <Link className="button button--ghost" to="/dashboard?takeover=demo">
+              Preview the macho takeover
+            </Link>
           </div>
         ) : null}
       </div>

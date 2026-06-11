@@ -203,25 +203,19 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+// Generic share ladder for any rendered card blob:
+// native file share (Instagram story) -> download -> link-as-text.
 // Returns: 'shared' | 'downloaded' | 'copied' | 'cancelled'
-export async function shareWarCardImage(card) {
-  let blob = null
-
-  try {
-    blob = await renderWarCardImage(card)
-  } catch {
-    blob = null
-  }
-
+export async function shareCardBlob(blob, { filename, text }) {
   if (blob && typeof File !== 'undefined' && navigator.canShare) {
-    const file = new File([blob], 'only-gains-war-card.png', { type: 'image/png' })
+    const file = new File([blob], filename, { type: 'image/png' })
 
     if (navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({
           files: [file],
           title: 'Only Gains',
-          text: 'Logged. No hiding now. Only Gains: https://onlygains.club',
+          text,
         })
         return 'shared'
       } catch (error) {
@@ -234,10 +228,26 @@ export async function shareWarCardImage(card) {
   }
 
   if (blob) {
-    downloadBlob(blob, 'only-gains-war-card.png')
+    downloadBlob(blob, filename)
     return 'downloaded'
   }
 
   // Last resort: share the link as text.
   return shareOnlyGains()
+}
+
+// Returns: 'shared' | 'downloaded' | 'copied' | 'cancelled'
+export async function shareWarCardImage(card) {
+  let blob = null
+
+  try {
+    blob = await renderWarCardImage(card)
+  } catch {
+    blob = null
+  }
+
+  return shareCardBlob(blob, {
+    filename: 'only-gains-war-card.png',
+    text: 'Logged. No hiding now. Only Gains: https://onlygains.club',
+  })
 }
