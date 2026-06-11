@@ -30,6 +30,7 @@ import { MACHO_TAKEOVER_CONFIG } from '../../config/machoTakeover'
 import { shareMachoCardImage } from '../../utils/machoCardImage'
 import { dealMachoImage, preloadNextMachoImage } from '../../utils/machoRotation'
 import { evaluateMachoTrigger, markMachoFired, resolveMachoPresentation } from '../../utils/machoTriggers'
+import { pingEventEngine } from '../../api/notifications'
 import { getToastMessage } from '../../utils/toastCopy'
 import { calculateCombo, calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
 import { shareWarCardImage } from '../../utils/warCardImage'
@@ -350,9 +351,14 @@ function AuthenticatedDashboard() {
             setManualError(detailedMessage)
           }
         },
-        onSuccess: async () => {
+        onSuccess: async (savedSubmission) => {
           if (activityType === 'km') {
             setManualError('')
+          }
+
+          // Wake the notification engine (fire-and-forget; never blocks UI).
+          if (savedSubmission?.id) {
+            pingEventEngine(savedSubmission.id)
           }
 
           // Earned moment? Full takeover replaces the standard war card so

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { Card } from '../../components/Card'
+import { AlertSettingsCard } from '../../features/profile/AlertSettingsCard'
 import { ProfileBasicsCard } from '../../features/profile/ProfileBasicsCard'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
@@ -731,6 +732,7 @@ export default function ProfileScreen() {
           <ProfileSummary />
           <BoardsCard />
           <AdminAwardControls />
+          <AlertSettingsCard />
           <ProfileYearEntryCard />
           <PersonalRecordsEntryCard />
           <VaultProfileCard />

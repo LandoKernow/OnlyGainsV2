@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { BoardSwitcher } from '../../components/BoardSwitcher'
+import { NotificationBell } from '../../components/NotificationBell'
+import { getPermissionState, registerServiceWorker } from '../../utils/pushManager'
 
 const navItems = [
   { to: '/dashboard', label: 'Board' },
@@ -13,6 +16,14 @@ const navItems = [
 export function AppShell({ children }) {
   const { session, status, authError } = useAuth()
   const location = useLocation()
+
+  // Returning users with alerts armed: keep the service worker registered so
+  // pushes land even after browser updates clear registrations.
+  useEffect(() => {
+    if (getPermissionState() === 'granted') {
+      void registerServiceWorker()
+    }
+  }, [])
   const userLabel = session?.user?.email ? session.user.email.split('@')[0] : null
   const isAwardRoute = location.pathname.startsWith('/award/')
   const isJoinRoute = location.pathname.startsWith('/join/')
@@ -50,13 +61,16 @@ export function AppShell({ children }) {
               <p className="eyebrow">ONLY GAINS</p>
               <h1>{headerTitle}</h1>
             </div>
-            {showSessionPill ? (
-              <div className="session-pill" title={session?.user?.email} aria-live="polite">
-                {status === 'loading' && 'Session loading'}
-                {status === 'authenticated' && userLabel}
-                {status === 'setup-error' && (authError || 'Setup error')}
-              </div>
-            ) : null}
+            <div className="app-header__meta">
+              {status === 'authenticated' ? <NotificationBell /> : null}
+              {showSessionPill ? (
+                <div className="session-pill" title={session?.user?.email} aria-live="polite">
+                  {status === 'loading' && 'Session loading'}
+                  {status === 'authenticated' && userLabel}
+                  {status === 'setup-error' && (authError || 'Setup error')}
+                </div>
+              ) : null}
+            </div>
           </header>
           {showBoardSwitcher ? <BoardSwitcher /> : null}
         </>

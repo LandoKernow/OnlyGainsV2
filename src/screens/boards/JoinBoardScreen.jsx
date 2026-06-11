@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { BattleAlertsPrompt } from '../../components/BattleAlertsPrompt'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
@@ -145,6 +146,7 @@ function JoinBoardContent() {
                   </Link>
                 </div>
               </div>
+              <BattleAlertsPrompt trigger="board-join" />
             </Card>
           ) : (
             <div className="board-stage__actions board-stage__actions--stacked">

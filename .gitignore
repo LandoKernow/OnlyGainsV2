@@ -3,3 +3,5 @@ dist
 .DS_Store
 .npm-cache
 .env
+.vapid-keys.env
+dist-worker

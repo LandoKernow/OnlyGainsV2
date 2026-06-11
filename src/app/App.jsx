@@ -23,6 +23,7 @@ const ProfileYearSetupScreen = lazy(() => import('../screens/profile/ProfileYear
 const PersonalRecordsScreen = lazy(() => import('../screens/profile/PersonalRecordsScreen'))
 const VaultScreen = lazy(() => import('../screens/vault/VaultScreen'))
 const ResetPasswordScreen = lazy(() => import('../screens/reset/ResetPasswordScreen'))
+const AlertsScreen = lazy(() => import('../screens/alerts/AlertsScreen'))
 
 export default function App() {
   return (
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="/profile/records" element={<PersonalRecordsScreen />} />
             <Route path="/profile/year/:year" element={<ProfileYearSetupScreen />} />
             <Route path="/vault" element={<VaultScreen />} />
+            <Route path="/alerts" element={<AlertsScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
           <AwardCelebrationWatcher />
