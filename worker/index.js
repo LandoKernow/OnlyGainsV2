@@ -28,23 +28,43 @@ import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
 // Supabase REST (service role) helpers
 // ---------------------------------------------------------------------------
 
+// Tolerates the common dashboard paste accidents in SUPABASE_URL: trailing
+// whitespace, trailing slash, or a pasted /rest/v1 suffix — any of which
+// turn every PostgREST request into a gateway 404.
+function supabaseBaseUrl(env) {
+  return String(env.SUPABASE_URL || '')
+    .trim()
+    .replace(/\/+$/, '')
+    .replace(/\/rest\/v1$/, '')
+}
+
 function sb(env, path, init = {}) {
-  return fetch(`${env.SUPABASE_URL}/rest/v1/${path}`, {
+  const key = String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+
+  return fetch(`${supabaseBaseUrl(env)}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: key,
+      Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',
       ...init.headers,
     },
   })
 }
 
+// Failed requests surface the response body — a 404 from a missing table
+// reads completely differently to a 404 from a malformed base URL, and the
+// next person debugging this deserves to know which one they have.
+async function sbFail(response, verb, path) {
+  const body = (await response.text().catch(() => '')).slice(0, 200)
+  throw new Error(`Supabase ${verb} failed (${response.status}): ${path} :: ${body}`)
+}
+
 async function sbSelect(env, path) {
   const response = await sb(env, path)
 
   if (!response.ok) {
-    throw new Error(`Supabase select failed (${response.status}): ${path}`)
+    await sbFail(response, 'select', path)
   }
 
   return response.json()
@@ -64,7 +84,7 @@ async function sbSelectAll(env, path) {
     })
 
     if (!response.ok) {
-      throw new Error(`Supabase select failed (${response.status}): ${path}`)
+      await sbFail(response, 'select', path)
     }
 
     const page = await response.json()
@@ -99,7 +119,7 @@ async function sbInsert(env, table, rows) {
   })
 
   if (!response.ok) {
-    throw new Error(`Supabase insert failed (${response.status}): ${table}`)
+    await sbFail(response, 'insert', table)
   }
 
   return response.json()
@@ -146,12 +166,22 @@ function formatValue(value, activityType) {
 // ---------------------------------------------------------------------------
 
 async function getPrefs(env, userId) {
-  const rows = await sbSelect(env, `notification_prefs?user_id=eq.${userId}&select=global_mute,categories`)
-  const row = rows[0]
+  // No prefs row — or no reachable prefs table — means defaults. A missing
+  // preference must never kill a war report.
+  try {
+    const rows = await sbSelect(env, `notification_prefs?user_id=eq.${userId}&select=global_mute,categories`)
+    const row = rows[0]
 
-  return {
-    globalMute: row?.global_mute ?? false,
-    categories: { ...NOTIFICATIONS_CONFIG.defaultCategories, ...(row?.categories ?? {}) },
+    return {
+      globalMute: row?.global_mute ?? false,
+      categories: { ...NOTIFICATIONS_CONFIG.defaultCategories, ...(row?.categories ?? {}) },
+    }
+  } catch (error) {
+    console.log('[engine] prefs lookup failed, using defaults', String(error?.message || error))
+    return {
+      globalMute: false,
+      categories: { ...NOTIFICATIONS_CONFIG.defaultCategories },
+    }
   }
 }
 
