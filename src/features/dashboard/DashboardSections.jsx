@@ -274,7 +274,7 @@ function getFightHero(currentUserRow, chase, activityType) {
   }
 }
 
-export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups', streak = null }) {
+export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups', streak = null, level = null, combo = 0 }) {
   const statusLabel = currentUserRow ? getRowStatus(currentUserRow, rows, activityType) : 'QUIET'
   const hero = getFightHero(currentUserRow, chase, activityType)
   const tier = getWarTier(currentUserRow?.total ?? 0, activityType)
@@ -300,12 +300,31 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
             <strong className="hero-war-banner__tier-name">{tier}</strong>
           </div>
           <div className={streak?.atRisk ? 'hero-war-banner__streak hero-war-banner__streak--risk' : 'hero-war-banner__streak'}>
-            <strong className="hero-war-banner__streak-value">{streakDays > 0 ? `${streakDays}🔥` : '0'}</strong>
+            <strong className="hero-war-banner__streak-value">
+              {streakDays > 0 ? `${streakDays}🔥` : '0'}
+              {combo >= 2 ? <span className="hero-combo"> ×{combo}</span> : null}
+            </strong>
             <span className="hero-war-banner__streak-label">
               {streak?.atRisk ? 'STREAK DIES AT MIDNIGHT' : streakDays > 0 ? 'DAY STREAK' : 'NO STREAK. START ONE.'}
+              {combo >= 2 ? ' · HEAVY COMBO' : ''}
             </span>
           </div>
         </div>
+        {level?.name && !level.isLoading ? (
+          <div className="hero-level">
+            <div className="hero-level__row">
+              <strong className="hero-level__name">LVL {level.level} {level.name}</strong>
+              <span className="hero-level__xp">
+                {level.nextLevelName
+                  ? `${level.xpToNextLevel.toLocaleString('en-GB')} XP TO ${level.nextLevelName}`
+                  : 'MAX RANK. HOLD IT.'}
+              </span>
+            </div>
+            <div className="hero-level__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level.progress * 100)}>
+              <div className="hero-level__fill" style={{ width: `${Math.max(level.progress * 100, 2)}%` }} />
+            </div>
+          </div>
+        ) : null}
         <div className="hero-status-grid">
           <div className="hero-status-grid__main">
             <strong>{hero.body}</strong>

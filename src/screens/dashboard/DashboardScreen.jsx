@@ -20,8 +20,10 @@ import { useWeeklyLeaderMessage } from '../../hooks/useWeeklyLeaderMessage'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
+import { BossBattleCard } from '../../components/BossBattleCard'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
+import { useWarriorXp } from '../../hooks/useWarriorXp'
 import { parseKmValue, formatActivityGap } from '../../utils/activity'
 import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { MACHO_TAKEOVER_CONFIG } from '../../config/machoTakeover'
@@ -29,8 +31,9 @@ import { shareMachoCardImage } from '../../utils/machoCardImage'
 import { dealMachoImage, preloadNextMachoImage } from '../../utils/machoRotation'
 import { evaluateMachoTrigger, markMachoFired, resolveMachoPresentation } from '../../utils/machoTriggers'
 import { getToastMessage } from '../../utils/toastCopy'
-import { calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
+import { calculateCombo, calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
 import { shareWarCardImage } from '../../utils/warCardImage'
+import { getWarriorLevel, getXpForLog } from '../../utils/xp'
 
 const BOARD_LIVE_FEED_LIMIT = 20
 const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
@@ -136,6 +139,8 @@ function AuthenticatedDashboard() {
   }
   const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
   const streak = calculateStreak(leaderboardQuery.data, session.user.id)
+  const warriorLevel = useWarriorXp({ circleId, userId: session.user.id })
+  const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
 
   // Warm the next takeover image so the reveal never lags.
   useEffect(() => {
@@ -189,6 +194,8 @@ function AuthenticatedDashboard() {
         newRank: pendingWarCard.rank,
         streakDays: pendingWarCard.streakDays,
         todayTotalBefore: leaderboardQuery.currentUserRow?.todayTotal ?? 0,
+        previousLevel: warriorLevel,
+        newLevel: getWarriorLevel(warriorLevel.xp + getXpForLog(activityType, value)),
       })
 
       if (!trigger) {
@@ -312,6 +319,8 @@ function AuthenticatedDashboard() {
       gapLabel,
       tagline: getWarCardTagline(`${session.user.id}:${weeklyTotal}`),
       milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType }),
+      combo: calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType)),
+      levelLabel: warriorLevel?.name ? `LVL ${warriorLevel.level} ${warriorLevel.name}` : '',
       shareState: '',
     }
   }
@@ -443,6 +452,8 @@ function AuthenticatedDashboard() {
           rows={leaderboardQuery.rows}
           activityType={activityType}
           streak={streak}
+          level={warriorLevel}
+          combo={combo}
         />
 
         <LogActivityCard
@@ -462,6 +473,8 @@ function AuthenticatedDashboard() {
           isLoading={leaderboardQuery.isLoading}
           activityType={activityType}
         />
+
+        <BossBattleCard />
 
         <WeeklyLeaderMessageCard
           messageRow={weeklyLeaderMessageQuery.messageRow}

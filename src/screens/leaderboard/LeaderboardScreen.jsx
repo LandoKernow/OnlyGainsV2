@@ -4,6 +4,7 @@ import { useAuth } from '../../features/auth/AuthProvider'
 import { HallOfShameCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
+import { BossBattleCard } from '../../components/BossBattleCard'
 import { ACTIVITY_META, ACTIVITY_TYPES } from '../../utils/activityTypes'
 
 function LeaderboardContent() {
@@ -47,6 +48,8 @@ function LeaderboardContent() {
       {!leaderboardQuery.isLoading ? (
         <HallOfShameCard rows={leaderboardQuery.rows} activityType={activityType} />
       ) : null}
+
+      <BossBattleCard />
     </div>
   )
 }

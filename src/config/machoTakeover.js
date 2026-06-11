@@ -21,10 +21,17 @@ export const MACHO_TAKEOVER_CONFIG = {
       tagline: 'NEW PERSONAL RECORD. HISTORY REWRITTEN.',
     },
 
+    // Career level-up on the warrior XP ladder (see src/utils/xp.js).
+    levelUp: {
+      enabled: true,
+      priority: 2,
+      tagline: 'PROMOTED ON THE FIELD. CARRY THE RANK.',
+    },
+
     // Streak milestone days — fires the day the streak HITS the number.
     streak: {
       enabled: true,
-      priority: 2,
+      priority: 3,
       days: [7, 30, 100],
       tagline: 'UNBROKEN. THE WEAK QUIT BY NOW.',
     },
@@ -32,7 +39,7 @@ export const MACHO_TAKEOVER_CONFIG = {
     // Rank improvement on the weekly board (taking a spot, not just moving).
     rankUp: {
       enabled: true,
-      priority: 3,
+      priority: 4,
       // Only fire when the new rank is at or above this (top N feels earned).
       minRank: 5,
       tagline: 'SPOT TAKEN. NO REFUNDS.',
@@ -41,7 +48,7 @@ export const MACHO_TAKEOVER_CONFIG = {
     // One single log this big = a statement, not a session.
     bigSession: {
       enabled: true,
-      priority: 4,
+      priority: 5,
       thresholds: {
         pressups: 150,
         pullups: 40,
