@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useBoardMeta } from '../hooks/useBoardMeta'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import { usePublicProfileSummary } from '../hooks/usePublicProfileSummary'
 import { formatActivityValue } from '../utils/activity'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../utils/profileYear'
@@ -46,6 +47,7 @@ export function ProfilePreviewModal({
 }) {
   const navigate = useNavigate()
   const { circleId } = useBoardMeta()
+  useEscapeKey(onClose, Boolean(userId))
   const summaryQuery = usePublicProfileSummary({ circleId, userId, year: 2026 })
   const summary = summaryQuery.summary
   const profile = summary?.profile

@@ -1,8 +1,11 @@
 import { formatActivityValue } from '../utils/activity'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 
 // The screenshot artifact. Pops after a log. Designed to be screamed at a
 // camera roll and posted to a story — so it carries the brand + URL on it.
 export function WarCard({ card, onShare, onCallout, onClose }) {
+  useEscapeKey(onClose, Boolean(card))
+
   if (!card) {
     return null
   }

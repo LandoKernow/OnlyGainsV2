@@ -7,6 +7,7 @@ import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
 import { getWarTier } from '../../utils/war'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
@@ -976,6 +977,8 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
 }
 
 export function RemoveEntryModal({ submission, onConfirm, onCancel, isDeleting }) {
+  useEscapeKey(onCancel, Boolean(submission) && !isDeleting)
+
   if (!submission) {
     return null
   }

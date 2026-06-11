@@ -7,6 +7,7 @@ import { useIsAdmin } from '../hooks/useIsAdmin'
 import { getBoardJoinErrorCopy, useJoinBoard } from '../hooks/useBoards'
 import { clearPendingBoardInviteCode, getPendingBoardInviteCode } from '../utils/boardInvites'
 import { BASIC_NON_GLOBAL_BOARD_LIMIT, countNonGlobalBoards, GLOBAL_BOARD_ID, isGlobalBoardId } from '../utils/boards'
+import { getToastMessage } from '../utils/toastCopy'
 import { fetchBoardInvitePreview } from '../api/boards'
 
 export function PendingBoardInviteWatcher() {
@@ -72,7 +73,7 @@ export function PendingBoardInviteWatcher() {
         clearPendingBoardInviteCode()
         showToast({
           tone: 'success',
-          message: isExistingMember ? 'Already on this board.' : "You're on the board.",
+          message: isExistingMember ? 'Already on this board.' : getToastMessage('board_joined', joinedBoard?.id),
         })
 
         if (!location.pathname.startsWith('/join/')) {

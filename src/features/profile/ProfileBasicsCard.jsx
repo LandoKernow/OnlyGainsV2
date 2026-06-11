@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Card } from '../../components/Card'
+import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../auth/AuthProvider'
 import { upsertMyProfile } from '../../api/profiles'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
@@ -10,6 +11,7 @@ const accents = ['ember', 'copper', 'ash', 'slate']
 export function ProfileBasicsCard() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const profileQuery = useCurrentProfile()
   const [form, setForm] = useState({
     name: '',
@@ -37,6 +39,14 @@ export function ProfileBasicsCard() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', session.user.id] })
+      showToast({ tone: 'success', message: 'NAME LOCKED IN.' })
+    },
+    onError: (error) => {
+      console.error('[Only Gains Profile] save failed', {
+        code: error?.code ?? null,
+        message: error?.message ?? null,
+      })
+      showToast({ tone: 'error', message: "PROFILE DIDN'T SAVE. TRY AGAIN." })
     },
   })
 
@@ -97,9 +107,8 @@ export function ProfileBasicsCard() {
       </form>
 
       {profileQuery.isLoading ? <p className="muted">Loading profile...</p> : null}
-      {profileQuery.error ? <p className="muted">{profileQuery.error.message}</p> : null}
-      {saveMutation.isSuccess ? <p className="muted">Profile saved.</p> : null}
-      {saveMutation.error ? <p className="muted">{saveMutation.error.message}</p> : null}
+      {profileQuery.error ? <p className="muted">Could not load your profile. Refresh to retry.</p> : null}
+      {saveMutation.error ? <p className="muted">Save failed. Check your connection and run it back.</p> : null}
     </Card>
   )
 }

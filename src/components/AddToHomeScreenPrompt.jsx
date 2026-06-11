@@ -6,6 +6,7 @@ import { useToast } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import { getProfileBuildPromptDismissKey, hasDismissedProfileBuildPrompt } from './ProfileBuildPrompt'
 
 const PROFILE_YEAR = 2026
@@ -162,6 +163,9 @@ export function AddToHomeScreenPrompt() {
     setIsSnoozed(true)
     setIsOpen(false)
   }
+
+  // Escape = "show me later", not a permanent dismissal.
+  useEscapeKey(snoozePrompt, isOpen)
 
   if (!isOpen) {
     return null

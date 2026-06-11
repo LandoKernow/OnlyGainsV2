@@ -1,6 +1,9 @@
+import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { useToast } from '../../components/ToastProvider'
 import { AuthGate } from '../../features/auth/AuthGate'
+import { useIsAdmin } from '../../hooks/useIsAdmin'
+import { copyText } from '../../utils/community'
 import { getLondonPeriodKeys } from '../../utils/dates'
 
 const GLOBAL_BOARD_ID = 'c769af17-6d63-41aa-8293-a4fd74d586f8'
@@ -23,27 +26,9 @@ from public.admin_finalize_period_awards_all(
 );`
 }
 
-function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(text)
-  }
-
-  const textarea = document.createElement('textarea')
-  textarea.value = text
-  document.body.appendChild(textarea)
-  textarea.select()
-
-  try {
-    document.execCommand('copy')
-  } finally {
-    document.body.removeChild(textarea)
-  }
-
-  return Promise.resolve()
-}
-
 export default function AdminAwardsScreen() {
   const { showToast } = useToast()
+  const isAdminQuery = useIsAdmin()
   const { weekKey, monthKey } = getLondonPeriodKeys(new Date())
   const lastCompletedWeek = new Date(`${weekKey}T12:00:00.000Z`)
   lastCompletedWeek.setUTCDate(lastCompletedWeek.getUTCDate() - 7)
@@ -63,6 +48,35 @@ export default function AdminAwardsScreen() {
 
   const weeklySql = buildWeeklySql()
   const monthlySql = buildMonthlySql()
+
+  // UI gate only — finalisation itself is enforced server-side. This just
+  // keeps the admin room off-limits to regular accounts (no content flash
+  // while the admin check loads).
+  if (isAdminQuery.isLoading) {
+    return (
+      <div className="screen">
+        <AuthGate>
+          <Card title="ADMIN" body="Checking access.">
+            <p className="muted">One moment.</p>
+          </Card>
+        </AuthGate>
+      </div>
+    )
+  }
+
+  if (!isAdminQuery.isAdmin) {
+    return (
+      <div className="screen">
+        <AuthGate>
+          <Card title="NOT YOUR ROOM" body="Admin tools live here. Your war is on the board.">
+            <Link className="button button--ghost" to="/dashboard">
+              Back to the board
+            </Link>
+          </Card>
+        </AuthGate>
+      </div>
+    )
+  }
 
   return (
     <div className="screen">
