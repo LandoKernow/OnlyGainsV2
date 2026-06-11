@@ -181,6 +181,16 @@ export function isMissingBoardLeaderboardRpc(error) {
   )
 }
 
+// The canonical RPC whitelists activity types server-side. Until the DB
+// migration adds a new type (e.g. pullups), it raises 22023 "Unsupported
+// activity type" — reads then fall back to the legacy submissions query,
+// the same path the app used before the RPCs existed.
+export function isUnsupportedActivityTypeRpcError(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return error?.code === '22023' || message.includes('unsupported activity type')
+}
+
 export async function fetchBoardActivityFeed({ boardId, limit, diagnosticsUserId = '', selectedBoardName = '' }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')

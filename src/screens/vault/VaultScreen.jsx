@@ -8,6 +8,7 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
+import { normalizeActivityType } from '../../utils/activityTypes'
 import {
   formatAwardMetricLine,
   formatAwardPeriodRange,
@@ -228,6 +229,8 @@ export default function VaultScreen() {
 
   const pressupsDay = records.pressupsDay
   const pressupsWeek = records.pressupsWeek
+  const pullupsDay = records.pullupsDay
+  const pullupsWeek = records.pullupsWeek
   const kmDay = records.kmDay
   const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
@@ -284,6 +287,20 @@ export default function VaultScreen() {
           onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
         />
         <VaultRecordCard
+          title="Most pull-ups / day"
+          record={pullupsDay}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(pullupsDay?.userId, pullupsDay?.actorName, 'pullups')}
+        />
+        <VaultRecordCard
+          title="Most pull-ups / week"
+          record={pullupsWeek}
+          emptyCopy={appTrackedEmptyCopy}
+          isPublicVisitor={isPublicVisitor}
+          onPreviewHolder={() => openProfilePreview(pullupsWeek?.userId, pullupsWeek?.actorName, 'pullups')}
+        />
+        <VaultRecordCard
           title="Most KM / day"
           record={kmDay}
           emptyCopy={appTrackedEmptyCopy}
@@ -329,7 +346,7 @@ export default function VaultScreen() {
     <VaultAwardsSection
       awards={awards}
       error={awardsQuery.error}
-      onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, award.activityType === 'km' ? 'km' : 'pressups')}
+      onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, normalizeActivityType(award.activityType))}
       onShareAward={handleShareAward}
     />
   ) : null

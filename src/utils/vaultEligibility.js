@@ -46,5 +46,14 @@ export function isVaultEligibleSubmission(submission) {
     return false
   }
 
+  // Same sanity gate for pull-ups, scaled: 500+ in one submission is a backfill, not a set.
+  if (submission.activityType === 'pullups' && value > 500) {
+    return false
+  }
+
+  if (submission.activityType === 'pullups' && isFirstDayOfMonth(submission.activityDate) && value >= 500) {
+    return false
+  }
+
   return true
 }

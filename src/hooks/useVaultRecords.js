@@ -127,6 +127,8 @@ export function useVaultRecords({ circleId }) {
     return {
       pressupsDay: normalizeSubmissionRecord(findAppTrackedRecord('most_pressups_day')),
       pressupsWeek: normalizeSubmissionRecord(findAppTrackedRecord('most_pressups_week')),
+      pullupsDay: normalizeSubmissionRecord(findAppTrackedRecord('most_pullups_day')),
+      pullupsWeek: normalizeSubmissionRecord(findAppTrackedRecord('most_pullups_week')),
       kmDay: normalizeSubmissionRecord(findAppTrackedRecord('most_km_day')),
       kmWeek: normalizeSubmissionRecord(findAppTrackedRecord('most_km_week')),
       claimed: Object.fromEntries(

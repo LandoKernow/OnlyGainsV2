@@ -7,7 +7,14 @@ import { useProfileYearSetup } from './useProfileYearSetup'
 import { getLondonDateParts } from '../utils/dates'
 import { aggregateEligibleSubmissionsByDay, aggregateEligibleSubmissionsByWeek } from '../utils/recordAggregation'
 
-const APP_TRACKED_RECORD_TYPES = new Set(['pressups_day', 'pressups_week', 'km_day', 'km_week'])
+const APP_TRACKED_RECORD_TYPES = new Set([
+  'pressups_day',
+  'pressups_week',
+  'pullups_day',
+  'pullups_week',
+  'km_day',
+  'km_week',
+])
 const LOWER_IS_BETTER_RECORD_TYPES = new Set(['fastest_5k', 'fastest_10k', 'half_marathon', 'marathon'])
 
 function createHistoryEntry({
@@ -61,6 +68,13 @@ export function usePersonalRecords(year = 2026) {
     staleTime: 30_000,
   })
 
+  const pullupsQuery = useQuery({
+    queryKey: ['personal-records', 'submissions', circleId, currentYear, 'pullups'],
+    queryFn: () => fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType: 'pullups' }),
+    enabled: isEnabled,
+    staleTime: 30_000,
+  })
+
   const kmQuery = useQuery({
     queryKey: ['personal-records', 'submissions', circleId, currentYear, 'km'],
     queryFn: () => fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType: 'km' }),
@@ -83,11 +97,14 @@ export function usePersonalRecords(year = 2026) {
     )
 
     const ownPressupsRows = (pressupsQuery.data ?? []).filter((row) => row.userId === userId)
+    const ownPullupsRows = (pullupsQuery.data ?? []).filter((row) => row.userId === userId)
     const ownKmRows = (kmQuery.data ?? []).filter((row) => row.userId === userId)
 
     const appTrackedEntries = [
       ...aggregateEligibleSubmissionsByDay(ownPressupsRows, 'pressups'),
       ...aggregateEligibleSubmissionsByWeek(ownPressupsRows, 'pressups'),
+      ...aggregateEligibleSubmissionsByDay(ownPullupsRows, 'pullups'),
+      ...aggregateEligibleSubmissionsByWeek(ownPullupsRows, 'pullups'),
       ...aggregateEligibleSubmissionsByDay(ownKmRows, 'km'),
       ...aggregateEligibleSubmissionsByWeek(ownKmRows, 'km'),
     ]
@@ -108,13 +125,13 @@ export function usePersonalRecords(year = 2026) {
     })
 
     return bucket
-  }, [kmQuery.data, pressupsQuery.data, profileYearSetup.recordEntries, userId])
+  }, [kmQuery.data, pressupsQuery.data, pullupsQuery.data, profileYearSetup.recordEntries, userId])
 
   return {
     year,
     recordsByType,
-    isLoading: profileYearSetup.isLoading || pressupsQuery.isLoading || kmQuery.isLoading,
-    error: profileYearSetup.error || pressupsQuery.error || kmQuery.error || null,
+    isLoading: profileYearSetup.isLoading || pressupsQuery.isLoading || pullupsQuery.isLoading || kmQuery.isLoading,
+    error: profileYearSetup.error || pressupsQuery.error || pullupsQuery.error || kmQuery.error || null,
     hasAppTrackedSupport(recordType) {
       return APP_TRACKED_RECORD_TYPES.has(recordType)
     },

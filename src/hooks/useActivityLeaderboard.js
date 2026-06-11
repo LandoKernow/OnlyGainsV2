@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchBoardLeaderboard, fetchLeaderboardSubmissions, isMissingBoardLeaderboardRpc } from '../api/submissions'
+import {
+  fetchBoardLeaderboard,
+  fetchLeaderboardSubmissions,
+  isMissingBoardLeaderboardRpc,
+  isUnsupportedActivityTypeRpcError,
+} from '../api/submissions'
 import { calculateLeaderboard } from '../logic/leaderboard/calculateLeaderboard'
 import { getLondonDateParts } from '../utils/dates'
 
@@ -31,12 +36,14 @@ export function useActivityLeaderboard({
             activityType,
           })
         } catch (error) {
-          if (!isMissingBoardLeaderboardRpc(error)) {
+          if (!isMissingBoardLeaderboardRpc(error) && !isUnsupportedActivityTypeRpcError(error)) {
             throw error
           }
 
           if (import.meta.env.DEV) {
-            console.warn('[Only Gains Board] get_board_leaderboard RPC not ready yet.')
+            console.warn(
+              `[Only Gains Board] get_board_leaderboard RPC not ready for '${activityType}'. Using legacy submissions path.`,
+            )
           }
         }
       }
@@ -48,7 +55,11 @@ export function useActivityLeaderboard({
   })
 
   const rawRows = query.data ?? []
-  const calculated = source === 'canonical'
+  // Canonical RPC rows arrive pre-ranked; the legacy fallback returns raw
+  // submissions that still need aggregating. Cache shape is a plain array in
+  // both cases (the contract) — distinguish by row shape, not by query state.
+  const hasPreRankedRows = rawRows.length === 0 || Number.isFinite(rawRows[0]?.rank)
+  const calculated = source === 'canonical' && hasPreRankedRows
     ? {
         rows: rawRows.map((row) => ({
           ...row,

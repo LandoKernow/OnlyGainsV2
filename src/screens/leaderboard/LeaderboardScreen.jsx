@@ -4,6 +4,7 @@ import { useAuth } from '../../features/auth/AuthProvider'
 import { HallOfShameCard, PressupLeaderboardCard } from '../../features/dashboard/DashboardSections'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
+import { ACTIVITY_META, ACTIVITY_TYPES } from '../../utils/activityTypes'
 
 function LeaderboardContent() {
   const [period, setPeriod] = useState('weekly')
@@ -21,8 +22,16 @@ function LeaderboardContent() {
   return (
     <div className="stack-lg screen--profile">
       <div className="segmented-toggle">
-        <button className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('pressups')}>Press Ups</button>
-        <button className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'} type="button" onClick={() => setActivityType('km')}>KM Ran</button>
+        {ACTIVITY_TYPES.map((type) => (
+          <button
+            key={type}
+            className={activityType === type ? 'pill-button pill-button--active' : 'pill-button'}
+            type="button"
+            onClick={() => setActivityType(type)}
+          >
+            {ACTIVITY_META[type].label}
+          </button>
+        ))}
       </div>
 
       <PressupLeaderboardCard

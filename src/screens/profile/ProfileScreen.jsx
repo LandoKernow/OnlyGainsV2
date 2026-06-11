@@ -55,7 +55,14 @@ function ProfileSummary() {
     period: 'weekly',
     activityType: 'pressups',
   })
+  const pullupsLeaderboardQuery = useActivityLeaderboard({
+    circleId,
+    currentUserId: session?.user?.id,
+    period: 'weekly',
+    activityType: 'pullups',
+  })
   const chase = useChase(leaderboardQuery.rows, session?.user?.id, 'pressups')
+  const pullupsRow = pullupsLeaderboardQuery.currentUserRow
   const profileName = profileQuery.data?.name || session?.user?.email?.split('@')[0] || 'Warrior'
   const currentRow = leaderboardQuery.currentUserRow
   const statusLabel = currentRow ? getRowStatus(currentRow, leaderboardQuery.rows, 'pressups') : 'QUIET'
@@ -93,6 +100,14 @@ function ProfileSummary() {
                 <div className="profile-identity-grid__row">
                   <span className="muted">Board status</span>
                   <strong>{statusLabel}</strong>
+                </div>
+                <div className="profile-identity-grid__row">
+                  <span className="muted">Bar work</span>
+                  <strong>
+                    {pullupsRow
+                      ? `${formatActivityValue(pullupsRow.total, 'pullups')} this week - #${pullupsRow.rank}`
+                      : 'No pull-ups logged this week.'}
+                  </strong>
                 </div>
                 <div className="profile-identity-grid__row">
                   <span className="muted">Current rival</span>

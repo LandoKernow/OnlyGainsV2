@@ -11,6 +11,7 @@ import {
   markAchievementToastSeen,
 } from '../utils/machoToasts'
 import { createClientId } from '../utils/uuid'
+import { getActivityUnit, normalizeActivityType } from '../utils/activityTypes'
 import { getLogSuccessMessage, getToastMessage } from '../utils/toastCopy'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
@@ -25,9 +26,9 @@ function buildPendingSubmission({ value, circleId, userId, actorName, activityTy
     id: `pending-${createClientId()}`,
     circleId,
     userId,
-    activityType: activityType === 'km' ? 'km' : 'pressups',
+    activityType: normalizeActivityType(activityType),
     value,
-    unit: activityType === 'km' ? 'km' : 'reps',
+    unit: getActivityUnit(activityType),
     source: 'app_v2',
     activityDate: dateParts.activityDate,
     createdAt: new Date().toISOString(),
@@ -138,9 +139,9 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
         id: createClientId(),
         circle_id: circleId,
         user_id: userId,
-        activity_type: activityType === 'km' ? 'km' : 'pressups',
+        activity_type: normalizeActivityType(activityType),
         value,
-        unit: activityType === 'km' ? 'km' : 'reps',
+        unit: getActivityUnit(activityType),
         source: 'app_v2',
         activity_date: dateParts.activityDate,
         note: '',

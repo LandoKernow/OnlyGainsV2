@@ -62,11 +62,12 @@ function buildFallbackName({ userId, awards, records, pressupsRow, kmRow }) {
 }
 
 export async function fetchPublicProfileSummary({ userId, circleId, year = 2026 }) {
-  const [profileResult, awardsResult, recordEntriesResult, pressupsResult, kmResult] = await Promise.allSettled([
+  const [profileResult, awardsResult, recordEntriesResult, pressupsResult, pullupsResult, kmResult] = await Promise.allSettled([
     fetchPublicProfileBasics(userId),
     fetchVaultAwards(circleId, { userId, limit: 12 }),
     fetchPublicProfileRecordEntries(year),
     fetchLeaderboardSubmissions({ circleId, year, activityType: 'pressups' }),
+    fetchLeaderboardSubmissions({ circleId, year, activityType: 'pullups' }),
     fetchLeaderboardSubmissions({ circleId, year, activityType: 'km' }),
   ])
 
@@ -76,8 +77,13 @@ export async function fetchPublicProfileSummary({ userId, circleId, year = 2026 
     .filter((row) => row.userId === userId)
     .sort(comparePublicRecords)
   const pressupsRows = pressupsResult.status === 'fulfilled' ? pressupsResult.value : []
+  const pullupsRows = pullupsResult.status === 'fulfilled' ? pullupsResult.value : []
   const kmRows = kmResult.status === 'fulfilled' ? kmResult.value : []
   const pressupsBoard = calculateLeaderboard(pressupsRows, {
+    period: 'weekly',
+    currentUserId: userId,
+  })
+  const pullupsBoard = calculateLeaderboard(pullupsRows, {
     period: 'weekly',
     currentUserId: userId,
   })
@@ -115,6 +121,7 @@ export async function fetchPublicProfileSummary({ userId, circleId, year = 2026 
     vaultClaimsCount: publicRecords.length,
     leaderboard: {
       pressups: pressupsBoard.currentUserRow,
+      pullups: pullupsBoard.currentUserRow,
       km: kmBoard.currentUserRow,
     },
     canReadProfileBasics: profileResult.status === 'fulfilled' && Boolean(profileResult.value),

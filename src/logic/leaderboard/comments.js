@@ -28,11 +28,13 @@ export function getLeaderboardComment(row) {
 
 export function getRecentActivityCopy(row, currentUserId) {
   if (row.pending) {
-    return row.activityType === 'km' ? `Saving ${formatKm(row.value)}...` : `Saving ${row.value} press-ups...`
+    if (row.activityType === 'km') {
+      return `Saving ${formatKm(row.value)}...`
+    }
+    return row.activityType === 'pullups' ? `Saving ${row.value} pull-ups...` : `Saving ${row.value} press-ups...`
   }
 
   const actor = row.userId === currentUserId ? 'You' : getSafeName(row.actorName)
-  const isPressup = row.activityType !== 'km'
 
   if (row.activityType === 'km') {
     if (row.value >= 10) {
@@ -42,6 +44,27 @@ export function getRecentActivityCopy(row, currentUserId) {
       return `${actor} moved the board: ${formatKm(row.value)}.`
     }
     return `${actor} broke silence with ${formatKm(row.value)}.`
+  }
+
+  // Pull-ups: same energy, thresholds scaled to bar work.
+  if (row.activityType === 'pullups') {
+    if (row.value >= 30) {
+      return `${actor} brought heat on the bar: ${row.value} pull-ups.`
+    }
+
+    if (row.value >= 20) {
+      return `${actor} took ground: ${row.value} pull-ups.`
+    }
+
+    if (row.value >= 12) {
+      return `${actor} added pressure: ${row.value} pull-ups.`
+    }
+
+    if (row.value >= 6) {
+      return `${actor} moved the board: ${row.value} pull-ups.`
+    }
+
+    return `${actor} broke silence: ${row.value} pull-ups.`
   }
 
   // Press-ups: varied language

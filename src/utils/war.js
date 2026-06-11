@@ -16,6 +16,17 @@ const PRESSUP_TIERS = [
   { min: 0, name: 'RECRUIT' },
 ]
 
+// Pull-ups run at roughly a quarter of press-up volume per week.
+const PULLUP_TIERS = [
+  { min: 500, name: 'IMMORTAL' },
+  { min: 250, name: 'WARLORD' },
+  { min: 125, name: 'GLADIATOR' },
+  { min: 60, name: 'VETERAN' },
+  { min: 25, name: 'ENFORCER' },
+  { min: 1, name: 'SOLDIER' },
+  { min: 0, name: 'RECRUIT' },
+]
+
 const KM_TIERS = [
   { min: 80, name: 'IMMORTAL' },
   { min: 50, name: 'WARLORD' },
@@ -26,8 +37,14 @@ const KM_TIERS = [
   { min: 0, name: 'RECRUIT' },
 ]
 
+const TIER_LADDERS = {
+  pressups: PRESSUP_TIERS,
+  pullups: PULLUP_TIERS,
+  km: KM_TIERS,
+}
+
 export function getWarTier(weeklyTotal, activityType = 'pressups') {
-  const ladder = activityType === 'km' ? KM_TIERS : PRESSUP_TIERS
+  const ladder = TIER_LADDERS[activityType] ?? PRESSUP_TIERS
   const total = Number(weeklyTotal) || 0
   return (ladder.find((tier) => total >= tier.min) ?? ladder[ladder.length - 1]).name
 }
@@ -93,13 +110,29 @@ export function calculateStreak(rows, userId, now = new Date()) {
 // Milestone line for the war card — the "insane not to post" hook.
 // Crossed-threshold logic: only fires when THIS log pushed the weekly/streak
 // total past a milestone, so it feels earned, not spammed.
-const WEEKLY_MILESTONES = [
-  { at: 2000, line: '2,000 THIS WEEK. THE BOARD FEARS YOU.' },
-  { at: 1000, line: '1,000 THIS WEEK. TOP 0.3% TERRITORY. PROVE IT.' },
-  { at: 500, line: '500 THIS WEEK. GLADIATOR CONFIRMED.' },
-  { at: 250, line: '250 THIS WEEK. THEY CAN FEEL YOU NOW.' },
-  { at: 100, line: 'FIRST 100 OF THE WEEK. NO HIDING NOW.' },
-]
+const WEEKLY_MILESTONES_BY_ACTIVITY = {
+  pressups: [
+    { at: 2000, line: '2,000 THIS WEEK. THE BOARD FEARS YOU.' },
+    { at: 1000, line: '1,000 THIS WEEK. TOP 0.3% TERRITORY. PROVE IT.' },
+    { at: 500, line: '500 THIS WEEK. GLADIATOR CONFIRMED.' },
+    { at: 250, line: '250 THIS WEEK. THEY CAN FEEL YOU NOW.' },
+    { at: 100, line: 'FIRST 100 OF THE WEEK. NO HIDING NOW.' },
+  ],
+  pullups: [
+    { at: 500, line: '500 PULL-UPS THIS WEEK. THE BAR SURRENDERED.' },
+    { at: 250, line: '250 THIS WEEK. GRAVITY FILED A COMPLAINT.' },
+    { at: 125, line: '125 THIS WEEK. GLADIATOR ON THE BAR.' },
+    { at: 60, line: '60 THIS WEEK. THEY CAN FEEL YOU NOW.' },
+    { at: 25, line: 'FIRST 25 OF THE WEEK. THE BAR KNOWS YOUR NAME.' },
+  ],
+  km: [
+    { at: 80, line: '80 KM THIS WEEK. THE ROAD FEARS YOU.' },
+    { at: 50, line: '50 KM THIS WEEK. WARLORD DISTANCE.' },
+    { at: 30, line: '30 KM THIS WEEK. GLADIATOR CONFIRMED.' },
+    { at: 15, line: '15 KM THIS WEEK. THEY CAN HEAR YOU COMING.' },
+    { at: 5, line: 'FIRST 5 KM OF THE WEEK. NO HIDING NOW.' },
+  ],
+}
 
 const STREAK_MILESTONES = [
   { at: 100, line: '100 DAY STREAK. INHUMAN.' },
@@ -107,8 +140,10 @@ const STREAK_MILESTONES = [
   { at: 7, line: '7 DAY STREAK. THE WEAK QUIT BY NOW.' },
 ]
 
-export function getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays }) {
-  for (const milestone of WEEKLY_MILESTONES) {
+export function getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType = 'pressups' }) {
+  const weeklyMilestones = WEEKLY_MILESTONES_BY_ACTIVITY[activityType] ?? WEEKLY_MILESTONES_BY_ACTIVITY.pressups
+
+  for (const milestone of weeklyMilestones) {
     if (weeklyTotal >= milestone.at && (previousWeeklyTotal ?? 0) < milestone.at) {
       return milestone.line
     }

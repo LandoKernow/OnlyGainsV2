@@ -92,6 +92,13 @@ export default function PublicProfileScreen() {
               Press Ups
             </button>
             <button
+              className={activityType === 'pullups' ? 'record-tab record-tab--active' : 'record-tab'}
+              type="button"
+              onClick={() => setActivityType('pullups')}
+            >
+              Pull Ups
+            </button>
+            <button
               className={activityType === 'km' ? 'record-tab record-tab--active' : 'record-tab'}
               type="button"
               onClick={() => setActivityType('km')}
