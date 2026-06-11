@@ -158,6 +158,40 @@ export function getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, act
   return ''
 }
 
+// Kill-streak combo: consecutive London days (ending today) where the day's
+// total hit the heavy threshold. ×2 and up earns the badge — one heavy day
+// is a session, two in a row is a warpath.
+const COMBO_THRESHOLDS = {
+  pressups: 100,
+  pullups: 25,
+  km: 8,
+}
+
+export function calculateCombo(rows, userId, activityType = 'pressups', now = new Date()) {
+  const threshold = COMBO_THRESHOLDS[activityType] ?? COMBO_THRESHOLDS.pressups
+  const totalsByDay = {}
+
+  for (const row of rows ?? []) {
+    if (row.userId !== userId || !row.activityDate) {
+      continue
+    }
+
+    const dayKey = getSubmissionPeriodKeys(row.activityDate).todayKey
+    totalsByDay[dayKey] = (totalsByDay[dayKey] ?? 0) + (Number(row.value) || 0)
+  }
+
+  const todayKey = getLondonPeriodKeys(now).todayKey
+  let cursor = (totalsByDay[todayKey] ?? 0) >= threshold ? todayKey : shiftDateKey(todayKey, -1)
+  let combo = 0
+
+  while ((totalsByDay[cursor] ?? 0) >= threshold) {
+    combo += 1
+    cursor = shiftDateKey(cursor, -1)
+  }
+
+  return combo
+}
+
 const CALLOUT_LINES = [
   'Enjoy the view while it lasts.',
   "I'm closing. You're coasting.",

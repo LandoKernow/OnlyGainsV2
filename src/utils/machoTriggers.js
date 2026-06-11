@@ -89,6 +89,22 @@ export function evaluateMachoTrigger(context, config = MACHO_TAKEOVER_CONFIG) {
     }
   }
 
+  // --- Level up: this log pushed the warrior over an XP rank boundary.
+  if (
+    triggers.levelUp?.enabled &&
+    context.newLevel &&
+    context.previousLevel &&
+    context.newLevel.level > context.previousLevel.level
+  ) {
+    fired.push({
+      type: 'levelUp',
+      priority: triggers.levelUp.priority,
+      tagline: triggers.levelUp.tagline,
+      stat: `LVL ${context.newLevel.level}`,
+      sub: context.newLevel.name,
+    })
+  }
+
   // --- Streak milestone: fires the day the streak hits the configured number.
   if (triggers.streak?.enabled && triggers.streak.days.includes(context.streakDays)) {
     fired.push({

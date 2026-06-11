@@ -23,6 +23,8 @@ export function WarCard({ card, onShare, onCallout, onClose }) {
     gapLabel,
     tagline,
     milestone,
+    combo,
+    levelLabel,
     shareState,
   } = card
 
@@ -48,9 +50,11 @@ export function WarCard({ card, onShare, onCallout, onClose }) {
           <span className="war-card__hit-eyebrow">REP COUNTED. WEAKNESS DENIED.</span>
           <strong className="war-card__hit-value">+{formatActivityValue(value, activityType)}</strong>
           <span className="war-card__warrior">{warriorName}</span>
+          {levelLabel ? <span className="war-card__level">{levelLabel}</span> : null}
         </div>
 
         {milestone ? <div className="war-card__milestone">{milestone}</div> : null}
+        {!milestone && combo >= 2 ? <div className="war-card__milestone">×{combo} HEAVY COMBO. STILL HUNGRY.</div> : null}
 
         <div className="war-card__stats">
           <div className="war-card__stat">

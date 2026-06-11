@@ -119,7 +119,16 @@ export async function renderWarCardImage(card) {
 
   drawCentered(ctx, String(card.warriorName || 'WARRIOR').toUpperCase(), W / 2, 920, '#f7f1eb', font(700, 48), 3)
 
+  if (card.levelLabel) {
+    drawCentered(ctx, String(card.levelLabel).toUpperCase(), W / 2, 975, '#d56a2c', font(700, 32), 5)
+  }
+
   let cursorY = 1030
+
+  // Combo earns the banner slot when no milestone claimed it.
+  if (!card.milestone && card.combo >= 2) {
+    card = { ...card, milestone: `×${card.combo} HEAVY COMBO. STILL HUNGRY.` }
+  }
 
   // Milestone banner.
   if (card.milestone) {
