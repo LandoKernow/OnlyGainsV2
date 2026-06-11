@@ -17,7 +17,8 @@ import {
   getBoardDisplayTypeLabel,
   isGlobalBoard,
 } from '../../utils/boards'
-import { TELEGRAM_URL } from '../../utils/community'
+import { IS_TELEGRAM_CONFIGURED, TELEGRAM_URL } from '../../utils/community'
+import { getToastMessage } from '../../utils/toastCopy'
 
 function JoinBoardContent() {
   const { inviteCode = '' } = useParams()
@@ -56,7 +57,7 @@ function JoinBoardContent() {
     setJoinState(isExistingMember ? 'existing' : 'joined')
     showToast({
       tone: 'success',
-      message: isExistingMember ? 'Already on this board.' : "You're on the board.",
+      message: isExistingMember ? 'Already on this board.' : getToastMessage('board_joined', joinedBoard?.id),
     })
   }
 
@@ -122,12 +123,14 @@ function JoinBoardContent() {
             ) : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now. Log first. Talk later.</p>
-            <p className="board-stage__microcopy">
-              <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-                Enter the Telegram.
-              </a>{' '}
-              The board talks there.
-            </p>
+            {IS_TELEGRAM_CONFIGURED ? (
+              <p className="board-stage__microcopy">
+                <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+                  Enter the Telegram.
+                </a>{' '}
+                The board talks there.
+              </p>
+            ) : null}
           </article>
 
           {joinState ? (

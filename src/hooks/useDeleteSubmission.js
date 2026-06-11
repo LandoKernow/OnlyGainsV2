@@ -2,26 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteSubmissionById } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
 import { getLondonDateParts } from '../utils/dates'
+import { getToastMessage } from '../utils/toastCopy'
 import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
-
-const DELETE_SUCCESS_MESSAGES = ['Entry removed.', 'Record cleaned.', 'Log removed.']
-
-function getStableIndex(seed, length) {
-  let hash = 0
-
-  for (const char of String(seed)) {
-    hash = (hash * 31 + char.charCodeAt(0)) | 0
-  }
-
-  return Math.abs(hash) % length
-}
-
-function getDeleteSuccessMessage(submissionId) {
-  const index = getStableIndex(submissionId ?? '', DELETE_SUCCESS_MESSAGES.length)
-  return DELETE_SUCCESS_MESSAGES[index]
-}
 
 export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
   const queryClient = useQueryClient()
@@ -57,14 +41,14 @@ export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
     onSuccess: (_data, variables) => {
       showToast({
         tone: 'success',
-        message: getDeleteSuccessMessage(variables.submissionId),
+        message: getToastMessage('delete_success', variables.submissionId),
       })
     },
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(recentQueryKey, context?.previousRecentRows ?? [])
       queryClient.setQueryData(leaderboardQueryKey, context?.previousLeaderboardRows ?? [])
       queryClient.setQueryData(leaderboardQueryKeyKm, context?.previousLeaderboardRowsKm ?? [])
-      showToast({ tone: 'error', message: 'Could not remove entry.' })
+      showToast({ tone: 'error', message: getToastMessage('delete_error') })
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: recentQueryKey })

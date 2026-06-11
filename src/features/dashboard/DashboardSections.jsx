@@ -6,6 +6,8 @@ import { getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/com
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
+import { getWarTier } from '../../utils/war'
+import { useEscapeKey } from '../../hooks/useEscapeKey'
 
 const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
@@ -34,6 +36,21 @@ function getGapCopy(gap, activityType, direction) {
 
 function formatSubmissionTimestamp(value) {
   return formatRelativeTime(value)
+}
+
+// Heavy logs earn a heat flag in the feed so the big hits stand out.
+function getFeedIntensity(value, activityType) {
+  const amount = Number(value) || 0
+
+  if (activityType === 'km') {
+    if (amount >= 15) return '☠️'
+    if (amount >= 8) return '🔥'
+    return ''
+  }
+
+  if (amount >= 200) return '☠️'
+  if (amount >= 100) return '🔥'
+  return ''
 }
 
 function buildStatusChip(label) {
@@ -234,9 +251,11 @@ function getFightHero(currentUserRow, chase, activityType) {
   }
 }
 
-export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups' }) {
+export function HeroStatus({ profile, currentUserRow, chase, rows = [], activityType = 'pressups', streak = null }) {
   const statusLabel = currentUserRow ? getRowStatus(currentUserRow, rows, activityType) : 'QUIET'
   const hero = getFightHero(currentUserRow, chase, activityType)
+  const tier = getWarTier(currentUserRow?.total ?? 0, activityType)
+  const streakDays = streak?.streakDays ?? 0
   const chips = currentUserRow
     ? [
         buildStatusChip(statusLabel),
@@ -252,6 +271,18 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
   return (
     <Card title={hero.eyebrow} body={hero.title}>
       <div className="stack hero-fight-card">
+        <div className="hero-war-banner">
+          <div className="hero-war-banner__tier">
+            <span className="hero-war-banner__tier-label">TIER</span>
+            <strong className="hero-war-banner__tier-name">{tier}</strong>
+          </div>
+          <div className={streak?.atRisk ? 'hero-war-banner__streak hero-war-banner__streak--risk' : 'hero-war-banner__streak'}>
+            <strong className="hero-war-banner__streak-value">{streakDays > 0 ? `${streakDays}🔥` : '0'}</strong>
+            <span className="hero-war-banner__streak-label">
+              {streak?.atRisk ? 'STREAK DIES AT MIDNIGHT' : streakDays > 0 ? 'DAY STREAK' : 'NO STREAK. START ONE.'}
+            </span>
+          </div>
+        </div>
         <div className="hero-status-grid">
           <div className="hero-status-grid__main">
             <strong>{hero.body}</strong>
@@ -589,7 +620,10 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                 >
                   <div className="leaderboard-rank">#{row.rank}</div>
                   <div className="leaderboard-copy">
-                    <strong>{row.actorName}</strong>
+                    <strong>
+                      {row.actorName}
+                      <span className="leaderboard-tier">{getWarTier(row.total, activityType)}</span>
+                    </strong>
                     {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
                     <div className="row-chip-list">
                       {buildLeaderboardChips(row, rows, activityType).map((chip) => (
@@ -622,6 +656,109 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
           />
         </>
       ) : null}
+    </Card>
+  )
+}
+
+export function HallOfShameCard({ rows = [], activityType = 'pressups' }) {
+  // The basement of the board. Only meaningful once there's a real field to
+  // fall to the bottom of — derived from the same ranked rows, no extra fetch.
+  const ranked = rows.filter((row) => !row.pending)
+
+  if (ranked.length < 5) {
+    return null
+  }
+
+  const shame = ranked.slice(-3).reverse()
+
+  return (
+    <Card title="HALL OF SHAME" body="The basement of the board. Climb out or stay buried.">
+      <ol className="shame-list">
+        {shame.map((row) => (
+          <li key={row.userId} className={row.isCurrentUser ? 'shame-row shame-row--current' : 'shame-row'}>
+            <div className="shame-row__rank">#{row.rank}</div>
+            <div className="shame-row__copy">
+              <strong>
+                {row.actorName}
+                <span className="leaderboard-tier leaderboard-tier--shame">{getWarTier(row.total, activityType)}</span>
+              </strong>
+              <span className="shame-row__meta">
+                {row.todayTotal > 0 ? 'Scraping by today.' : 'Silent today. The board noticed.'}
+              </span>
+            </div>
+            <div className="shame-row__total">{formatActivityValue(row.total, activityType)}</div>
+          </li>
+        ))}
+      </ol>
+    </Card>
+  )
+}
+
+export function BattleReplayCard({ chase, isLoading, activityType = 'pressups' }) {
+  if (isLoading) {
+    return (
+      <Card title="BATTLE REPLAY" body="Loading the matchup.">
+        <p className="muted">Sizing up the field...</p>
+      </Card>
+    )
+  }
+
+  const you = chase?.currentUserRow
+  const target = chase?.rowAbove ?? null
+  const hunter = chase?.rowBelow ?? null
+  const opponent = target ?? hunter
+
+  if (!you) {
+    return (
+      <Card title="BATTLE REPLAY" body="No matchup yet.">
+        <p className="muted">Log first. The arena pairs you with someone to break.</p>
+      </Card>
+    )
+  }
+
+  if (!opponent) {
+    return (
+      <Card title="BATTLE REPLAY" body="You stand alone.">
+        <p className="muted">Nobody above. Nobody close. Widen the gap and make them chase.</p>
+      </Card>
+    )
+  }
+
+  const isChasing = Boolean(target)
+  const gapValue = isChasing ? chase?.gapToCatch : chase?.gapToDefend
+  const gapLabel = gapValue != null ? formatActivityGap(gapValue, activityType) : ''
+
+  function side(row, role) {
+    return (
+      <div className={role === 'you' ? 'replay-side replay-side--you' : 'replay-side'}>
+        <span className="replay-side__role">{role === 'you' ? 'YOU' : isChasing ? 'TARGET' : 'HUNTER'}</span>
+        <strong className="replay-side__name">{getSafeName(row.actorName)}</strong>
+        <span className="replay-side__tier">{getWarTier(row.total, activityType)}</span>
+        <div className="replay-side__stats">
+          <span className="replay-side__rank">{getSafeRank(row.rank)}</span>
+          <strong className="replay-side__total">{formatActivityValue(row.total, activityType)}</strong>
+          <span className="replay-side__today">
+            {row.todayTotal > 0 ? `${formatActivityValue(row.todayTotal, activityType)} today` : 'Quiet today'}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Card
+      title="BATTLE REPLAY"
+      body={isChasing ? `${gapLabel} from taking the spot.` : `${gapLabel} on the warrior below you.`}
+    >
+      <div className="battle-replay">
+        {side(you, 'you')}
+        <div className="replay-versus">
+          <span className="replay-versus__vs">VS</span>
+          {gapLabel ? <span className="replay-versus__gap">{gapLabel}</span> : null}
+          <span className="replay-versus__cry">{isChasing ? 'ONE LOG CLOSES THIS.' : 'WIDEN IT.'}</span>
+        </div>
+        {side(opponent, 'opponent')}
+      </div>
     </Card>
   )
 }
@@ -738,6 +875,26 @@ export function ChasePlaceholder() {
 export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
   const [showAll, setShowAll] = useState(false)
 
+  const { visibleRows, latestCurrentUserRowInjected } = useMemo(() => {
+    if (showAll) {
+      return { visibleRows: rows, latestCurrentUserRowInjected: false }
+    }
+
+    const topRows = rows.slice(0, 3)
+
+    if (!currentUserId || topRows.some((row) => row.userId === currentUserId)) {
+      return { visibleRows: topRows, latestCurrentUserRowInjected: false }
+    }
+
+    const latestCurrentUserRow = rows.find((row) => row.userId === currentUserId)
+
+    if (!latestCurrentUserRow) {
+      return { visibleRows: topRows, latestCurrentUserRowInjected: false }
+    }
+
+    return { visibleRows: [...topRows, latestCurrentUserRow], latestCurrentUserRowInjected: true }
+  }, [currentUserId, rows, showAll])
+
   if (error && rows.length === 0) {
     return (
       <Card title="BOARD LIVE" body="Could not load recent activity.">
@@ -745,29 +902,6 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
       </Card>
     )
   }
-
-  let latestCurrentUserRowInjected = false
-
-  const visibleRows = useMemo(() => {
-    if (showAll) {
-      return rows
-    }
-
-    const topRows = rows.slice(0, 3)
-
-    if (!currentUserId || topRows.some((row) => row.userId === currentUserId)) {
-      return topRows
-    }
-
-    const latestCurrentUserRow = rows.find((row) => row.userId === currentUserId)
-
-    if (!latestCurrentUserRow) {
-      return topRows
-    }
-
-    latestCurrentUserRowInjected = true
-    return [...topRows, latestCurrentUserRow]
-  }, [currentUserId, rows, showAll])
 
   if (canLogBoardLiveDiagnostics(currentUserId)) {
     console.debug('[Only Gains Board Live]', 'RecentActivityCard render', {
@@ -814,7 +948,12 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
                   <span>{row.pending ? 'Saving...' : formatSubmissionTimestamp(row.createdAt)}</span>
                 </div>
                 <div className="activity-meta">
-                  <span className="activity-value">{formatActivityValue(row.value, row.activityType)}</span>
+                  <span className="activity-value">
+                    {getFeedIntensity(row.value, row.activityType)
+                      ? <span className="activity-intensity" aria-hidden="true">{getFeedIntensity(row.value, row.activityType)} </span>
+                      : null}
+                    {formatActivityValue(row.value, row.activityType)}
+                  </span>
                   {canRemove ? (
                     <button className="activity-remove" type="button" onClick={() => onRequestRemove(row)}>
                       Remove
@@ -838,6 +977,8 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
 }
 
 export function RemoveEntryModal({ submission, onConfirm, onCancel, isDeleting }) {
+  useEscapeKey(onCancel, Boolean(submission) && !isDeleting)
+
   if (!submission) {
     return null
   }
@@ -854,10 +995,10 @@ export function RemoveEntryModal({ submission, onConfirm, onCancel, isDeleting }
         <div className="stack">
           <div>
             <h2 id="remove-entry-title" className="modal-title">Remove entry</h2>
-            <p className="muted">This removes the exact saved press-up entry from the board.</p>
+            <p className="muted">This removes the exact saved entry from every board it touched.</p>
           </div>
           <div className="modal-summary">
-            <span>{submission.value} press-ups</span>
+            <span>{formatActivityValue(submission.value, submission.activityType)}</span>
             <span>{formatSubmissionTimestamp(submission.createdAt)}</span>
           </div>
           <div className="modal-actions">

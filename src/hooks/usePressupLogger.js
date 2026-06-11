@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createSubmission, debugSubmissionPropagation } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
 import { getLondonSubmissionParts } from '../utils/dates'
+import { getLogSuccessMessage, getToastMessage } from '../utils/toastCopy'
 import { createClientId } from '../utils/uuid'
 import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
@@ -142,7 +143,7 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5, board
         ),
       )
 
-      showToast({ tone: 'success', message: 'BOARD UPDATED.' })
+      showToast({ tone: 'success', message: getLogSuccessMessage('pressups', Number(savedSubmission.value)) })
 
       scheduleCanonicalPropagationRefresh({ queryClient })
 
@@ -174,7 +175,7 @@ export function usePressupLogger({ circleId, userId, actorName, limit = 5, board
       })
       queryClient.setQueryData(queryKey, context?.previousRows ?? [])
       queryClient.setQueryData(leaderboardQueryKey, context?.previousLeaderboardRows ?? [])
-      showToast({ tone: 'error', message: 'Could not save. Try again.' })
+      showToast({ tone: 'error', message: getToastMessage('log_error', error?.code) })
     },
     onSettled: () => {
       globalThis.setTimeout(() => {

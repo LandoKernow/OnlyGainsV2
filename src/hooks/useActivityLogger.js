@@ -11,47 +11,12 @@ import {
   markAchievementToastSeen,
 } from '../utils/machoToasts'
 import { createClientId } from '../utils/uuid'
+import { getLogSuccessMessage, getToastMessage } from '../utils/toastCopy'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
 import { GLOBAL_BOARD_ID } from '../utils/boards'
 
-const PRESSUP_SUCCESS_MESSAGES = [
-  'BOARD UPDATED.',
-  'Pressure added.',
-  'The board saw it.',
-  'You moved. They noticed.',
-  'Ground taken.',
-  'Position defended.',
-]
-
-const KM_SUCCESS_MESSAGES = [
-  'BOARD UPDATED.',
-  'Distance banked.',
-  'The board moved.',
-  'Road work recorded.',
-  'Pressure added.',
-  'You moved. They noticed.',
-  'Legs paid rent.',
-]
-
 const CANONICAL_PROPAGATION_REFRESH_DELAYS = [350, 1400]
-
-function getStableIndex(seed, length) {
-  let hash = 0
-  const value = String(seed)
-
-  for (const char of value) {
-    hash = (hash * 31 + char.charCodeAt(0)) | 0
-  }
-
-  return Math.abs(hash) % length
-}
-
-function getSuccessMessage(activityType, value) {
-  const list = activityType === 'km' ? KM_SUCCESS_MESSAGES : PRESSUP_SUCCESS_MESSAGES
-  const index = value != null ? getStableIndex(value, list.length) : getStableIndex(activityType, list.length)
-  return list[index]
-}
 
 function buildPendingSubmission({ value, circleId, userId, actorName, activityType }) {
   const dateParts = getLondonSubmissionParts()
@@ -262,7 +227,7 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
       if (!didShowAchievementToast) {
         showToast({
           tone: 'success',
-          message: getSuccessMessage(activityType, Number(savedSubmission.value)),
+          message: getLogSuccessMessage(activityType, Number(savedSubmission.value)),
         })
       }
 
@@ -299,7 +264,7 @@ export function useActivityLogger({ circleId, userId, actorName, activityType = 
       })
       queryClient.setQueryData(queryKey, context?.previousRows ?? [])
       queryClient.setQueryData(leaderboardQueryKey, context?.previousLeaderboardRows ?? [])
-      showToast({ tone: 'error', message: 'Could not save. Try again.' })
+      showToast({ tone: 'error', message: getToastMessage('log_error', error?.code) })
     },
     onSettled: () => {
       globalThis.setTimeout(() => {

@@ -19,7 +19,11 @@ import { useWeeklyLeaderMessage } from '../../hooks/useWeeklyLeaderMessage'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
-import { parseKmValue } from '../../utils/activity'
+import { WarCard } from '../../components/WarCard'
+import { parseKmValue, formatActivityGap } from '../../utils/activity'
+import { getToastMessage } from '../../utils/toastCopy'
+import { calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
+import { shareWarCardImage } from '../../utils/warCardImage'
 
 const quickValues = [10, 20, 50]
 const BOARD_LIVE_FEED_LIMIT = 20
@@ -62,6 +66,7 @@ function AuthenticatedDashboard() {
   const [activityType, setActivityType] = useState('pressups')
   const [manualError, setManualError] = useState('')
   const [entryToRemove, setEntryToRemove] = useState(null)
+  const [warCard, setWarCard] = useState(null)
   const { showToast } = useToast()
   const logger = useActivityLogger({
     circleId,
@@ -120,6 +125,7 @@ function AuthenticatedDashboard() {
     })
   }
   const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
+  const streak = calculateStreak(leaderboardQuery.data, session.user.id)
 
   function handleQuickLog(value) {
     if (logger.isPending) {
@@ -162,9 +168,43 @@ function AuthenticatedDashboard() {
     setManualValue('')
   }
 
+  function buildWarCard(value) {
+    const previousWeeklyTotal = leaderboardQuery.currentUserRow?.total ?? 0
+    const weeklyTotal = previousWeeklyTotal + value
+
+    // Re-rank cheaply against the current board: nobody else's total moved.
+    const rivalsAhead = leaderboardQuery.rows.filter(
+      (row) => row.userId !== session.user.id && (row.total ?? 0) > weeklyTotal,
+    ).length
+    const rank = rivalsAhead + 1
+
+    const streak = calculateStreak(leaderboardQuery.data, session.user.id)
+    const streakDays = streak.activeToday ? streak.streakDays : streak.streakDays + 1
+
+    const rival = chase?.rowAbove ?? chase?.rowBelow ?? null
+    const gapValue = chase?.rowAbove ? chase?.gapToCatch : chase?.gapToDefend
+    const gapLabel = gapValue != null ? formatActivityGap(gapValue, activityType) : ''
+
+    return {
+      warriorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'WARRIOR',
+      boardName: activeBoard?.name || 'GLOBAL BOARD',
+      activityType,
+      value,
+      tier: getWarTier(weeklyTotal, activityType),
+      rank,
+      weeklyTotal,
+      streakDays,
+      rivalName: rival?.actorName || '',
+      gapLabel,
+      tagline: getWarCardTagline(`${session.user.id}:${weeklyTotal}`),
+      milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays }),
+      shareState: '',
+    }
+  }
+
   function submitActivity(value) {
     if (!circleId) {
-      showToast({ tone: 'error', message: 'Could not save. Try again.' })
+      showToast({ tone: 'error', message: getToastMessage('log_error') })
       if (import.meta.env.DEV) {
         console.log('[Only Gains KM] submitActivity blocked: missing circleId', { circleId, value, activityType })
       }
@@ -174,6 +214,8 @@ function AuthenticatedDashboard() {
     if (import.meta.env.DEV) {
       console.log('[Only Gains KM] submitActivity', { activityType, value, circleId, userId: session.user.id })
     }
+
+    const pendingWarCard = buildWarCard(value)
 
     logger.mutate(
       { value },
@@ -189,9 +231,49 @@ function AuthenticatedDashboard() {
           if (activityType === 'km') {
             setManualError('')
           }
+
+          setWarCard(pendingWarCard)
         },
       },
     )
+  }
+
+  async function handleWarCardShare() {
+    setWarCard((current) => (current ? { ...current, shareState: 'pending' } : current))
+
+    try {
+      const result = await shareWarCardImage(warCard)
+
+      if (result === 'cancelled') {
+        setWarCard((current) => (current ? { ...current, shareState: '' } : current))
+        return
+      }
+
+      setWarCard((current) => (current ? { ...current, shareState: result } : current))
+
+      if (result === 'downloaded') {
+        showToast({ tone: 'success', message: 'WAR CARD SAVED. POST IT.' })
+      }
+    } catch {
+      setWarCard((current) => (current ? { ...current, shareState: '' } : current))
+      showToast({ tone: 'error', message: getToastMessage('generic_error') })
+    }
+  }
+
+  async function handleWarCardCallout() {
+    if (!warCard?.rivalName) {
+      return
+    }
+
+    try {
+      const result = await shareCallout({ rivalName: warCard.rivalName, gapLabel: warCard.gapLabel })
+
+      if (result === 'shared' || result === 'copied') {
+        showToast({ tone: 'success', message: 'CALL-OUT SENT. NO TAKEBACKS.' })
+      }
+    } catch {
+      showToast({ tone: 'error', message: getToastMessage('generic_error') })
+    }
   }
 
   function handleConfirmRemove() {
@@ -218,6 +300,7 @@ function AuthenticatedDashboard() {
           chase={chase}
           rows={leaderboardQuery.rows}
           activityType={activityType}
+          streak={streak}
         />
 
         <LogActivityCard
@@ -274,6 +357,12 @@ function AuthenticatedDashboard() {
           }
         }}
         isDeleting={deleteSubmission.isPending}
+      />
+      <WarCard
+        card={warCard}
+        onShare={handleWarCardShare}
+        onCallout={handleWarCardCallout}
+        onClose={() => setWarCard(null)}
       />
     </>
   )

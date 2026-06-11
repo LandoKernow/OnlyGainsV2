@@ -2,6 +2,9 @@ import { appEnv } from '../lib/env'
 
 export const DEFAULT_TELEGRAM_URL = 'https://t.me/ONLY_GAINS_PLACEHOLDER'
 export const TELEGRAM_URL = appEnv.telegramUrl || DEFAULT_TELEGRAM_URL
+// True only when a real Telegram URL is configured. Screens hide Telegram
+// links when this is false so launch users never hit a dead placeholder link.
+export const IS_TELEGRAM_CONFIGURED = Boolean(appEnv.telegramUrl)
 export const REPORT_ISSUE_TEMPLATE = 'Only Gains 2.0 feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No'
 export const OPEN_ADD_TO_HOME_SCREEN_EVENT = 'only_gains_open_add_to_home_screen'
 

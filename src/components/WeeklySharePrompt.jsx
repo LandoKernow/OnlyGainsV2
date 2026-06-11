@@ -6,6 +6,8 @@ import { useToast } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { getLondonPeriodKeys } from '../utils/dates'
 import { shareOnlyGains } from '../utils/shareApp'
+import { getToastMessage } from '../utils/toastCopy'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import {
   getAddToHomeScreenPromptDismissKey,
@@ -142,6 +144,9 @@ export function WeeklySharePrompt() {
     setIsOpen(false)
   }
 
+  // Escape behaves like "Not now" — seen for this week.
+  useEscapeKey(dismissPrompt, isOpen)
+
   async function handleShare() {
     try {
       const result = await shareOnlyGains()
@@ -153,7 +158,7 @@ export function WeeklySharePrompt() {
 
       showToast({
         tone: 'success',
-        message: result === 'shared' ? 'Only Gains shared.' : 'Share link copied.',
+        message: result === 'shared' ? getToastMessage('share_success') : getToastMessage('copy_success'),
       })
     } catch {
       showToast({ tone: 'error', message: 'Could not share Only Gains.' })

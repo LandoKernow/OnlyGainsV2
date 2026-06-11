@@ -6,6 +6,7 @@ import { useToast } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 import { getProfileBuildPromptDismissKey, hasDismissedProfileBuildPrompt } from './ProfileBuildPrompt'
 
 const PROFILE_YEAR = 2026
@@ -56,6 +57,8 @@ export function AddToHomeScreenPrompt() {
   const [isDismissed, setIsDismissed] = useState(true)
   const [isDismissStateReady, setIsDismissStateReady] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  // "Show me later" only snoozes for this session; "Got it" persists the dismissal.
+  const [isSnoozed, setIsSnoozed] = useState(false)
   const isAwardRoute = location.pathname.startsWith('/award/')
   const isJoinRoute = location.pathname.startsWith('/join/')
   const isBoardInviteRoute = /^\/boards\/[^/]+\/invite$/.test(location.pathname)
@@ -97,6 +100,7 @@ export function AddToHomeScreenPrompt() {
       !isAuthenticated ||
       !isDismissStateReady ||
       isDismissed ||
+      isSnoozed ||
       isOpen ||
       isBlockedRoute ||
       isProfileYearRoute ||
@@ -127,6 +131,7 @@ export function AddToHomeScreenPrompt() {
     isDismissed,
     isOpen,
     isProfileYearRoute,
+    isSnoozed,
     profilePromptBlocks,
     profileYearQuery.isFetching,
     profileYearQuery.isLoading,
@@ -153,6 +158,14 @@ export function AddToHomeScreenPrompt() {
     setIsDismissed(true)
     setIsOpen(false)
   }
+
+  function snoozePrompt() {
+    setIsSnoozed(true)
+    setIsOpen(false)
+  }
+
+  // Escape = "show me later", not a permanent dismissal.
+  useEscapeKey(snoozePrompt, isOpen)
 
   if (!isOpen) {
     return null
@@ -198,7 +211,7 @@ export function AddToHomeScreenPrompt() {
             <button className="button" type="button" onClick={dismissPrompt}>
               Got it
             </button>
-            <button className="button button--ghost" type="button" onClick={dismissPrompt}>
+            <button className="button button--ghost" type="button" onClick={snoozePrompt}>
               Show me later
             </button>
           </div>

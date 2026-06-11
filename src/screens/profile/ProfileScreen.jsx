@@ -17,7 +17,8 @@ import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
 import { formatAwardPeriodRange } from '../../utils/awardShare'
-import { copyReportIssueTemplate, openAddToHomeScreenPrompt, TELEGRAM_URL } from '../../utils/community'
+import { copyReportIssueTemplate, IS_TELEGRAM_CONFIGURED, openAddToHomeScreenPrompt, TELEGRAM_URL } from '../../utils/community'
+import { getToastMessage } from '../../utils/toastCopy'
 import {
   BASIC_NON_GLOBAL_BOARD_LIMIT,
   countNonGlobalBoards,
@@ -262,7 +263,7 @@ function BoardsCard() {
       }
 
       setBoardName('')
-      showToast({ tone: 'success', message: 'Board created.' })
+      showToast({ tone: 'success', message: getToastMessage('board_created', createdBoard?.id) })
 
       if (createdBoard?.id) {
         navigate(`/boards/${createdBoard.id}/invite`)
@@ -307,7 +308,7 @@ function BoardsCard() {
       setInviteCode('')
       showToast({
         tone: 'success',
-        message: isExistingMember ? 'Already on this board.' : "You're on the board.",
+        message: isExistingMember ? 'Already on this board.' : getToastMessage('board_joined', joinedBoard?.id),
       })
     } catch (error) {
       showToast({
@@ -319,7 +320,7 @@ function BoardsCard() {
 
   function handleSwitchBoard(boardId) {
     setActiveBoardId(boardId)
-    showToast({ tone: 'success', message: 'Board switched.' })
+    showToast({ tone: 'success', message: getToastMessage('board_switched') })
   }
 
   function handleRequestLeave(board) {
@@ -371,7 +372,7 @@ function BoardsCard() {
       setLeaveTargetBoard(null)
       showToast({
         tone: 'success',
-        message: status === 'deleted' ? 'Board deleted.' : 'Board left.',
+        message: status === 'deleted' ? 'Board deleted.' : getToastMessage('board_left'),
       })
     } catch (error) {
       boardDebug('leave error surfaced', {
@@ -679,11 +680,15 @@ function HelpCommunityCard() {
         <div className="community-link-row">
           <div>
             <strong>ENTER THE TELEGRAM</strong>
-            <p className="muted">The board talks there.</p>
+            <p className="muted">{IS_TELEGRAM_CONFIGURED ? 'The board talks there.' : 'The board room opens soon.'}</p>
           </div>
-          <a className="button button--ghost" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-            Join Telegram
-          </a>
+          {IS_TELEGRAM_CONFIGURED ? (
+            <a className="button button--ghost" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+              Join Telegram
+            </a>
+          ) : (
+            <span className="muted">Soon</span>
+          )}
         </div>
 
         <div className="community-link-row">
