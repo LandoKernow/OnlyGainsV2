@@ -12,6 +12,15 @@ const TOAST_COPY = {
     'GROUND TAKEN.',
     'YOU MOVED. THEY NOTICED.',
   ],
+  log_success_pullups: [
+    'BOARD UPDATED.',
+    'THE BAR BENT. YOU DIDN\'T.',
+    'LOGGED. GRAVITY LOST.',
+    'PULLED. COUNTED. PUBLIC.',
+    'PRESSURE ADDED.',
+    'CHIN OVER BAR. NAME OVER THEIRS.',
+    'YOU MOVED. THEY NOTICED.',
+  ],
   log_success_km: [
     'BOARD UPDATED.',
     'DISTANCE BANKED.',
@@ -92,6 +101,8 @@ export function getToastMessage(eventType, seed) {
 }
 
 export function getLogSuccessMessage(activityType, value) {
-  const eventType = activityType === 'km' ? 'log_success_km' : 'log_success_pressups'
+  const eventType = TOAST_COPY[`log_success_${activityType}`]
+    ? `log_success_${activityType}`
+    : 'log_success_pressups'
   return getToastMessage(eventType, value != null ? value : activityType)
 }

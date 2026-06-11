@@ -85,6 +85,18 @@ export function buildCrownTakenToast({ activityType }) {
     }
   }
 
+  if (activityType === 'pullups') {
+    return {
+      tone: 'success',
+      variant: 'macho',
+      eyebrow: 'CROWN TAKEN',
+      title: 'YOU OWN THE BAR.',
+      message: 'The board hangs beneath you.',
+      imagePath: MACHO_IMAGES.crown,
+      durationMs: 4200,
+    }
+  }
+
   return {
     tone: 'success',
     variant: 'macho',
@@ -105,6 +117,18 @@ export function buildVaultRecordToast({ activityType, periodType }) {
       title: periodType === 'week' ? 'ROAD RECORD TAKEN.' : 'DISTANCE CLAIMED.',
       message: 'The Vault saw it.',
       imagePath: MACHO_IMAGES.road,
+      durationMs: 4200,
+    }
+  }
+
+  if (activityType === 'pullups') {
+    return {
+      tone: 'success',
+      variant: 'macho',
+      eyebrow: 'VAULT RECORD',
+      title: periodType === 'week' ? 'BAR RECORD TAKEN.' : 'THE BAR REMEMBERS.',
+      message: 'The Vault saw it.',
+      imagePath: MACHO_IMAGES.vault,
       durationMs: 4200,
     }
   }

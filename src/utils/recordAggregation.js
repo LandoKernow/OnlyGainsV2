@@ -1,9 +1,6 @@
 import { getSubmissionPeriodKeys } from './dates'
 import { isVaultEligibleSubmission } from './vaultEligibility'
-
-function normalizeActivityType(activityType) {
-  return activityType === 'km' ? 'km' : 'pressups'
-}
+import { getActivityUnit, normalizeActivityType } from './activityTypes'
 
 function getPeriodValue(row) {
   return Number(row?.value) || 0
@@ -16,7 +13,7 @@ function createAggregate(row, recordType, period) {
     userId: row?.userId || '',
     actorName: row?.actorName || 'Unknown',
     activityType,
-    unit: activityType === 'km' ? 'km' : 'reps',
+    unit: getActivityUnit(activityType),
     recordType,
     period,
     valueNumeric: 0,
@@ -102,7 +99,7 @@ export function aggregateEligibleSubmissionsByDay(submissions, activityType) {
     submissions,
     normalizedActivityType,
     'todayKey',
-    normalizedActivityType === 'km' ? 'km_day' : 'pressups_day',
+    `${normalizedActivityType}_day`,
   )
 }
 
@@ -112,7 +109,7 @@ export function aggregateEligibleSubmissionsByWeek(submissions, activityType) {
     submissions,
     normalizedActivityType,
     'weekKey',
-    normalizedActivityType === 'km' ? 'km_week' : 'pressups_week',
+    `${normalizedActivityType}_week`,
   )
 }
 

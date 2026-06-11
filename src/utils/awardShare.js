@@ -146,7 +146,10 @@ export function formatAwardValue(award) {
     return formatDurationFromSeconds(award.valueSeconds)
   }
 
-  if (award.valueNumeric != null && (award.activityType === 'pressups' || award.activityType === 'km')) {
+  if (
+    award.valueNumeric != null &&
+    (award.activityType === 'pressups' || award.activityType === 'pullups' || award.activityType === 'km')
+  ) {
     return formatActivityValue(award.valueNumeric, award.activityType)
   }
 
@@ -163,7 +166,9 @@ export function formatAwardMetricLine(award) {
   }
 
   const rawValue = Number(award.valueNumeric ?? 0)
-  return `${rawValue.toLocaleString('en-GB')} press-ups`
+  return award.activityType === 'pullups'
+    ? `${rawValue.toLocaleString('en-GB')} pull-ups`
+    : `${rawValue.toLocaleString('en-GB')} press-ups`
 }
 
 export function formatAwardShareMetricLine(award) {
@@ -176,7 +181,9 @@ export function formatAwardShareMetricLine(award) {
   }
 
   const rawValue = Number(award.valueNumeric ?? 0)
-  return `${rawValue.toLocaleString('en-GB')} press-ups.`
+  return award.activityType === 'pullups'
+    ? `${rawValue.toLocaleString('en-GB')} pull-ups.`
+    : `${rawValue.toLocaleString('en-GB')} press-ups.`
 }
 
 export function formatAwardLandingCopy(award) {

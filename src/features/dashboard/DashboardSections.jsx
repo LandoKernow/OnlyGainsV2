@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
 import { getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
+import { ACTIVITY_META, ACTIVITY_TYPES, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
@@ -39,17 +40,19 @@ function formatSubmissionTimestamp(value) {
 }
 
 // Heavy logs earn a heat flag in the feed so the big hits stand out.
+// Per-activity thresholds: [skull, fire].
+const FEED_INTENSITY_THRESHOLDS = {
+  pressups: { skull: 200, fire: 100 },
+  pullups: { skull: 50, fire: 25 },
+  km: { skull: 15, fire: 8 },
+}
+
 function getFeedIntensity(value, activityType) {
   const amount = Number(value) || 0
+  const thresholds = FEED_INTENSITY_THRESHOLDS[activityType] ?? FEED_INTENSITY_THRESHOLDS.pressups
 
-  if (activityType === 'km') {
-    if (amount >= 15) return '☠️'
-    if (amount >= 8) return '🔥'
-    return ''
-  }
-
-  if (amount >= 200) return '☠️'
-  if (amount >= 100) return '🔥'
+  if (amount >= thresholds.skull) return '☠️'
+  if (amount >= thresholds.fire) return '🔥'
   return ''
 }
 
@@ -118,6 +121,10 @@ function getLeaderboardBody(period, activityType) {
     return "This week's killers."
   }
 
+  if (period === 'weekly' && activityType === 'pullups') {
+    return 'Kings of the bar.'
+  }
+
   if (period === 'weekly' && activityType === 'km') {
     return 'Current war.'
   }
@@ -173,7 +180,11 @@ function LeaderboardRowPreviewModal({ row, activityType, allRows = [], onClose }
 
 function getFightActionCopy({ state, gapToCatch, gapToDefend, activityType }) {
   if (state === 'crown') {
-    return activityType === 'km' ? 'Make them chase distance.' : 'Make them bleed reps.'
+    if (activityType === 'km') {
+      return 'Make them chase distance.'
+    }
+
+    return activityType === 'pullups' ? 'Make them earn the bar.' : 'Make them bleed reps.'
   }
 
   if (state === 'hunted') {
@@ -186,6 +197,18 @@ function getFightActionCopy({ state, gapToCatch, gapToDefend, activityType }) {
     }
 
     return 'Distance breaks the line.'
+  }
+
+  if (activityType === 'pullups') {
+    if (gapToCatch != null && gapToCatch <= 10) {
+      return 'One more set breaks them.'
+    }
+
+    if (gapToCatch != null && gapToCatch <= 20) {
+      return 'Twenty takes the spot.'
+    }
+
+    return 'Add pressure. Move the board.'
   }
 
   if (gapToCatch != null && gapToCatch <= 25) {
@@ -337,26 +360,23 @@ export function LogActivityCard({
   onActivityTypeChange,
 }) {
   const isKm = activityType === 'km'
+  const meta = ACTIVITY_META[normalizeActivityType(activityType)]
 
   return (
     <Card title="LOG THE HIT" body="Move the board. Make it public.">
       <div className="dashboard-activity-toggle">
-        <button
-          className={activityType === 'pressups' ? 'pill-button pill-button--active' : 'pill-button'}
-          type="button"
-          onClick={() => onActivityTypeChange?.('pressups')}
-        >
-          Press Ups
-        </button>
-        <button
-          className={activityType === 'km' ? 'pill-button pill-button--active' : 'pill-button'}
-          type="button"
-          onClick={() => onActivityTypeChange?.('km')}
-        >
-          KM Ran
-        </button>
+        {ACTIVITY_TYPES.map((type) => (
+          <button
+            key={type}
+            className={activityType === type ? 'pill-button pill-button--active' : 'pill-button'}
+            type="button"
+            onClick={() => onActivityTypeChange?.(type)}
+          >
+            {ACTIVITY_META[type].label}
+          </button>
+        ))}
       </div>
-      {!isKm ? (
+      {isRepActivity(activityType) && quickValues.length > 0 ? (
         <div className="quick-actions quick-actions--board">
           {quickValues.map((quickValue) => (
             <button
@@ -373,7 +393,7 @@ export function LogActivityCard({
       ) : null}
       <form className="stack section-gap" onSubmit={onManualSubmit}>
         <label className="stack">
-          <span>{isKm ? 'KM' : 'Reps'}</span>
+          <span>{meta.inputLabel}</span>
           <input
             className="input"
             type="number"
@@ -382,7 +402,7 @@ export function LogActivityCard({
             inputMode="decimal"
             value={manualValue}
             onChange={(event) => onManualValueChange(event.target.value)}
-            placeholder={isKm ? 'e.g. 5.2' : 'e.g. 25'}
+            placeholder={meta.inputPlaceholder}
             disabled={isSaving}
           />
         </label>
@@ -565,8 +585,11 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
     <Card title={compact ? 'MINI RANKS' : 'Ranks'} body={compact ? 'Top 3 plus your spot.' : cardBody}>
       {!compact ? (
         <div className="placeholder-tabs">
-          <span className={isKm ? 'pill' : 'pill pill--active'}>Press Ups</span>
-          <span className={isKm ? 'pill pill--active' : 'pill'}>KM</span>
+          {ACTIVITY_TYPES.map((type) => (
+            <span key={type} className={normalizeActivityType(activityType) === type ? 'pill pill--active' : 'pill'}>
+              {ACTIVITY_META[type].label}
+            </span>
+          ))}
           {periods.map((item) => (
             <button
               key={item.key}

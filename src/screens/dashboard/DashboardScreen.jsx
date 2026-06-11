@@ -21,30 +21,32 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 import { WarCard } from '../../components/WarCard'
 import { parseKmValue, formatActivityGap } from '../../utils/activity'
+import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { getToastMessage } from '../../utils/toastCopy'
 import { calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
 import { shareWarCardImage } from '../../utils/warCardImage'
 
-const quickValues = [10, 20, 50]
 const BOARD_LIVE_FEED_LIMIT = 20
 const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
 function parseManualValue(value, activityType) {
   const trimmed = value.trim()
 
-  if (trimmed === '' && activityType === 'pressups') {
-    return { error: 'Enter a press-up count.' }
-  }
+  if (isRepActivity(activityType)) {
+    const meta = ACTIVITY_META[normalizeActivityType(activityType)]
 
-  if (activityType === 'pressups') {
+    if (trimmed === '') {
+      return { error: meta.emptyError }
+    }
+
     if (!/^\d+$/.test(trimmed)) {
-      return { error: 'Press-ups must be a whole number.' }
+      return { error: meta.wholeNumberError }
     }
 
     const parsed = Number(trimmed)
 
     if (parsed <= 0) {
-      return { error: 'Press-ups must be greater than 0.' }
+      return { error: meta.positiveError }
     }
 
     return { value: parsed }
@@ -73,14 +75,14 @@ function AuthenticatedDashboard() {
     boardIds: boards.map((board) => board.id),
     userId: session.user.id,
     actorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'You',
-    activityType: activityType === 'km' ? 'km' : 'pressups',
+    activityType: normalizeActivityType(activityType),
     limit: BOARD_LIVE_FEED_LIMIT,
   })
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
     period: 'weekly',
     currentUserId: session.user.id,
-    activityType: activityType === 'km' ? 'km' : 'pressups',
+    activityType: normalizeActivityType(activityType),
   })
   const isPressupWeeklyLeader =
     !leaderboardQuery.isLoading &&
@@ -197,7 +199,7 @@ function AuthenticatedDashboard() {
       rivalName: rival?.actorName || '',
       gapLabel,
       tagline: getWarCardTagline(`${session.user.id}:${weeklyTotal}`),
-      milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays }),
+      milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType }),
       shareState: '',
     }
   }
@@ -304,7 +306,7 @@ function AuthenticatedDashboard() {
         />
 
         <LogActivityCard
-          quickValues={quickValues}
+          quickValues={getActivityQuickValues(activityType)}
           manualValue={manualValue}
           manualError={manualError}
           onManualValueChange={setManualValue}

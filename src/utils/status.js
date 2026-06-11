@@ -3,16 +3,28 @@
  * No new tables, no persistence, no extra fetching.
  */
 
+// Per-activity heat thresholds: [war-mode today, rising today, danger gap].
+// Pull-ups scale at roughly a quarter of press-up volume.
+const STATUS_THRESHOLDS = {
+  pressups: { war: 100, rising: 30, danger: 20 },
+  pullups: { war: 25, rising: 8, danger: 5 },
+  km: { war: 8, rising: 3, danger: 0.5 },
+}
+
+function getThresholds(activityType) {
+  return STATUS_THRESHOLDS[activityType] ?? STATUS_THRESHOLDS.pressups
+}
+
 function getWarThreshold(activityType) {
-  return activityType === 'km' ? 8 : 100
+  return getThresholds(activityType).war
 }
 
 function getRisingThreshold(activityType) {
-  return activityType === 'km' ? 3 : 30
+  return getThresholds(activityType).rising
 }
 
 function getDangerThreshold(activityType) {
-  return activityType === 'km' ? 0.5 : 20
+  return getThresholds(activityType).danger
 }
 
 function getGapAhead(row, allRows = []) {

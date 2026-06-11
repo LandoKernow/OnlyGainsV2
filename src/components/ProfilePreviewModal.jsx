@@ -3,6 +3,7 @@ import { useBoardMeta } from '../hooks/useBoardMeta'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { usePublicProfileSummary } from '../hooks/usePublicProfileSummary'
 import { formatActivityValue } from '../utils/activity'
+import { normalizeActivityType } from '../utils/activityTypes'
 import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../utils/profileYear'
 
 function formatPreviewRecord(record) {
@@ -52,7 +53,7 @@ export function ProfilePreviewModal({
   const summary = summaryQuery.summary
   const profile = summary?.profile
   const currentRow =
-    summary?.leaderboard?.[initialActivityType === 'km' ? 'km' : 'pressups'] ?? null
+    summary?.leaderboard?.[normalizeActivityType(initialActivityType)] ?? null
   const displayName = profile?.name || initialName || 'Board member'
   const displayRank = currentRow?.rank ?? initialRank
   const displayTotal = currentRow?.total ?? initialWeeklyTotal
