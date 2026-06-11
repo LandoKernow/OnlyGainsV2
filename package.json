@@ -12,6 +12,7 @@
     "macho:manifest": "node scripts/generate-macho-manifest.mjs"
   },
   "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2",
     "@supabase/supabase-js": "^2.53.0",
     "@tanstack/react-query": "^5.76.2",
     "react": "^19.1.0",

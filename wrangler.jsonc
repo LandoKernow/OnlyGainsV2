@@ -1,9 +1,20 @@
 {
   "name": "only-gains-2-0",
-  "type": "javascript",
   "compatibility_date": "2026-06-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "worker/index.js",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Only API calls hit the worker; everything else is served as static
+    // assets directly from the edge (fast path unchanged).
+    "run_worker_first": ["/api/*"]
+  },
+  "triggers": {
+    // STREAK_AT_RISK evening sweeps (UTC). 17:00/20:00 UTC = 18:00/21:00
+    // London in summer. Keep in step with streakSweepHoursUtc in
+    // src/config/notifications.js.
+    "crons": ["0 17 * * *", "0 20 * * *"]
   }
 }
