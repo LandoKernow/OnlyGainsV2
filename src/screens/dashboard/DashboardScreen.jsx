@@ -23,6 +23,7 @@ import { useToast } from '../../components/ToastProvider'
 import { BossBattleCard } from '../../components/BossBattleCard'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
+import { useCrownHonors } from '../../hooks/useCrownHonors'
 import { useWarriorXp } from '../../hooks/useWarriorXp'
 import { parseKmValue, formatActivityGap } from '../../utils/activity'
 import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
@@ -147,6 +148,49 @@ function AuthenticatedDashboard() {
   useEffect(() => {
     void preloadNextMachoImage(session.user.id)
   }, [session.user.id])
+
+  // TREBLE: the maximum event. First open after winning all three crowns
+  // gets the full-screen takeover (once per treble, tracked locally), and
+  // the takeover doubles as its own shareable war card.
+  const honors = useCrownHonors()
+  const latestTrebleId = honors.latestTreble?.id ?? ''
+
+  useEffect(() => {
+    if (!latestTrebleId || takeover) {
+      return
+    }
+
+    const seenKey = `only_gains_treble_takeover_seen_v1_${session.user.id}_${latestTrebleId}`
+
+    try {
+      if (globalThis.localStorage?.getItem(seenKey) === 'true') {
+        return
+      }
+      globalThis.localStorage?.setItem(seenKey, 'true')
+    } catch {
+      // Restrictive storage: show it anyway — better twice than never.
+    }
+
+    const treblePayload = honors.latestTreble?.payload ?? {}
+
+    dealMachoImage(session.user.id).then((imageSrc) => {
+      if (!imageSrc) {
+        return
+      }
+
+      setTakeover({
+        imageSrc,
+        stat: 'TREBLE',
+        sub: `ALL 3 CROWNS · ONE ${treblePayload.period === 'monthly' ? 'MONTH' : 'WEEK'}`,
+        tagline: 'THE IMPOSSIBLE, DONE.',
+        warriorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'WARRIOR',
+        boardName: activeBoard?.name || 'GLOBAL BOARD',
+        shareState: '',
+      })
+    })
+    // Keyed on the treble event id — fires once per treble won.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestTrebleId, session.user.id])
 
   // Demo trigger: /dashboard?takeover=demo fires the full takeover + share
   // flow with a rotation-dealt image. No cooldowns marked, nothing persisted.

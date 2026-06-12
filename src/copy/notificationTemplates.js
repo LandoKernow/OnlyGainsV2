@@ -56,6 +56,33 @@ const TEMPLATES = {
     url: '/profile/records',
   }),
 
+  CROWN: (event) => ({
+    title: 'CROWNED.',
+    body: `${(p(event).discipline ?? 'THE BOARD').toUpperCase()} IS YOURS FOR THE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. #1. DEFEND IT.`,
+    url: '/profile',
+  }),
+
+  DOUBLE_CROWN: (event) => ({
+    title: 'DOUBLE CROWN.',
+    body: `TWO DISCIPLINES. ONE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. THE BOARD HAS BEEN TOLD.`,
+    url: '/profile',
+  }),
+
+  TREBLE: (event) => ({
+    title: 'TREBLE. THE IMPOSSIBLE.',
+    body: `ALL THREE CROWNS IN ONE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. THE RAREST HONOR IN THE APP. WEAR IT.`,
+    url: '/profile',
+  }),
+
+  CROWN_REPORT: (event) => ({
+    title: p(event).honor === 'TREBLE' ? 'WITNESS THIS.' : 'WAR REPORT.',
+    body:
+      p(event).honor === 'TREBLE'
+        ? `${name(event)} HAS DONE THE IMPOSSIBLE. TRIPLE CROWN. ALL THREE DISCIPLINES. BOW OR BEAT IT.`
+        : `${name(event)} TOOK TWO CROWNS THIS ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. YOUR MOVE.`,
+    url: '/leaderboard',
+  }),
+
   BOARD_ACTIVITY: (event) => {
     const count = p(event).count ?? 1
     const first = name(event)

@@ -3259,3 +3259,9 @@ button {
   accent-color: #d56a2c;
   flex-shrink: 0;
 }
+
+/* Crown honors */
+.profile-honors {
+  color: #f0c9a8;
+  letter-spacing: 0.04em;
+}
