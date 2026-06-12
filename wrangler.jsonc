@@ -3,6 +3,10 @@
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker/index.js",
+  // Dashboard-set variables survive every `wrangler deploy` from the build
+  // pipeline. Without this, each merge wipes anything added in the dashboard
+  // UI as plain-text vars (the PR #8 secret-wipe incident).
+  "keep_vars": true,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
