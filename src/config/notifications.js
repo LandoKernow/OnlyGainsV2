@@ -21,6 +21,12 @@ export const NOTIFICATIONS_CONFIG = {
     STREAK_AT_RISK: { priority: 'high', category: 'streak', cooldownMinutes: 720 },
     MILESTONE: { priority: 'medium', category: 'milestone', cooldownMinutes: 60 },
     BOARD_ACTIVITY: { priority: 'low', category: 'board', cooldownMinutes: 0 },
+    // Crowns: period-rollover honors. Cooldown 0 — deduped per period instead.
+    CROWN: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
+    DOUBLE_CROWN: { priority: 'high', category: 'milestone', cooldownMinutes: 0 },
+    TREBLE: { priority: 'high', category: 'milestone', cooldownMinutes: 0 },
+    // Board-wide announcement when someone lands a double or treble.
+    CROWN_REPORT: { priority: 'medium', category: 'board', cooldownMinutes: 0 },
   },
 
   // CHASE_CLOSING fires when the rival behind you closes within EITHER bound.

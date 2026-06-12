@@ -16,9 +16,10 @@
     "run_worker_first": ["/api/*"]
   },
   "triggers": {
-    // STREAK_AT_RISK evening sweeps (UTC). 17:00/20:00 UTC = 18:00/21:00
-    // London in summer. Keep in step with streakSweepHoursUtc in
-    // src/config/notifications.js.
-    "crons": ["0 17 * * *", "0 20 * * *"]
+    // 17:00/20:00 UTC daily = STREAK_AT_RISK sweeps (18:00/21:00 London BST).
+    // Monday 00:30 UTC = weekly crowns; 1st of month 00:30 UTC = monthly
+    // crowns (both score the just-completed period). The worker branches on
+    // the cron expression in scheduled().
+    "crons": ["0 17 * * *", "0 20 * * *", "30 0 * * 1", "30 0 1 * *"]
   }
 }

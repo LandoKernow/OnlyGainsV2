@@ -543,6 +543,178 @@ async function runStreakSweep(env) {
 }
 
 // ---------------------------------------------------------------------------
+// CROWNS — period-rollover honors sweep (weekly + monthly, all disciplines)
+// ---------------------------------------------------------------------------
+
+const DISCIPLINES = ['pressups', 'pullups', 'km']
+
+const DISCIPLINE_LABELS = {
+  pressups: 'Press-ups',
+  pullups: 'Pull-ups',
+  km: 'KM',
+}
+
+function londonMonthStart(dayKey) {
+  return `${dayKey.slice(0, 7)}-01`
+}
+
+// Period window: by default the LAST COMPLETED period (the cron runs just
+// after rollover); current=true sweeps the in-progress period for testing.
+function getCrownWindow(period, { current = false } = {}) {
+  const todayKey = londonDayKey()
+
+  if (period === 'monthly') {
+    const thisMonthStart = londonMonthStart(todayKey)
+
+    if (current) {
+      return { start: thisMonthStart, endExclusive: shiftDayKey(todayKey, 1), periodKey: thisMonthStart.slice(0, 7) }
+    }
+
+    const lastMonthStart = londonMonthStart(shiftDayKey(thisMonthStart, -1))
+    return { start: lastMonthStart, endExclusive: thisMonthStart, periodKey: lastMonthStart.slice(0, 7) }
+  }
+
+  const thisWeekStart = londonWeekStart(todayKey)
+
+  if (current) {
+    return { start: thisWeekStart, endExclusive: shiftDayKey(todayKey, 1), periodKey: thisWeekStart }
+  }
+
+  const lastWeekStart = shiftDayKey(thisWeekStart, -7)
+  return { start: lastWeekStart, endExclusive: thisWeekStart, periodKey: lastWeekStart }
+}
+
+// One crown event per recipient/type/board/period — re-running the sweep
+// (retries, manual fires) can never double-award.
+async function crownAlreadyAwarded(env, recipientId, type, boardId, periodKey) {
+  const rows = await sbSelect(
+    env,
+    `notification_events?recipient_user_id=eq.${recipientId}&type=eq.${type}&payload->>periodKey=eq.${periodKey}&payload->>boardId=eq.${boardId}&select=id&limit=1`,
+  )
+
+  return rows.length > 0
+}
+
+async function runCrownsSweep(env, period, { current = false } = {}) {
+  const window = getCrownWindow(period, { current })
+  const sweepId = `crowns:${period}:${window.periodKey}`
+
+  try {
+    const rows = await sbSelectAll(
+      env,
+      `submissions?activity_date=gte.${window.start}&activity_date=lt.${window.endExclusive}&select=circle_id,user_id,activity_type,value&order=created_at.desc`,
+    )
+
+    // totals[board][discipline][user] -> period volume
+    const totals = new Map()
+
+    for (const row of rows) {
+      if (!DISCIPLINES.includes(row.activity_type)) {
+        continue
+      }
+
+      const boardKey = row.circle_id
+      if (!totals.has(boardKey)) totals.set(boardKey, new Map())
+      const board = totals.get(boardKey)
+      if (!board.has(row.activity_type)) board.set(row.activity_type, new Map())
+      const discipline = board.get(row.activity_type)
+      discipline.set(row.user_id, (discipline.get(row.user_id) ?? 0) + (Number(row.value) || 0))
+    }
+
+    const stats = { boards: totals.size, crowns: 0, doubles: 0, trebles: 0, reports: 0, skippedDuplicates: 0 }
+
+    for (const [boardId, disciplines] of totals) {
+      // Champions per discipline (ties share the crown).
+      const crownsByUser = new Map()
+      const boardMembers = new Set()
+
+      for (const [discipline, userTotals] of disciplines) {
+        let best = 0
+
+        for (const [userId, total] of userTotals) {
+          boardMembers.add(userId)
+          if (total > best) best = total
+        }
+
+        if (best <= 0) {
+          continue
+        }
+
+        for (const [userId, total] of userTotals) {
+          if (total === best) {
+            if (!crownsByUser.has(userId)) crownsByUser.set(userId, [])
+            crownsByUser.get(userId).push(discipline)
+          }
+        }
+      }
+
+      const names = await fetchProfileNames(env, [...crownsByUser.keys()])
+
+      for (const [userId, wonDisciplines] of crownsByUser) {
+        const type = wonDisciplines.length >= 3 ? 'TREBLE' : wonDisciplines.length === 2 ? 'DOUBLE_CROWN' : 'CROWN'
+
+        if (await crownAlreadyAwarded(env, userId, type, boardId, window.periodKey)) {
+          stats.skippedDuplicates += 1
+          continue
+        }
+
+        const payload = {
+          period,
+          periodKey: window.periodKey,
+          boardId,
+          disciplines: wonDisciplines,
+          discipline: wonDisciplines.map((d) => DISCIPLINE_LABELS[d]).join(' + '),
+        }
+
+        const event = await createEvent(env, {
+          recipientUserId: userId,
+          type,
+          actorUserId: userId,
+          actorName: names[userId] ?? 'A warrior',
+          payload,
+        })
+
+        if (event) {
+          if (type === 'TREBLE') stats.trebles += 1
+          else if (type === 'DOUBLE_CROWN') stats.doubles += 1
+          else stats.crowns += 1
+        }
+
+        // Doubles and trebles get announced to the whole board — nobody
+        // should be able to miss a treble.
+        if (type !== 'CROWN') {
+          for (const member of boardMembers) {
+            if (member === userId) {
+              continue
+            }
+
+            if (await crownAlreadyAwarded(env, member, 'CROWN_REPORT', boardId, `${window.periodKey}:${userId}`)) {
+              continue
+            }
+
+            const report = await createEvent(env, {
+              recipientUserId: member,
+              type: 'CROWN_REPORT',
+              actorUserId: userId,
+              actorName: names[userId] ?? 'A warrior',
+              payload: { period, periodKey: `${window.periodKey}:${userId}`, boardId, honor: type },
+            })
+
+            if (report) stats.reports += 1
+          }
+        }
+      }
+    }
+
+    await logOutcome(env, sweepId, 'crowns_swept', { ...stats, window })
+    return { swept: true, ...stats, window }
+  } catch (error) {
+    await logOutcome(env, sweepId, 'error', { message: String(error?.message || error) })
+    throw error
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HTTP surface
 // ---------------------------------------------------------------------------
 
@@ -626,6 +798,13 @@ export default {
           return json(await runStreakSweep(env))
         }
 
+        // Manual crowns run: { "crowns": "weekly"|"monthly", "current": true }
+        // current=true scores the in-progress period (for testing without
+        // waiting for rollover).
+        if (body.crowns) {
+          return json(await runCrownsSweep(env, body.crowns === 'monthly' ? 'monthly' : 'weekly', { current: Boolean(body.current) }))
+        }
+
         const event = await createEvent(env, {
           recipientUserId: body.recipientUserId,
           type: body.type || 'OVERTAKEN',
@@ -648,7 +827,19 @@ export default {
     return env.ASSETS.fetch(request)
   },
 
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
+    // Crons (wrangler.jsonc): Monday 00:30 UTC = weekly crowns; 1st of the
+    // month 00:30 UTC = monthly crowns; evening crons = streak sweep.
+    if (event.cron === '30 0 * * 1') {
+      ctx.waitUntil(runCrownsSweep(env, 'weekly'))
+      return
+    }
+
+    if (event.cron === '30 0 1 * *') {
+      ctx.waitUntil(runCrownsSweep(env, 'monthly'))
+      return
+    }
+
     ctx.waitUntil(runStreakSweep(env))
   },
 }

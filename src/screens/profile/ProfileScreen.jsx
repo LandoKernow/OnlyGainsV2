@@ -13,6 +13,7 @@ import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
+import { useCrownHonors } from '../../hooks/useCrownHonors'
 import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
 import { formatActivityGap, formatActivityValue } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
@@ -49,6 +50,7 @@ function ProfileSummary() {
   const { session, signOut } = useAuth()
   const { circleId } = useBoardMeta()
   const profileQuery = useCurrentProfile()
+  const honors = useCrownHonors()
   const profileYearSetup = useProfileYearSetup(2026)
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
@@ -102,6 +104,16 @@ function ProfileSummary() {
                   <span className="muted">Board status</span>
                   <strong>{statusLabel}</strong>
                 </div>
+                {honors.totalCrowns > 0 ? (
+                  <div className="profile-identity-grid__row">
+                    <span className="muted">Honors</span>
+                    <strong className="profile-honors">
+                      {honors.trebleCount > 0 ? `${honors.trebleCount}x TREBLE WARRIOR · ` : ''}
+                      {honors.doubleCount > 0 ? `${honors.doubleCount}x DOUBLE CROWN · ` : ''}
+                      👑 {honors.totalCrowns}
+                    </strong>
+                  </div>
+                ) : null}
                 <div className="profile-identity-grid__row">
                   <span className="muted">Bar work</span>
                   <strong>
