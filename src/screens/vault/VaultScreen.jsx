@@ -9,34 +9,35 @@ import { useVaultAwards } from '../../hooks/useVaultAwards'
 import { useVaultRecords } from '../../hooks/useVaultRecords'
 import { formatActivityValue } from '../../utils/activity'
 import { normalizeActivityType } from '../../utils/activityTypes'
-import {
-  formatAwardMetricLine,
-  formatAwardPeriodRange,
-  formatAwardSourceLabel,
-  shareAward,
-} from '../../utils/awardShare'
-import { formatDurationFromSeconds, PROFILE_YEAR_RECORD_LABELS } from '../../utils/profileYear'
-import { IS_TELEGRAM_CONFIGURED, TELEGRAM_URL } from '../../utils/community'
+import { formatAwardMetricLine, formatAwardPeriodRange, shareAward } from '../../utils/awardShare'
+import { formatDurationFromSeconds } from '../../utils/profileYear'
+import { TELEGRAM_URL } from '../../utils/community'
 
-const CLAIMED_RECORD_TYPES = [
-  'pressups_set',
-  'pullups_day',
-  'pullups_week',
-  'pullups_set',
-  'fastest_5k',
-  'fastest_10k',
-  'half_marathon',
-  'marathon',
-  'longest_run',
+// Trophy room rules: huge number, tiny label, no sentences.
+const APP_TRACKED_TROPHIES = [
+  { key: 'pressupsDay', label: 'PRESS-UPS · DAY', activityType: 'pressups' },
+  { key: 'pressupsWeek', label: 'PRESS-UPS · WEEK', activityType: 'pressups' },
+  { key: 'pullupsDay', label: 'PULL-UPS · DAY', activityType: 'pullups' },
+  { key: 'pullupsWeek', label: 'PULL-UPS · WEEK', activityType: 'pullups' },
+  { key: 'kmDay', label: 'KM · DAY', activityType: 'km' },
+  { key: 'kmWeek', label: 'KM · WEEK', activityType: 'km' },
 ]
 
-function formatSourceLabel(sourceLabel) {
-  return String(sourceLabel || '').replace(/_/g, '-').toUpperCase()
-}
+const CLAIMED_TROPHIES = [
+  { key: 'pressups_set', label: 'PRESS-UPS · SET', activityType: 'pressups' },
+  { key: 'pullups_day', label: 'PULL-UPS · DAY', activityType: 'pullups' },
+  { key: 'pullups_week', label: 'PULL-UPS · WEEK', activityType: 'pullups' },
+  { key: 'pullups_set', label: 'PULL-UPS · SET', activityType: 'pullups' },
+  { key: 'fastest_5k', label: '5K', activityType: 'pressups' },
+  { key: 'fastest_10k', label: '10K', activityType: 'pressups' },
+  { key: 'half_marathon', label: 'HALF MARATHON', activityType: 'pressups' },
+  { key: 'marathon', label: 'MARATHON', activityType: 'pressups' },
+  { key: 'longest_run', label: 'LONGEST RUN', activityType: 'km' },
+]
 
-function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
+function formatTrophyValue(record, fallbackActivityType) {
   if (!record) {
-    return 'No record yet'
+    return '—'
   }
 
   if (record.unit === 'seconds') {
@@ -50,18 +51,42 @@ function formatVaultRecordValue(record, fallbackActivityType = 'pressups') {
   return formatActivityValue(record.valueNumeric ?? record.value, fallbackActivityType)
 }
 
+function sourceTag(record) {
+  const label = String(record?.sourceLabel || '')
+  return label === 'app_tracked' ? 'LIVE' : 'CLAIMED'
+}
+
+function Trophy({ label, record, activityType, onPreviewHolder }) {
+  return (
+    <article className={record ? 'trophy' : 'trophy trophy--empty'}>
+      <span className="trophy__label">{label}</span>
+      <strong className="trophy__value">{formatTrophyValue(record, activityType)}</strong>
+      {record ? (
+        <>
+          <button className="trophy__holder" type="button" onClick={onPreviewHolder}>
+            {record.actorName || 'Unknown'}
+          </button>
+          <span className="trophy__tag">
+            {sourceTag(record)} · {record.year}
+          </span>
+        </>
+      ) : (
+        <span className="trophy__tag trophy__tag--empty">UNCLAIMED</span>
+      )}
+    </article>
+  )
+}
+
 function FeaturedAwardCard({ award, onPreviewWinner, onShare }) {
   return (
     <article className="vault-award-featured">
       <p className="vault-award-featured__eyebrow">LATEST AWARD</p>
       <strong className="vault-award-featured__title">{award.title}</strong>
+      <div className="vault-award-featured__value">{formatAwardMetricLine(award)}</div>
       <button className="profile-link-button vault-award-featured__winner" type="button" onClick={onPreviewWinner}>
         {award.actorName}
       </button>
-      <div className="vault-award-featured__value">{formatAwardMetricLine(award)}</div>
       {formatAwardPeriodRange(award) ? <p className="vault-award-featured__period">{formatAwardPeriodRange(award)}</p> : null}
-      <p className="vault-award-featured__quote">{award.quote || 'Name in the Vault.'}</p>
-      <p className="vault-award-featured__source">{formatAwardSourceLabel(award)}</p>
       <div className="vault-award-card__actions">
         <Link className="button button--ghost vault-award-card__button" to={`/award/${award.id}`}>
           View
@@ -107,7 +132,7 @@ function VaultAwardsSection({ awards, error, onPreviewWinner, onShareAward }) {
   }
 
   return (
-    <Card title="AWARDS" body="Final wins are written into the Vault.">
+    <Card title="AWARDS">
       <div className="stack">
         {awards.length > 0 ? (
           <>
@@ -124,7 +149,7 @@ function VaultAwardsSection({ awards, error, onPreviewWinner, onShareAward }) {
                   onClick={() => setIsExpanded((current) => !current)}
                   aria-expanded={isExpanded}
                 >
-                  {isExpanded ? 'Hide previous awards' : 'Show previous awards'}
+                  {isExpanded ? 'Hide previous' : `Previous (${awards.length - 1})`}
                 </button>
                 {isExpanded ? (
                   <div className="stack">
@@ -142,77 +167,8 @@ function VaultAwardsSection({ awards, error, onPreviewWinner, onShareAward }) {
             ) : null}
           </>
         ) : (
-          <div className="stack">
-            <strong>No final wins stored yet.</strong>
-            <p className="muted">Finalise a week or month to write names into the Vault.</p>
-          </div>
+          <p className="muted">Nothing written yet.</p>
         )}
-      </div>
-    </Card>
-  )
-}
-
-function VaultRecordCard({ title, record, emptyCopy, isPublicVisitor, onPreviewHolder }) {
-  if (record && isPublicVisitor) {
-    return (
-      <article className="vault-card vault-record-card vault-record-card--public">
-        <strong>{title}</strong>
-        <div className="vault-record-card__inline">
-          <span className="vault-card__value">
-            {formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}
-          </span>
-          <span className="vault-card__inline-dot" aria-hidden="true">
-            &middot;
-          </span>
-          <button className="profile-link-button vault-card__holder" type="button" onClick={onPreviewHolder}>
-            {record.actorName || 'Unknown'}
-          </button>
-        </div>
-        <div className="vault-card__status">
-          {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
-        </div>
-      </article>
-    )
-  }
-
-  return (
-    <article className={isPublicVisitor ? 'vault-card vault-record-card vault-record-card--public' : 'vault-card vault-record-card'}>
-      <strong>{title}</strong>
-      <div className="vault-card__value">
-        {formatVaultRecordValue(record, title.includes('KM') || title === 'Longest run' ? 'km' : 'pressups')}
-      </div>
-      {record ? (
-        <>
-          <button className="profile-link-button vault-card__holder" type="button" onClick={onPreviewHolder}>
-            {record.actorName || 'Unknown'}
-          </button>
-          <div className="vault-card__status">
-            {formatSourceLabel(record.sourceLabel)} <span aria-hidden="true">&middot;</span> {record.year}
-          </div>
-        </>
-      ) : (
-        <div className="stack">
-          <div className="vault-card__empty">{emptyCopy}</div>
-          <Link className="button button--ghost vault-card__action" to={isPublicVisitor ? '/dashboard' : '/profile/records'}>
-            {isPublicVisitor ? 'Join the board' : 'View your records'}
-          </Link>
-        </div>
-      )}
-    </article>
-  )
-}
-
-function VaultFutureSection() {
-  const futureTitles = ['Verified claims', 'Proof flow', 'Year-over-year comparisons']
-
-  return (
-    <Card title="COMING NEXT" body="The Vault gets sharper from here.">
-      <div className="vault-future">
-        {futureTitles.map((title) => (
-          <span key={title} className="vault-future-chip">
-            {title}
-          </span>
-        ))}
       </div>
     </Card>
   )
@@ -226,29 +182,14 @@ export default function VaultScreen() {
   const { records, isLoading, error, currentYear, appTrackedUnavailable } = useVaultRecords({ circleId })
   const awardsQuery = useVaultAwards(circleId)
   const isPublicVisitor = status === 'unauthenticated'
-
-  const pressupsDay = records.pressupsDay
-  const pressupsWeek = records.pressupsWeek
-  const pullupsDay = records.pullupsDay
-  const pullupsWeek = records.pullupsWeek
-  const kmDay = records.kmDay
-  const kmWeek = records.kmWeek
   const claimedRecords = records.claimed ?? {}
-  const awards = awardsQuery.awards
-  const appTrackedEmptyCopy = appTrackedUnavailable
-    ? 'App-tracked records are being rebuilt.'
-    : 'No holder yet. Log enough to leave a mark.'
 
   function openProfilePreview(userId, actorName, activityType = 'pressups') {
     if (!userId) {
       return
     }
 
-    setPreviewState({
-      userId,
-      actorName,
-      activityType,
-    })
+    setPreviewState({ userId, actorName, activityType })
   }
 
   async function handleShareAward(award) {
@@ -268,83 +209,56 @@ export default function VaultScreen() {
   }
 
   const appTrackedCard = (
-    <Card title="APP-TRACKED" body="Earned on this board.">
-      {appTrackedUnavailable ? <p className="muted">App-tracked records are being rebuilt.</p> : null}
-      <div className="vault-records">
-        <div id="vault-records" />
-        <VaultRecordCard
-          title="Most press-ups / day"
-          record={pressupsDay}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(pressupsDay?.userId, pressupsDay?.actorName, 'pressups')}
-        />
-        <VaultRecordCard
-          title="Most press-ups / week"
-          record={pressupsWeek}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(pressupsWeek?.userId, pressupsWeek?.actorName, 'pressups')}
-        />
-        <VaultRecordCard
-          title="Most pull-ups / day"
-          record={pullupsDay}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(pullupsDay?.userId, pullupsDay?.actorName, 'pullups')}
-        />
-        <VaultRecordCard
-          title="Most pull-ups / week"
-          record={pullupsWeek}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(pullupsWeek?.userId, pullupsWeek?.actorName, 'pullups')}
-        />
-        <VaultRecordCard
-          title="Most KM / day"
-          record={kmDay}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(kmDay?.userId, kmDay?.actorName, 'km')}
-        />
-        <VaultRecordCard
-          title="Most KM / week"
-          record={kmWeek}
-          emptyCopy={appTrackedEmptyCopy}
-          isPublicVisitor={isPublicVisitor}
-          onPreviewHolder={() => openProfilePreview(kmWeek?.userId, kmWeek?.actorName, 'km')}
-        />
+    <Card title={`LIVE RECORDS · ${currentYear}`}>
+      {appTrackedUnavailable ? <p className="muted">Rebuilding.</p> : null}
+      <div className="trophy-grid" id="vault-records">
+        {APP_TRACKED_TROPHIES.map((trophy) => (
+          <Trophy
+            key={trophy.key}
+            label={trophy.label}
+            record={records[trophy.key]}
+            activityType={trophy.activityType}
+            onPreviewHolder={() =>
+              openProfilePreview(records[trophy.key]?.userId, records[trophy.key]?.actorName, trophy.activityType)
+            }
+          />
+        ))}
       </div>
     </Card>
   )
 
   const claimedCard = (
-    <Card title="CLAIMED RECORDS" body="Profile claims. Visible across boards.">
-      <div className="vault-records">
-        {CLAIMED_RECORD_TYPES.map((recordType) => (
-          <VaultRecordCard
-            key={recordType}
-            title={PROFILE_YEAR_RECORD_LABELS[recordType]}
-            record={claimedRecords[recordType] ?? null}
-            emptyCopy="No holder yet. Claim it from your 2026 profile."
-            isPublicVisitor={isPublicVisitor}
-            onPreviewHolder={() => openProfilePreview(claimedRecords[recordType]?.userId, claimedRecords[recordType]?.actorName)}
+    <Card title="CLAIMED RECORDS">
+      <div className="trophy-grid">
+        {CLAIMED_TROPHIES.map((trophy) => (
+          <Trophy
+            key={trophy.key}
+            label={trophy.label}
+            record={claimedRecords[trophy.key] ?? null}
+            activityType={trophy.activityType}
+            onPreviewHolder={() =>
+              openProfilePreview(claimedRecords[trophy.key]?.userId, claimedRecords[trophy.key]?.actorName)
+            }
           />
         ))}
       </div>
-      {isPublicVisitor ? (
-        <div className="section-gap">
-          <Link className="button button--ghost" to="/dashboard">
-            Think you can beat one? Join the board.
+      <div className="section-gap vault-actions-row">
+        {isPublicVisitor ? (
+          <Link className="button" to="/dashboard">
+            Join the board
           </Link>
-        </div>
-      ) : null}
+        ) : (
+          <Link className="button button--ghost" to="/profile/records">
+            Your records
+          </Link>
+        )}
+      </div>
     </Card>
   )
 
   const awardsSection = !awardsQuery.error ? (
     <VaultAwardsSection
-      awards={awards}
+      awards={awardsQuery.awards}
       error={awardsQuery.error}
       onPreviewWinner={(award) => openProfilePreview(award.userId, award.actorName, normalizeActivityType(award.activityType))}
       onShareAward={handleShareAward}
@@ -354,45 +268,13 @@ export default function VaultScreen() {
   return (
     <div className={isPublicVisitor ? 'screen screen--vault screen--vault-public' : 'screen screen--vault'}>
       <div className="stack-lg">
-        {isPublicVisitor ? (
-          <Card title="THE VAULT" body="Records are remembered. Crowns are written here. Join the board.">
-            <div className="stack">
-              <p className="eyebrow">ONLY GAINS</p>
-              <p className="vault-public-hero__line">Discipline becomes public.</p>
-              <div className="vault-public-hero__actions">
-                <Link className="button" to="/dashboard">
-                  Join the board
-                </Link>
-                <a className="button button--ghost" href="#vault-records">
-                  View records
-                </a>
-              </div>
-            </div>
-          </Card>
-        ) : (
-          <Card title="THE VAULT" body="Records are remembered.">
-            <div className="page-kicker">
-              <p className="page-kicker__eyebrow">STATUS KEPT</p>
-              <p className="page-kicker__copy">Claimed records are visible. Verified records are coming.</p>
-              <p className="muted">The Vault remembers what the Board forgets.</p>
-              <Link className="button button--ghost" to="/profile/records">
-                View your records
-              </Link>
-            </div>
-          </Card>
-        )}
-
-        <div className="vault-intro">
-          <p className="vault-intro__eyebrow">{currentYear} RECORDS</p>
-          <p className="vault-intro__copy">App-tracked live. Claimed records clearly labelled.</p>
-          {isPublicVisitor ? <p className="vault-intro__copy">Think you can beat one? Join the board.</p> : null}
-          {IS_TELEGRAM_CONFIGURED ? (
-            <p className="vault-intro__copy">
-              <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-                Enter the Telegram.
-              </a>{' '}
-              The board talks there.
-            </p>
+        <div className="vault-kicker">
+          <p className="vault-kicker__eyebrow">ONLY GAINS</p>
+          <h2 className="vault-kicker__title">THE VAULT</h2>
+          {isPublicVisitor ? (
+            <Link className="button vault-kicker__cta" to="/dashboard">
+              Join the board
+            </Link>
           ) : null}
         </div>
 
@@ -412,10 +294,14 @@ export default function VaultScreen() {
           )
         ) : null}
 
-        {isLoading ? <p className="muted">Loading Vault records...</p> : null}
-        {error ? <p className="muted">Unable to load Vault records.</p> : null}
+        {isLoading ? <p className="muted">Opening the Vault...</p> : null}
+        {error ? <p className="muted">Vault unreachable. Refresh.</p> : null}
 
-        <VaultFutureSection />
+        <p className="vault-footer-link">
+          <a className="subtle-link" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+            Enter the Telegram
+          </a>
+        </p>
       </div>
       {previewState ? (
         <ProfilePreviewModal
