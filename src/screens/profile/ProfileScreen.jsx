@@ -14,12 +14,14 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
+import { useWarriorXp } from '../../hooks/useWarriorXp'
+import { calculateStreak } from '../../utils/war'
 import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
-import { formatActivityGap, formatActivityValue } from '../../utils/activity'
+import { formatActivityGap } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
 import { getLondonPeriodKeys } from '../../utils/dates'
 import { formatAwardPeriodRange } from '../../utils/awardShare'
-import { copyReportIssueTemplate, IS_TELEGRAM_CONFIGURED, openAddToHomeScreenPrompt, TELEGRAM_URL } from '../../utils/community'
+import { copyReportIssueTemplate, openAddToHomeScreenPrompt, TELEGRAM_URL } from '../../utils/community'
 import { getToastMessage } from '../../utils/toastCopy'
 import {
   BASIC_NON_GLOBAL_BOARD_LIMIT,
@@ -46,11 +48,14 @@ function boardDebug(step, details) {
   console.debug('[Only Gains Board Debug]', step, details)
 }
 
+// The warrior card: identity, rank, headline numbers, honors. Big numbers,
+// tiny words — the three most impressive things land instantly.
 function ProfileSummary() {
-  const { session, signOut } = useAuth()
+  const { session } = useAuth()
   const { circleId } = useBoardMeta()
   const profileQuery = useCurrentProfile()
   const honors = useCrownHonors()
+  const warriorLevel = useWarriorXp({ circleId, userId: session?.user?.id })
   const profileYearSetup = useProfileYearSetup(2026)
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
@@ -70,84 +75,71 @@ function ProfileSummary() {
   const currentRow = leaderboardQuery.currentUserRow
   const statusLabel = currentRow ? getRowStatus(currentRow, leaderboardQuery.rows, 'pressups') : 'QUIET'
   const rivalRow = chase.rowAbove || chase.rowBelow
+  const streak = calculateStreak(leaderboardQuery.data ?? [], session?.user?.id)
   const recordCount = profileYearSetup.recordEntries.length
   const profileYearState = !profileYearSetup.profileYear
     ? 'NOT STARTED'
     : profileYearSetup.profileYear.setupStatus === 'claimed'
       ? 'CLAIMED'
       : 'IN PROGRESS'
-  const rivalCopy = chase.rowAbove && chase.gapToCatch != null
-    ? `${rivalRow?.actorName || 'Unknown'} - ${formatActivityGap(chase.gapToCatch, 'pressups')} to take the spot`
+  const rivalLine = chase.rowAbove && chase.gapToCatch != null
+    ? `${(rivalRow?.actorName || 'UNKNOWN').toUpperCase()} +${formatActivityGap(chase.gapToCatch, 'pressups')}`
     : chase.rowBelow && chase.gapToDefend != null
-      ? `${rivalRow?.actorName || 'Unknown'} - ${formatActivityGap(chase.gapToDefend, 'pressups')} off your back`
-      : 'No immediate rival.'
+      ? `${(rivalRow?.actorName || 'UNKNOWN').toUpperCase()} −${formatActivityGap(chase.gapToDefend, 'pressups')}`
+      : 'NONE'
 
   return (
     <>
-      <Card title="Who you're becoming" body="The year is being written.">
-        <div className="stack">
-          <div className="stat-strip">
-            <strong>{profileName}</strong>
-            <span>{currentRow ? `#${currentRow.rank} this week` : 'No weekly rank yet'}</span>
+      <Card className="warrior-card">
+        <div className="warrior-card__head">
+          <div>
+            <strong className="warrior-card__name">{profileName.toUpperCase()}</strong>
+            {warriorLevel?.name ? (
+              <span className="warrior-card__level">LVL {warriorLevel.level} {warriorLevel.name}</span>
+            ) : null}
           </div>
+          <span className={`row-chip row-chip--${getStatusTone(statusLabel)}`}>{statusLabel}</span>
+        </div>
 
-          {leaderboardQuery.isLoading || profileQuery.isLoading ? (
-            <p className="muted">Loading board identity...</p>
-          ) : currentRow ? (
-            <div className="stack section-gap">
-              <div className="stat-strip">
-                <span>{formatActivityValue(currentRow.total, 'pressups')} this week</span>
-                <span>{recordCount} records claimed</span>
-              </div>
-              <div className="profile-identity-grid">
-                <div className="profile-identity-grid__row">
-                  <span className="muted">Board status</span>
-                  <strong>{statusLabel}</strong>
-                </div>
-                {honors.totalCrowns > 0 ? (
-                  <div className="profile-identity-grid__row">
-                    <span className="muted">Honors</span>
-                    <strong className="profile-honors">
-                      {honors.trebleCount > 0 ? `${honors.trebleCount}x TREBLE WARRIOR · ` : ''}
-                      {honors.doubleCount > 0 ? `${honors.doubleCount}x DOUBLE CROWN · ` : ''}
-                      👑 {honors.totalCrowns}
-                    </strong>
-                  </div>
-                ) : null}
-                <div className="profile-identity-grid__row">
-                  <span className="muted">Bar work</span>
-                  <strong>
-                    {pullupsRow
-                      ? `${formatActivityValue(pullupsRow.total, 'pullups')} this week - #${pullupsRow.rank}`
-                      : 'No pull-ups logged this week.'}
-                  </strong>
-                </div>
-                <div className="profile-identity-grid__row">
-                  <span className="muted">Current rival</span>
-                  <strong>{rivalCopy}</strong>
-                </div>
-                <div className="profile-identity-grid__row">
-                  <span className="muted">2026 profile</span>
-                  <strong>{profileYearState}</strong>
-                </div>
-              </div>
-              <div className="row-chip-list">
-                <span className={`row-chip row-chip--${getStatusTone(statusLabel)}`}>{statusLabel}</span>
-                {currentRow.todayTotal > 0 ? <span className="row-chip">ACTIVE TODAY</span> : null}
-              </div>
-            </div>
-          ) : (
-            <div className="stack">
-              <strong>Not yet on the board.</strong>
-              <span>Log press-up activity to make yourself visible.</span>
-            </div>
-          )}
+        {honors.totalCrowns > 0 ? (
+          <div className="warrior-card__honors">
+            {honors.trebleCount > 0 ? <span className="warrior-card__treble">{honors.trebleCount}x TREBLE WARRIOR</span> : null}
+            {honors.doubleCount > 0 ? <span>{honors.doubleCount}x DOUBLE</span> : null}
+            <span>👑 {honors.totalCrowns}</span>
+          </div>
+        ) : null}
 
-          <p className="muted">Arena returning. Profiles expanding. The year is being written.</p>
-          <div className="profile-summary-actions">
-            <button className="button button--ghost" type="button" onClick={() => signOut()}>
-              Sign out
-            </button>
+        {leaderboardQuery.isLoading || profileQuery.isLoading ? (
+          <p className="muted">Loading...</p>
+        ) : (
+          <div className="warrior-card__stats">
+            <div className="warrior-stat">
+              <strong className="warrior-stat__value">{currentRow ? `#${currentRow.rank}` : '—'}</strong>
+              <span className="warrior-stat__label">RANK · WEEK</span>
+            </div>
+            <div className="warrior-stat">
+              <strong className="warrior-stat__value">{currentRow ? Math.round(currentRow.total) : 0}</strong>
+              <span className="warrior-stat__label">PRESS-UPS · WEEK</span>
+            </div>
+            <div className="warrior-stat">
+              <strong className="warrior-stat__value">{streak.streakDays}{streak.streakDays > 0 ? '🔥' : ''}</strong>
+              <span className="warrior-stat__label">DAY STREAK</span>
+            </div>
+          </div>
+        )}
+
+        <div className="profile-identity-grid warrior-card__grid">
+          <div className="profile-identity-grid__row">
+            <span className="muted">BAR WORK</span>
+            <strong>{pullupsRow ? `${Math.round(pullupsRow.total)} · #${pullupsRow.rank}` : '0'}</strong>
+          </div>
+          <div className="profile-identity-grid__row">
+            <span className="muted">RIVAL</span>
+            <strong>{rivalLine}</strong>
+          </div>
+          <div className="profile-identity-grid__row">
+            <span className="muted">2026 PROFILE</span>
+            <strong>{profileYearState} · {recordCount} CLAIMED</strong>
           </div>
         </div>
       </Card>
@@ -164,74 +156,32 @@ function ProfileSummary() {
   )
 }
 
-function VaultProfileCard() {
+// Sign out survives, demoted to a quiet footer at the bottom of the screen.
+function SignOutFooter() {
+  const { signOut } = useAuth()
+
   return (
-    <Card title="Vault records" body="Claimed records are visible. Verified records are coming.">
-      <div className="stack">
-        <p className="muted">The Vault remembers what the Board forgets.</p>
-        <Link className="button" to="/vault">
-          Enter the Vault
-        </Link>
-      </div>
-    </Card>
+    <div className="profile-summary-actions">
+      <button className="button button--ghost" type="button" onClick={() => signOut()}>
+        Sign out
+      </button>
+    </div>
   )
 }
 
-function PersonalRecordsEntryCard() {
+// One row, three doors. The taglines died for the cause.
+function WarRecordLinksCard() {
   return (
-    <Card title="Personal Records" body="Your best work is on record.">
-      <div className="stack">
-        <p className="muted">Break this. Update the mark.</p>
-        <Link className="button" to="/profile/records">
-          View your records
+    <Card title="WAR RECORD">
+      <div className="war-record-links">
+        <Link className="button button--ghost war-record-links__button" to="/profile/records">
+          RECORDS
         </Link>
-      </div>
-    </Card>
-  )
-}
-
-function ProfileYearEntryCard() {
-  const profileYearSetup = useProfileYearSetup(2026)
-  const profileYear = profileYearSetup.profileYear
-  const recordCount = profileYearSetup.recordEntries.length
-  const title = !profileYear
-    ? 'Build your 2026 profile'
-    : '2026 profile'
-  const statusLabel = !profileYear
-    ? 'Not started'
-    : profileYear.setupStatus === 'claimed'
-      ? 'Claimed'
-      : 'In progress'
-
-  if (profileYearSetup.isLoading) {
-    return (
-      <Card title="Build your 2026 profile" body="Claim records. Add yearly totals. Power the Vault.">
-        <p className="muted">Loading your year setup.</p>
-      </Card>
-    )
-  }
-
-  if (profileYearSetup.error) {
-    return (
-      <Card title="Build your 2026 profile" body="Claim records. Add yearly totals. Power the Vault.">
-        <p className="muted">Could not load year setup yet.</p>
-        <Link className="button" to="/profile/year/2026">
-          Build your year
+        <Link className="button button--ghost war-record-links__button" to="/profile/year/2026">
+          2026 PROFILE
         </Link>
-      </Card>
-    )
-  }
-
-  return (
-    <Card title={title} body="Claim your records. Power the Vault.">
-      <div className="stack">
-        <div className="stat-strip">
-          <span>{statusLabel}</span>
-          <span>{recordCount} records claimed</span>
-        </div>
-        <p className="muted">The Board is earned live. The Profile remembers the year.</p>
-        <Link className="button" to="/profile/year/2026">
-          Build your year
+        <Link className="button button--ghost war-record-links__button" to="/vault">
+          VAULT
         </Link>
       </div>
     </Card>
@@ -257,6 +207,7 @@ function BoardsCard() {
   const [boardType, setBoardType] = useState('gym')
   const [inviteCode, setInviteCode] = useState('')
   const [leaveTargetBoard, setLeaveTargetBoard] = useState(null)
+  const [showForms, setShowForms] = useState(false)
   const nonGlobalBoardCount = countNonGlobalBoards(boards)
   const isBoardLimitCheckPending = isAdminQuery.isLoading && !isAdminQuery.isAdmin
   const hasUnlimitedBoards = isAdminQuery.isAdmin
@@ -417,29 +368,17 @@ function BoardsCard() {
   }
 
   return (
-    <Card title="BOARDS" body="Your boards. Your wars.">
+    <Card title="BOARDS" aside={<span className="muted">{hasUnlimitedBoards ? '∞' : `${nonGlobalBoardCount}/${BASIC_NON_GLOBAL_BOARD_LIMIT}`}</span>}>
       <div className="stack">
         <div className="profile-identity-grid">
           <div className="profile-identity-grid__row">
-            <span className="muted">Active board</span>
-            <strong>{getBoardDisplayName(activeBoard)}</strong>
+            <span className="muted">ACTIVE</span>
+            <strong>{getBoardDisplayName(activeBoard)} · {getBoardDisplayTypeLabel(activeBoard)}</strong>
           </div>
-          <div className="profile-identity-grid__row">
-            <span className="muted">Board type</span>
-            <strong>{getBoardDisplayTypeLabel(activeBoard)}</strong>
-          </div>
-        </div>
-
-        <div className="stat-strip">
-          <span>{hasUnlimitedBoards ? 'Admin: unlimited boards' : isBoardLimitCheckPending ? 'Checking board access...' : `${nonGlobalBoardCount}/${BASIC_NON_GLOBAL_BOARD_LIMIT} boards used`}</span>
-          <span>Global Board stays open</span>
         </div>
 
         {hasReachedBoardLimit ? (
-          <div className="board-limit-note">
-            <strong>TWO WARS IS ENOUGH FOR NOW.</strong>
-            <p className="muted">You have Global plus 2 boards. Finish what you started.</p>
-          </div>
+          <p className="muted">TWO WARS IS ENOUGH. FINISH ONE.</p>
         ) : null}
 
         {activeBoard?.id && boardFeatureReady ? (
@@ -450,8 +389,7 @@ function BoardsCard() {
           </div>
         ) : null}
 
-        {isBoardsLoading ? <p className="muted">Loading boards...</p> : null}
-        {!boardFeatureReady ? <p className="muted">Board invites wake up when the new board SQL is live.</p> : null}
+        {isBoardsLoading ? <p className="muted">Loading...</p> : null}
 
         {boards.length > 1 ? (
           <div className="board-switcher-list">
@@ -482,63 +420,71 @@ function BoardsCard() {
               )
             })}
           </div>
-        ) : (
-          <p className="muted">Your current board stays live here. Create the next one or join another war below.</p>
-        )}
+        ) : null}
 
-        <form className="board-form" onSubmit={handleCreateBoard}>
-          <div className="board-form__header">
-            <strong>Create board</strong>
-            <span className="muted">Your gym. Your team. Your war.</span>
-          </div>
-          <label className="stack">
-            <span>Board name</span>
-            <input
-              className="input"
-              type="text"
-              value={boardName}
-              onChange={(event) => setBoardName(event.target.value)}
-              placeholder="Warehouse Warriors"
-              maxLength={80}
-            />
-          </label>
-          <label className="stack">
-            <span>Board type</span>
-            <select className="input" value={boardType} onChange={(event) => setBoardType(event.target.value)}>
-              {BOARD_TYPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button className="button" type="submit" disabled={createBoardMutation.isPending || hasReachedBoardLimit}>
-            {createBoardMutation.isPending ? 'Creating...' : hasReachedBoardLimit ? 'Board limit hit' : 'Create board'}
-          </button>
-        </form>
+        <button
+          className="button button--ghost"
+          type="button"
+          onClick={() => setShowForms((current) => !current)}
+          aria-expanded={showForms}
+        >
+          {showForms ? 'CLOSE' : '+ NEW WAR'}
+        </button>
 
-        <form className="board-form" onSubmit={handleJoinBoard}>
-          <div className="board-form__header">
-            <strong>Join board</strong>
-            <span className="muted">Got a link or code? Step in.</span>
-          </div>
-          <label className="stack">
-            <span>Invite code</span>
-            <input
-              className="input"
-              type="text"
-              value={inviteCode}
-              onChange={(event) => setInviteCode(event.target.value)}
-              placeholder="OG-WAREHOUSE"
-              autoCapitalize="characters"
-              autoCorrect="off"
-            />
-          </label>
-          <button className="button button--ghost" type="submit" disabled={joinBoardMutation.isPending || hasReachedBoardLimit}>
-            {joinBoardMutation.isPending ? 'Joining...' : hasReachedBoardLimit ? 'Board limit hit' : 'Join board'}
-          </button>
-        </form>
+        {showForms ? (
+          <>
+            <form className="board-form" onSubmit={handleCreateBoard}>
+              <div className="board-form__header">
+                <strong>Create board</strong>
+              </div>
+              <label className="stack">
+                <span>Board name</span>
+                <input
+                  className="input"
+                  type="text"
+                  value={boardName}
+                  onChange={(event) => setBoardName(event.target.value)}
+                  placeholder="Warehouse Warriors"
+                  maxLength={80}
+                />
+              </label>
+              <label className="stack">
+                <span>Board type</span>
+                <select className="input" value={boardType} onChange={(event) => setBoardType(event.target.value)}>
+                  {BOARD_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="button" type="submit" disabled={createBoardMutation.isPending || hasReachedBoardLimit}>
+                {createBoardMutation.isPending ? 'Creating...' : hasReachedBoardLimit ? 'Board limit hit' : 'Create board'}
+              </button>
+            </form>
 
+            <form className="board-form" onSubmit={handleJoinBoard}>
+              <div className="board-form__header">
+                <strong>Join board</strong>
+              </div>
+              <label className="stack">
+                <span>Invite code</span>
+                <input
+                  className="input"
+                  type="text"
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value)}
+                  placeholder="OG-WAREHOUSE"
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                />
+              </label>
+              <button className="button button--ghost" type="submit" disabled={joinBoardMutation.isPending || hasReachedBoardLimit}>
+                {joinBoardMutation.isPending ? 'Joining...' : hasReachedBoardLimit ? 'Board limit hit' : 'Join board'}
+              </button>
+            </form>
+          </>
+        ) : null}
       </div>
       {leaveTargetBoard ? (
         <div className="board-leave-modal" role="dialog" aria-modal="true" aria-labelledby="leave-board-title">
@@ -696,41 +642,17 @@ function HelpCommunityCard() {
   }
 
   return (
-    <Card title="Help / Community" body="Quiet tools. Useful exits.">
-      <div className="community-links">
-        <div className="community-link-row">
-          <div>
-            <strong>Add to Home Screen</strong>
-            <p className="muted">Keep the Board one tap away.</p>
-          </div>
-          <button className="button button--ghost" type="button" onClick={() => openAddToHomeScreenPrompt()}>
-            Open guide
-          </button>
-        </div>
-
-        <div className="community-link-row">
-          <div>
-            <strong>ENTER THE TELEGRAM</strong>
-            <p className="muted">{IS_TELEGRAM_CONFIGURED ? 'The board talks there.' : 'The board room opens soon.'}</p>
-          </div>
-          {IS_TELEGRAM_CONFIGURED ? (
-            <a className="button button--ghost" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
-              Join Telegram
-            </a>
-          ) : (
-            <span className="muted">Soon</span>
-          )}
-        </div>
-
-        <div className="community-link-row">
-          <div>
-            <strong>Report issue</strong>
-            <p className="muted">Copy the bug template and send it with a screenshot.</p>
-          </div>
-          <button className="button button--ghost" type="button" onClick={handleReportIssue}>
-            Copy report
-          </button>
-        </div>
+    <Card title="COMMS">
+      <div className="war-record-links">
+        <a className="button button--ghost war-record-links__button" href={TELEGRAM_URL} target="_blank" rel="noreferrer">
+          TELEGRAM
+        </a>
+        <button className="button button--ghost war-record-links__button" type="button" onClick={handleReportIssue}>
+          REPORT
+        </button>
+        <button className="button button--ghost war-record-links__button" type="button" onClick={() => openAddToHomeScreenPrompt()}>
+          INSTALL
+        </button>
       </div>
     </Card>
   )
@@ -742,14 +664,13 @@ export default function ProfileScreen() {
       <AuthGate>
         <div className="stack-lg">
           <ProfileSummary />
+          <WarRecordLinksCard />
           <BoardsCard />
-          <AdminAwardControls />
           <AlertSettingsCard />
-          <ProfileYearEntryCard />
-          <PersonalRecordsEntryCard />
-          <VaultProfileCard />
+          <AdminAwardControls />
           <HelpCommunityCard />
           <ProfileBasicsCard />
+          <SignOutFooter />
         </div>
       </AuthGate>
     </div>

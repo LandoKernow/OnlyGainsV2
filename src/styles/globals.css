@@ -3265,3 +3265,200 @@ button {
   color: #f0c9a8;
   letter-spacing: 0.04em;
 }
+
+/* ============================================================
+   BIG NUMBERS, TINY WORDS — vault trophy room + warrior card
+   ============================================================ */
+
+.vault-kicker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 0;
+}
+
+.vault-kicker__eyebrow {
+  margin: 0;
+  color: #d56a2c;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+}
+
+.vault-kicker__title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.vault-kicker__cta {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.trophy-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.trophy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 12px;
+  border: 1px solid rgba(213, 106, 44, 0.3);
+  border-radius: 14px;
+  background: linear-gradient(170deg, rgba(213, 106, 44, 0.08), rgba(10, 7, 8, 0.2));
+}
+
+.trophy--empty {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.trophy__label {
+  color: #8f8077;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.trophy__value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff4ed;
+}
+
+.trophy--empty .trophy__value {
+  color: #564c45;
+}
+
+.trophy__holder {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #f0c9a8;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trophy__tag {
+  color: #8f8077;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.trophy__tag--empty {
+  color: #564c45;
+}
+
+.vault-footer-link {
+  margin: 0;
+  text-align: center;
+}
+
+.vault-actions-row {
+  display: flex;
+  justify-content: center;
+}
+
+/* Warrior card */
+.warrior-card .card__header {
+  display: none;
+}
+
+.warrior-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.warrior-card__name {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.warrior-card__level {
+  display: block;
+  margin-top: 2px;
+  color: #d56a2c;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.warrior-card__honors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+  color: #f0c9a8;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.warrior-card__treble {
+  color: #ffd700;
+}
+
+.warrior-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.warrior-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border: 1px solid rgba(213, 106, 44, 0.25);
+  border-radius: 12px;
+  background: rgba(213, 106, 44, 0.06);
+  text-align: center;
+}
+
+.warrior-stat__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.05;
+  color: #fff4ed;
+}
+
+.warrior-stat__label {
+  color: #8f8077;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.warrior-card__grid {
+  margin-top: 14px;
+}
+
+.war-record-links {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.war-record-links__button {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  padding-left: 4px;
+  padding-right: 4px;
+}

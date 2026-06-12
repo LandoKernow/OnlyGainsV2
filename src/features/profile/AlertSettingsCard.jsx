@@ -7,10 +7,10 @@ import { armPushAlerts, getPermissionState, isPushSupported, needsIosInstall } f
 import { openAddToHomeScreenPrompt } from '../../utils/community'
 
 const CATEGORY_LABELS = [
-  { key: 'chase', label: 'Chase Alerts', hint: 'Footsteps behind you. Targets escaping.' },
-  { key: 'board', label: 'Board Wars', hint: 'Spots taken. Spots lost. Big sessions.' },
-  { key: 'streak', label: 'Streak Warnings', hint: 'Your streak dies at midnight.' },
-  { key: 'milestone', label: 'Milestones', hint: 'Round numbers. PRs. History made.' },
+  { key: 'chase', label: 'Chase Alerts' },
+  { key: 'board', label: 'Board Wars' },
+  { key: 'streak', label: 'Streak Warnings' },
+  { key: 'milestone', label: 'Milestones' },
 ]
 
 export function AlertSettingsCard() {
@@ -56,7 +56,6 @@ export function AlertSettingsCard() {
           <label className="alert-toggle alert-toggle--master">
             <span>
               <strong>Global mute</strong>
-              <span className="muted"> — silence everything. Fight blind.</span>
             </span>
             <input
               type="checkbox"
@@ -69,7 +68,6 @@ export function AlertSettingsCard() {
             <label key={category.key} className="alert-toggle">
               <span>
                 <strong>{category.label}</strong>
-                <span className="muted"> — {category.hint}</span>
               </span>
               <input
                 type="checkbox"
