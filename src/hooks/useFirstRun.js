@@ -25,25 +25,26 @@ function writeFlag(storageKey) {
   }
 }
 
-// Durable, device-independent FIRST BLOOD truth: a FIRST_BLOOD event in
-// notification_events (written once-ever by the Worker, readable by the user
-// under their own RLS). localStorage is only a fast same-device guard.
-async function fetchFirstBloodEvent() {
+// Durable FIRST BLOOD truth: either a FIRST_BLOOD event (already coronated) or
+// a first_blood_exempt row (a veteran who existed at deploy — never eligible).
+// Both are server-side and read under the user's own RLS, so the instant
+// client takeover stays exactly in step with the Worker's award gate. No
+// dependency on submission history anywhere. localStorage is only a fast
+// same-device guard for users who just drew first blood.
+async function fetchFirstBloodState() {
   if (!supabase) {
-    return null
+    return { coronated: false, exempt: false }
   }
 
-  const { data, error } = await supabase
-    .from('notification_events')
-    .select('id')
-    .eq('type', 'FIRST_BLOOD')
-    .limit(1)
+  const [eventResult, exemptResult] = await Promise.all([
+    supabase.from('notification_events').select('id').eq('type', 'FIRST_BLOOD').limit(1),
+    supabase.from('first_blood_exempt').select('user_id').limit(1),
+  ])
 
-  if (error) {
-    return null
+  return {
+    coronated: Boolean((eventResult.data ?? [])[0]),
+    exempt: Boolean((exemptResult.data ?? [])[0]),
   }
-
-  return (data ?? [])[0] ?? null
 }
 
 export function useFirstRun() {
@@ -53,14 +54,18 @@ export function useFirstRun() {
 
   const firstBloodQuery = useQuery({
     queryKey: ['onboarding', 'first-blood', userId],
-    queryFn: fetchFirstBloodEvent,
+    queryFn: fetchFirstBloodState,
     enabled: isAuthenticated,
     staleTime: 60_000,
   })
 
-  // Done = durable server record exists, OR this device already fired it.
+  // Done = already coronated, OR a deploy-time veteran (exempt), OR this device
+  // already fired it. Veterans never fire first blood — kept sacred to genuine
+  // first sessions.
   const firstBloodDone =
-    Boolean(firstBloodQuery.data) || (Boolean(userId) && readFlag(key(FIRST_BLOOD_KEY_PREFIX, userId)))
+    Boolean(firstBloodQuery.data?.coronated) ||
+    Boolean(firstBloodQuery.data?.exempt) ||
+    (Boolean(userId) && readFlag(key(FIRST_BLOOD_KEY_PREFIX, userId)))
 
   const introSeen = Boolean(userId) && readFlag(key(CONSCRIPTION_KEY_PREFIX, userId))
 

@@ -397,12 +397,15 @@ async function processSubmission(env, submissionId) {
     ONBOARDING_CONFIG.firstBlood.enabled && (Number(value) || 0) >= firstBloodFloor
 
   if (qualifiesForFirstBlood) {
-    const priorFirstBlood = await sbSelect(
-      env,
-      `notification_events?recipient_user_id=eq.${actorId}&type=eq.FIRST_BLOOD&select=id&limit=1`,
-    )
+    // Veteran exemption: accounts that existed at deploy were backfilled into
+    // first_blood_exempt and never draw first blood. Gate is account-identity
+    // only — NO submission-history dependency.
+    const [priorFirstBlood, exemptRows] = await Promise.all([
+      sbSelect(env, `notification_events?recipient_user_id=eq.${actorId}&type=eq.FIRST_BLOOD&select=id&limit=1`),
+      sbSelect(env, `first_blood_exempt?user_id=eq.${actorId}&select=user_id&limit=1`),
+    ])
 
-    if (priorFirstBlood.length === 0) {
+    if (priorFirstBlood.length === 0 && exemptRows.length === 0) {
       const event = await createEvent(env, {
         recipientUserId: actorId,
         type: 'FIRST_BLOOD',
