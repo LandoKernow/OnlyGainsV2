@@ -21,6 +21,7 @@ import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 import { BossBattleCard } from '../../components/BossBattleCard'
+import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
@@ -29,7 +30,7 @@ import { parseKmValue, formatActivityGap } from '../../utils/activity'
 import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { MACHO_TAKEOVER_CONFIG } from '../../config/machoTakeover'
 import { shareMachoCardImage } from '../../utils/machoCardImage'
-import { dealMachoImage, preloadNextMachoImage } from '../../utils/machoRotation'
+import { dealCrownImage, dealMachoImage, preloadNextMachoImage } from '../../utils/machoRotation'
 import { evaluateMachoTrigger, markMachoFired, resolveMachoPresentation } from '../../utils/machoTriggers'
 import { pingEventEngine } from '../../api/notifications'
 import { getToastMessage } from '../../utils/toastCopy'
@@ -149,18 +150,20 @@ function AuthenticatedDashboard() {
     void preloadNextMachoImage(session.user.id)
   }, [session.user.id])
 
-  // TREBLE: the maximum event. First open after winning all three crowns
-  // gets the full-screen takeover (once per treble, tracked locally), and
-  // the takeover doubles as its own shareable war card.
+  // CROWN CORONATION: first open after winning a double or treble gets the
+  // full-screen takeover (once per win, tracked locally). Treble pulls the
+  // max-intensity image tier and a distinct gold three-throne war card.
   const honors = useCrownHonors()
-  const latestTrebleId = honors.latestTreble?.id ?? ''
+  const latestTakeoverId = honors.latestTakeover?.id ?? ''
 
   useEffect(() => {
-    if (!latestTrebleId || takeover) {
+    if (!latestTakeoverId || takeover) {
       return
     }
 
-    const seenKey = `only_gains_treble_takeover_seen_v1_${session.user.id}_${latestTrebleId}`
+    const award = honors.latestTakeover
+    const isTreble = award.type === 'TREBLE'
+    const seenKey = `only_gains_crown_takeover_seen_v1_${session.user.id}_${latestTakeoverId}`
 
     try {
       if (globalThis.localStorage?.getItem(seenKey) === 'true') {
@@ -171,26 +174,30 @@ function AuthenticatedDashboard() {
       // Restrictive storage: show it anyway — better twice than never.
     }
 
-    const treblePayload = honors.latestTreble?.payload ?? {}
+    const payload = award.payload ?? {}
 
-    dealMachoImage(session.user.id).then((imageSrc) => {
+    dealCrownImage(session.user.id, award.type).then((imageSrc) => {
       if (!imageSrc) {
         return
       }
 
       setTakeover({
         imageSrc,
-        stat: 'TREBLE',
-        sub: `ALL 3 CROWNS · ONE ${treblePayload.period === 'monthly' ? 'MONTH' : 'WEEK'}`,
-        tagline: 'THE IMPOSSIBLE, DONE.',
+        stat: isTreble ? 'TREBLE' : 'DOUBLE',
+        sub: isTreble
+          ? `ALL 3 THRONES · ONE ${payload.period === 'monthly' ? 'MONTH' : 'WEEK'}`
+          : `${(payload.discipline || 'TWO THRONES').toUpperCase()}`,
+        tagline: isTreble ? 'THE IMPOSSIBLE, DONE.' : 'TWO CROWNS. ONE MORE TO GO.',
         warriorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'WARRIOR',
-        boardName: activeBoard?.name || 'GLOBAL BOARD',
+        boardName: activeBoard?.name || payload.boardName || 'GLOBAL BOARD',
+        // Distinct crown war card with all three discipline figures.
+        crown: { tier: award.type, isTreble, stats: payload.stats ?? {}, period: payload.period },
         shareState: '',
       })
     })
-    // Keyed on the treble event id — fires once per treble won.
+    // Keyed on the award id — fires once per double/treble won.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [latestTrebleId, session.user.id])
+  }, [latestTakeoverId, session.user.id])
 
   // Demo trigger: /dashboard?takeover=demo fires the full takeover + share
   // flow with a rotation-dealt image. No cooldowns marked, nothing persisted.
@@ -523,6 +530,8 @@ function AuthenticatedDashboard() {
           isLoading={leaderboardQuery.isLoading}
           activityType={activityType}
         />
+
+        <CrownStandingsCard />
 
         <BossBattleCard />
 

@@ -22,6 +22,7 @@
 
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 import { NOTIFICATIONS_CONFIG, getEventConfig } from '../src/config/notifications.js'
+import { CROWNS_CONFIG } from '../src/config/crowns.js'
 import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
 
 // ---------------------------------------------------------------------------
@@ -595,17 +596,29 @@ async function crownAlreadyAwarded(env, recipientId, type, boardId, periodKey) {
   return rows.length > 0
 }
 
+// Faithful port of calculateLeaderboard's ranking: highest total, ties broken
+// by todayTotal desc then most-recent-log desc. Returns exactly one champion.
+function pickChampion(userStats) {
+  return [...userStats.values()].sort((a, b) => {
+    if (b.total !== a.total) return b.total - a.total
+    if (b.todayTotal !== a.todayTotal) return b.todayTotal - a.todayTotal
+    return new Date(b.lastCreatedAt).getTime() - new Date(a.lastCreatedAt).getTime()
+  })[0]
+}
+
 async function runCrownsSweep(env, period, { current = false } = {}) {
   const window = getCrownWindow(period, { current })
   const sweepId = `crowns:${period}:${window.periodKey}`
+  const minWarriors = CROWNS_CONFIG.minWarriorsPerDiscipline
+  const todayKey = londonDayKey()
 
   try {
     const rows = await sbSelectAll(
       env,
-      `submissions?activity_date=gte.${window.start}&activity_date=lt.${window.endExclusive}&select=circle_id,user_id,activity_type,value&order=created_at.desc`,
+      `submissions?activity_date=gte.${window.start}&activity_date=lt.${window.endExclusive}&select=circle_id,user_id,activity_type,value,activity_date,created_at&order=created_at.desc`,
     )
 
-    // totals[board][discipline][user] -> period volume
+    // totals[board][discipline][user] -> { total, todayTotal, lastCreatedAt }
     const totals = new Map()
 
     for (const row of rows) {
@@ -618,37 +631,67 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
       const board = totals.get(boardKey)
       if (!board.has(row.activity_type)) board.set(row.activity_type, new Map())
       const discipline = board.get(row.activity_type)
-      discipline.set(row.user_id, (discipline.get(row.user_id) ?? 0) + (Number(row.value) || 0))
+      const value = Number(row.value) || 0
+      const existing = discipline.get(row.user_id) ?? { userId: row.user_id, total: 0, todayTotal: 0, lastCreatedAt: row.created_at }
+
+      existing.total += value
+      if (String(row.activity_date).slice(0, 10) === todayKey) {
+        existing.todayTotal += value
+      }
+      if (new Date(row.created_at).getTime() > new Date(existing.lastCreatedAt).getTime()) {
+        existing.lastCreatedAt = row.created_at
+      }
+
+      discipline.set(row.user_id, existing)
     }
 
-    const stats = { boards: totals.size, crowns: 0, doubles: 0, trebles: 0, reports: 0, skippedDuplicates: 0 }
+    const stats = { boards: totals.size, crowns: 0, doubles: 0, trebles: 0, reports: 0, skippedDuplicates: 0, standings: [] }
 
     for (const [boardId, disciplines] of totals) {
-      // Champions per discipline (ties share the crown).
-      const crownsByUser = new Map()
       const boardMembers = new Set()
+      const crownsByUser = new Map() // user -> [discipline keys]
+      const championTotals = {} // user -> { [discipline]: total } for the treble card
+      const boardStanding = { boardId, disciplines: [] }
 
-      for (const [discipline, userTotals] of disciplines) {
-        let best = 0
+      for (const disciplineKey of DISCIPLINES) {
+        const userStats = disciplines.get(disciplineKey)
 
-        for (const [userId, total] of userTotals) {
-          boardMembers.add(userId)
-          if (total > best) best = total
+        if (userStats) {
+          for (const userId of userStats.keys()) {
+            boardMembers.add(userId)
+          }
         }
 
-        if (best <= 0) {
+        const activeWarriors = userStats ? [...userStats.values()].filter((stat) => stat.total > 0).length : 0
+
+        // Minimum-warrior gate: too few warriors, no real crown.
+        if (!userStats || activeWarriors < minWarriors) {
+          boardStanding.disciplines.push({ discipline: disciplineKey, champion: null, activeWarriors, gated: true })
           continue
         }
 
-        for (const [userId, total] of userTotals) {
-          if (total === best) {
-            if (!crownsByUser.has(userId)) crownsByUser.set(userId, [])
-            crownsByUser.get(userId).push(discipline)
-          }
+        const champion = pickChampion(userStats)
+
+        if (!champion || champion.total <= 0) {
+          boardStanding.disciplines.push({ discipline: disciplineKey, champion: null, activeWarriors, gated: false })
+          continue
         }
+
+        if (!crownsByUser.has(champion.userId)) crownsByUser.set(champion.userId, [])
+        crownsByUser.get(champion.userId).push(disciplineKey)
+        championTotals[champion.userId] = { ...(championTotals[champion.userId] ?? {}), [disciplineKey]: champion.total }
+
+        boardStanding.disciplines.push({
+          discipline: disciplineKey,
+          champion: champion.userId,
+          championTotal: champion.total,
+          activeWarriors,
+          gated: false,
+        })
       }
 
-      const names = await fetchProfileNames(env, [...crownsByUser.keys()])
+      stats.standings.push(boardStanding)
+      const names = await fetchProfileNames(env, [...boardMembers])
 
       for (const [userId, wonDisciplines] of crownsByUser) {
         const type = wonDisciplines.length >= 3 ? 'TREBLE' : wonDisciplines.length === 2 ? 'DOUBLE_CROWN' : 'CROWN'
@@ -658,12 +701,17 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
           continue
         }
 
+        const disciplineStats = championTotals[userId] ?? {}
         const payload = {
           period,
           periodKey: window.periodKey,
           boardId,
+          boardName: undefined,
           disciplines: wonDisciplines,
           discipline: wonDisciplines.map((d) => DISCIPLINE_LABELS[d]).join(' + '),
+          // All three figures travel with the treble so the war card can show
+          // the full coronation; doubles/singles carry what they hold.
+          stats: disciplineStats,
         }
 
         const event = await createEvent(env, {
@@ -680,8 +728,8 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
           else stats.crowns += 1
         }
 
-        // Doubles and trebles get announced to the whole board — nobody
-        // should be able to miss a treble.
+        // Doubles and trebles broadcast to every other board member — nobody
+        // misses a treble coronation.
         if (type !== 'CROWN') {
           for (const member of boardMembers) {
             if (member === userId) {

@@ -93,6 +93,12 @@ export async function renderMachoCardImage(card) {
   // Brand.
   drawCentered(ctx, 'ONLY GAINS', 150, '#d56a2c', font(800, 44), 12)
 
+  // Crown cards are visually distinct: a tier band + a three-discipline stat
+  // row, instead of one giant number. Treble gets the gold treatment.
+  if (card.crown) {
+    return finishCrownCard(ctx, canvas, card)
+  }
+
   // Stat block, lower third.
   let cursorY = H - 640
 
@@ -136,6 +142,69 @@ export async function renderMachoCardImage(card) {
         resolve(blob)
       } else {
         reject(new Error('Could not export macho card'))
+      }
+    }, 'image/png')
+  })
+}
+
+// Distinct crown war card: tier band, three-discipline stat row, treble gold.
+// card.crown = { tier, isTreble, stats: { pressups, pullups, km }, period }
+function finishCrownCard(ctx, canvas, card) {
+  const crown = card.crown
+  const gold = crown.isTreble
+  const accent = gold ? '#ffd54a' : '#f0a36e'
+  const crownGlyphs = crown.isTreble ? '👑 👑 👑' : crown.tier === 'DOUBLE_CROWN' ? '👑 👑' : '👑'
+  const tierLabel = crown.isTreble ? 'TREBLE CROWN' : crown.tier === 'DOUBLE_CROWN' ? 'DOUBLE CROWN' : 'CROWN'
+
+  // Tier band.
+  drawCentered(ctx, crownGlyphs, H - 760, accent, font(800, 110))
+  drawCentered(ctx, tierLabel, H - 630, accent, font(800, 96), 4)
+  drawCentered(ctx, `${(crown.period === 'monthly' ? 'MONTH' : 'WEEK')} ${crown.isTreble ? '· ALL THREE THRONES' : 'CHAMPION'}`, H - 560, '#f0c9a8', font(700, 36), 6)
+
+  // Three-discipline stat row.
+  const cols = [
+    { label: 'PUSH', value: crown.stats?.pressups },
+    { label: 'PULL', value: crown.stats?.pullups },
+    { label: 'DIST', value: crown.stats?.km },
+  ]
+  const colWidth = W / 3
+  const rowY = H - 380
+
+  cols.forEach((col, index) => {
+    const cx = colWidth * index + colWidth / 2
+    const held = col.value != null
+    ctx.save()
+    ctx.textAlign = 'center'
+    ctx.fillStyle = held ? '#fff7f1' : '#564c45'
+    ctx.font = font(800, 96)
+    const display = !held ? '—' : col.label === 'DIST' ? String(Number(col.value).toFixed(col.value % 1 ? 1 : 0)) : String(Math.round(col.value))
+    ctx.fillText(display, cx, rowY)
+    ctx.fillStyle = held ? accent : '#564c45'
+    ctx.font = font(700, 34)
+    ctx.fillText(col.label, cx, rowY + 56)
+    ctx.restore()
+  })
+
+  // Warrior + footer.
+  drawCentered(ctx, String(card.warriorName || 'WARRIOR').toUpperCase(), H - 230, '#ffffff', font(800, 56), 3)
+
+  ctx.save()
+  ctx.font = font(700, 30)
+  ctx.textBaseline = 'alphabetic'
+  ctx.textAlign = 'left'
+  ctx.fillStyle = '#bdaea2'
+  ctx.fillText(String(card.boardName || 'GLOBAL BOARD').toUpperCase(), 96, H - 110)
+  ctx.textAlign = 'right'
+  ctx.fillStyle = '#d56a2c'
+  ctx.fillText('onlygains.club', W - 96, H - 110)
+  ctx.restore()
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob)
+      } else {
+        reject(new Error('Could not export crown card'))
       }
     }, 'image/png')
   })

@@ -13,6 +13,10 @@ function p(event) {
   return event.payload ?? {}
 }
 
+function period(event) {
+  return p(event).period === 'monthly' ? 'MONTH' : 'WEEK'
+}
+
 const TEMPLATES = {
   OVERTAKEN: (event) => ({
     title: 'SPOT TAKEN.',
@@ -56,30 +60,32 @@ const TEMPLATES = {
     url: '/profile/records',
   }),
 
+  // Escalating coronation: single is earned, double is a statement, treble
+  // is mythology. Period word ("WEEK"/"MONTH") shifts the weight of each.
   CROWN: (event) => ({
-    title: 'CROWNED.',
-    body: `${(p(event).discipline ?? 'THE BOARD').toUpperCase()} IS YOURS FOR THE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. #1. DEFEND IT.`,
+    title: '👑 CROWNED.',
+    body: `${(p(event).discipline ?? 'THE BOARD').toUpperCase()} IS YOURS FOR THE ${period(event)}. #1. NOW DEFEND IT.`,
     url: '/profile',
   }),
 
   DOUBLE_CROWN: (event) => ({
-    title: 'DOUBLE CROWN.',
-    body: `TWO DISCIPLINES. ONE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. THE BOARD HAS BEEN TOLD.`,
+    title: '👑👑 DOUBLE CROWN.',
+    body: `${(p(event).discipline ?? 'TWO THRONES').toUpperCase()}. TWO THRONES, ONE ${period(event)}. THE BOARD KNOWS YOUR NAME. ONE MORE FOR THE TREBLE.`,
     url: '/profile',
   }),
 
   TREBLE: (event) => ({
-    title: 'TREBLE. THE IMPOSSIBLE.',
-    body: `ALL THREE CROWNS IN ONE ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. THE RAREST HONOR IN THE APP. WEAR IT.`,
+    title: '⚔️ THE TREBLE. ALL THREE THRONES.',
+    body: `YOU HOLD EVERY CROWN ON THE BOARD THIS ${period(event)}. PUSH. PULL. DISTANCE. THE RAREST HONOR IN ONLY GAINS. THEY WILL REMEMBER THIS.`,
     url: '/profile',
   }),
 
   CROWN_REPORT: (event) => ({
-    title: p(event).honor === 'TREBLE' ? 'WITNESS THIS.' : 'WAR REPORT.',
+    title: p(event).honor === 'TREBLE' ? '⚔️ A TREBLE HAS BEEN TAKEN.' : '👑👑 DOUBLE CROWN ON THE BOARD.',
     body:
       p(event).honor === 'TREBLE'
-        ? `${name(event)} HAS DONE THE IMPOSSIBLE. TRIPLE CROWN. ALL THREE DISCIPLINES. BOW OR BEAT IT.`
-        : `${name(event)} TOOK TWO CROWNS THIS ${p(event).period === 'monthly' ? 'MONTH' : 'WEEK'}. YOUR MOVE.`,
+        ? `${name(event)} HAS TAKEN THE TREBLE. ALL THREE THRONES. BOW — OR TAKE ONE BACK.`
+        : `${name(event)} SEIZED TWO CROWNS THIS ${period(event)}. THE THRONES ARE FALLING. YOUR MOVE.`,
     url: '/leaderboard',
   }),
 

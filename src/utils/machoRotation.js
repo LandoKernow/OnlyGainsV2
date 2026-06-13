@@ -6,6 +6,7 @@
 // deck automatically (appended in shuffled order); removed images are culled.
 
 import { MACHO_TAKEOVER_CONFIG } from '../config/machoTakeover'
+import { CROWNS_CONFIG } from '../config/crowns'
 
 const DECK_KEY_PREFIX = 'only_gains_macho_deck_v1'
 
@@ -88,6 +89,22 @@ export async function dealMachoImage(userId) {
   }
 
   return dealt ?? null
+}
+
+// Crown coronation image. Trebles reserve the curated max-intensity set (a
+// random pick from it that's present in the manifest); doubles and singles
+// fall through to the normal shuffle-bag so they still rotate.
+export async function dealCrownImage(userId, tier) {
+  if (CROWNS_CONFIG.imageIntensity[tier] === 'max') {
+    const allImages = await fetchMachoManifest()
+    const available = CROWNS_CONFIG.trebleImages.filter((image) => allImages.includes(image))
+
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)]
+    }
+  }
+
+  return dealMachoImage(userId)
 }
 
 // Warms the cache for the first reveal of the session.

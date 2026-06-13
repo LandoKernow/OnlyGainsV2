@@ -103,8 +103,13 @@ function ProfileSummary() {
 
         {honors.totalCrowns > 0 ? (
           <div className="warrior-card__honors">
-            {honors.trebleCount > 0 ? <span className="warrior-card__treble">{honors.trebleCount}x TREBLE WARRIOR</span> : null}
-            {honors.doubleCount > 0 ? <span>{honors.doubleCount}x DOUBLE</span> : null}
+            {honors.activeTitle ? (
+              <span className={honors.activeTitle.tier === 'TREBLE' ? 'warrior-card__treble' : 'warrior-card__active-title'}>
+                {honors.activeTitle.label}
+                {honors.activeTitle.defended ? '' : ' (DECAYING)'}
+              </span>
+            ) : null}
+            {honors.trebleCount > 0 ? <span>{honors.trebleCount}x TREBLE</span> : null}
             <span>👑 {honors.totalCrowns}</span>
           </div>
         ) : null}
