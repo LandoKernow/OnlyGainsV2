@@ -5,6 +5,7 @@ import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
 import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatcher'
 import { ConscriptionWatcher } from '../components/ConscriptionWatcher'
 import { ConscriptionIntro } from '../components/ConscriptionIntro'
+import { ReferralWatcher } from '../components/ReferralWatcher'
 import { AddToHomeScreenPrompt } from '../components/AddToHomeScreenPrompt'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
@@ -26,6 +27,7 @@ const PersonalRecordsScreen = lazy(() => import('../screens/profile/PersonalReco
 const VaultScreen = lazy(() => import('../screens/vault/VaultScreen'))
 const ResetPasswordScreen = lazy(() => import('../screens/reset/ResetPasswordScreen'))
 const AlertsScreen = lazy(() => import('../screens/alerts/AlertsScreen'))
+const ReferralLandingScreen = lazy(() => import('../screens/referral/ReferralLandingScreen'))
 
 export default function App() {
   return (
@@ -48,11 +50,13 @@ export default function App() {
             <Route path="/profile/year/:year" element={<ProfileYearSetupScreen />} />
             <Route path="/vault" element={<VaultScreen />} />
             <Route path="/alerts" element={<AlertsScreen />} />
+            <Route path="/r/:refCode" element={<ReferralLandingScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
           <AwardCelebrationWatcher />
           <PendingBoardInviteWatcher />
           <ConscriptionWatcher />
+          <ReferralWatcher />
           <ConscriptionIntro />
           <ProfileBuildPrompt />
           <AddToHomeScreenPrompt />

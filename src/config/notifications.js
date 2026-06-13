@@ -29,6 +29,8 @@ export const NOTIFICATIONS_CONFIG = {
     CROWN_REPORT: { priority: 'medium', category: 'board', cooldownMinutes: 0 },
     // The first-ever log. Once per warrior, ever. Durable record + dedupe.
     FIRST_BLOOD: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
+    // Fires to the RECRUITER when their recruit draws first blood.
+    RECRUIT_FIRST_BLOOD: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
   },
 
   // CHASE_CLOSING fires when the rival behind you closes within EITHER bound.

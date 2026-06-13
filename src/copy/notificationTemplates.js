@@ -80,6 +80,12 @@ const TEMPLATES = {
     url: '/profile',
   }),
 
+  RECRUIT_FIRST_BLOOD: (event) => ({
+    title: '⚔️ THE ARMY GROWS.',
+    body: `${name(event)} — THE WARRIOR YOU DRAGGED IN — JUST DREW FIRST BLOOD. YOUR RANKS ARE SWELLING.`,
+    url: '/profile',
+  }),
+
   FIRST_BLOOD: () => ({
     title: '🩸 FIRST BLOOD.',
     body: 'YOU LOGGED YOUR FIRST SET. THE BOARD KNOWS YOUR NAME NOW. THERE IS NO GOING BACK.',

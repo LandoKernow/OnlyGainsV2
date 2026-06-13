@@ -15,6 +15,9 @@ import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
 import { useWarriorXp } from '../../hooks/useWarriorXp'
+import { useMyReferralCode, useRecruits } from '../../hooks/useReferrals'
+import { REFERRALS_CONFIG } from '../../config/referrals'
+import { shareReferral } from '../../utils/referralCodes'
 import { calculateStreak } from '../../utils/war'
 import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
 import { formatActivityGap } from '../../utils/activity'
@@ -55,8 +58,24 @@ function ProfileSummary() {
   const { circleId } = useBoardMeta()
   const profileQuery = useCurrentProfile()
   const honors = useCrownHonors()
+  const recruits = useRecruits()
+  const referralCode = useMyReferralCode()
+  const { showToast } = useToast()
   const warriorLevel = useWarriorXp({ circleId, userId: session?.user?.id })
   const profileYearSetup = useProfileYearSetup(2026)
+
+  async function handleRecruit() {
+    try {
+      const result = await shareReferral(referralCode)
+      if (result === 'copied') {
+        showToast({ tone: 'success', message: 'RECRUIT LINK COPIED. BRING ENEMIES.' })
+      } else if (result === 'shared') {
+        showToast({ tone: 'success', message: 'SENT. THE ARMY GROWS.' })
+      }
+    } catch {
+      showToast({ tone: 'error', message: "COULDN'T SHARE THE LINK. TRY AGAIN." })
+    }
+  }
   const leaderboardQuery = useActivityLeaderboard({
     circleId,
     currentUserId: session?.user?.id,
@@ -101,7 +120,7 @@ function ProfileSummary() {
           <span className={`row-chip row-chip--${getStatusTone(statusLabel)}`}>{statusLabel}</span>
         </div>
 
-        {honors.totalCrowns > 0 ? (
+        {honors.totalCrowns > 0 || recruits.tier ? (
           <div className="warrior-card__honors">
             {honors.activeTitle ? (
               <span className={honors.activeTitle.tier === 'TREBLE' ? 'warrior-card__treble' : 'warrior-card__active-title'}>
@@ -110,7 +129,8 @@ function ProfileSummary() {
               </span>
             ) : null}
             {honors.trebleCount > 0 ? <span>{honors.trebleCount}x TREBLE</span> : null}
-            <span>👑 {honors.totalCrowns}</span>
+            {honors.totalCrowns > 0 ? <span>👑 {honors.totalCrowns}</span> : null}
+            {recruits.tier ? <span className="warrior-card__recruiter">⚔️ {recruits.tier.title} · {recruits.count}</span> : null}
           </div>
         ) : null}
 
@@ -147,6 +167,12 @@ function ProfileSummary() {
             <strong>{profileYearState} · {recordCount} CLAIMED</strong>
           </div>
         </div>
+
+        {REFERRALS_CONFIG.enabled && referralCode ? (
+          <button className="button warrior-card__recruit-cta" type="button" onClick={handleRecruit}>
+            RECRUIT WARRIORS
+          </button>
+        ) : null}
       </Card>
       {import.meta.env.DEV ? (
         <details className="build-info">
