@@ -3,6 +3,7 @@
 // type, and the brand. Same zero-dependency canvas approach as the war card.
 
 import { shareCardBlob } from './warCardImage'
+import { PUBLIC_BASE_URL } from '../lib/publicUrl'
 
 const W = 1080
 const H = 1920
@@ -222,6 +223,6 @@ export async function shareMachoCardImage(card) {
 
   return shareCardBlob(blob, {
     filename: 'only-gains-war-card.png',
-    text: `${card.tagline || 'EARNED.'} Only Gains: https://onlygains.club`,
+    text: `${card.tagline || 'EARNED.'} Only Gains: ${PUBLIC_BASE_URL}`,
   })
 }

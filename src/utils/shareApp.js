@@ -1,4 +1,6 @@
-const LIVE_SHARE_ORIGIN = 'https://onlygains.club'
+import { PUBLIC_BASE_URL } from '../lib/publicUrl'
+
+const LIVE_SHARE_ORIGIN = PUBLIC_BASE_URL
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) {

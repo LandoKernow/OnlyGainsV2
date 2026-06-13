@@ -4,6 +4,7 @@
 
 import { formatActivityValue } from './activity'
 import { shareOnlyGains } from './shareApp'
+import { PUBLIC_BASE_URL } from '../lib/publicUrl'
 
 const W = 1080
 const H = 1920
@@ -257,6 +258,6 @@ export async function shareWarCardImage(card) {
 
   return shareCardBlob(blob, {
     filename: 'only-gains-war-card.png',
-    text: 'Logged. No hiding now. Only Gains: https://onlygains.club',
+    text: `Logged. No hiding now. Only Gains: ${PUBLIC_BASE_URL}`,
   })
 }

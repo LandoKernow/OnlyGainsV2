@@ -1,7 +1,8 @@
 import { formatActivityValue } from './activity'
 import { formatDurationFromSeconds } from './profileYear'
+import { PUBLIC_BASE_URL } from '../lib/publicUrl'
 
-const LIVE_SHARE_ORIGIN = 'https://onlygains.club'
+const LIVE_SHARE_ORIGIN = PUBLIC_BASE_URL
 const AWARD_SEEN_KEY_PREFIX = 'only_gains_award_seen_'
 
 const AWARD_IMAGES = {
