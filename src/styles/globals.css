@@ -3527,3 +3527,136 @@ button {
 .warrior-card__active-title {
   color: #f0a36e;
 }
+
+/* ============================================================
+   COLD START — conscription intro + first mission
+   ============================================================ */
+
+.conscription {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: stretch;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(213, 106, 44, 0.18), rgba(8, 5, 4, 0.98));
+  animation: macho-takeover-in 0.3s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.conscription__inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 28px) 28px calc(env(safe-area-inset-bottom, 0px) + 28px);
+}
+
+.conscription__skip {
+  align-self: flex-end;
+  border: none;
+  background: none;
+  color: #8f8077;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.conscription__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  gap: 14px;
+}
+
+.conscription__eyebrow {
+  margin: 0;
+  color: #d56a2c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+}
+
+.conscription__title {
+  margin: 0;
+  font-size: 2.1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+
+.conscription__copy {
+  margin: 0;
+  color: #bdaea2;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.conscription__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.conscription__dots {
+  display: flex;
+  gap: 8px;
+}
+
+.conscription__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.conscription__dot--on {
+  background: #d56a2c;
+}
+
+.conscription__next {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.first-mission {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.first-mission__eyebrow {
+  color: #d56a2c;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+}
+
+.first-mission__target {
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #fff4ed;
+}
+
+.first-mission__headline {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #fff4ed;
+}
+
+.first-mission__gap {
+  color: #f0a36e;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.first-mission__copy {
+  margin: 6px 0 0;
+  color: #bdaea2;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
 import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
 import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatcher'
+import { ConscriptionWatcher } from '../components/ConscriptionWatcher'
+import { ConscriptionIntro } from '../components/ConscriptionIntro'
 import { AddToHomeScreenPrompt } from '../components/AddToHomeScreenPrompt'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
@@ -50,6 +52,8 @@ export default function App() {
           </Routes>
           <AwardCelebrationWatcher />
           <PendingBoardInviteWatcher />
+          <ConscriptionWatcher />
+          <ConscriptionIntro />
           <ProfileBuildPrompt />
           <AddToHomeScreenPrompt />
           <WeeklySharePrompt />

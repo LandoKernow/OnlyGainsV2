@@ -27,6 +27,8 @@ export const NOTIFICATIONS_CONFIG = {
     TREBLE: { priority: 'high', category: 'milestone', cooldownMinutes: 0 },
     // Board-wide announcement when someone lands a double or treble.
     CROWN_REPORT: { priority: 'medium', category: 'board', cooldownMinutes: 0 },
+    // The first-ever log. Once per warrior, ever. Durable record + dedupe.
+    FIRST_BLOOD: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
   },
 
   // CHASE_CLOSING fires when the rival behind you closes within EITHER bound.

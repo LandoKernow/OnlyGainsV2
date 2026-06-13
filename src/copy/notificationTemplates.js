@@ -80,6 +80,12 @@ const TEMPLATES = {
     url: '/profile',
   }),
 
+  FIRST_BLOOD: () => ({
+    title: '🩸 FIRST BLOOD.',
+    body: 'YOU LOGGED YOUR FIRST SET. THE BOARD KNOWS YOUR NAME NOW. THERE IS NO GOING BACK.',
+    url: '/dashboard',
+  }),
+
   CROWN_REPORT: (event) => ({
     title: p(event).honor === 'TREBLE' ? '⚔️ A TREBLE HAS BEEN TAKEN.' : '👑👑 DOUBLE CROWN ON THE BOARD.',
     body:

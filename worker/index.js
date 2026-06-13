@@ -383,6 +383,35 @@ async function processSubmission(env, submissionId) {
   const actorName = names[actorId] ?? 'A rival'
   const created = []
 
+  // FIRST BLOOD — the actor's first-ever log, anywhere. Durable once-ever
+  // record (dedup: no prior FIRST_BLOOD event); when it fires it OWNS this
+  // log, so the normal MILESTONE is suppressed. The client fires the visual
+  // takeover instantly; this is the server truth behind it.
+  let firstBloodFired = false
+  const actorEverRows = await sbSelect(env, `submissions?user_id=eq.${actorId}&select=id&limit=2`)
+  const isFirstEverLog = actorEverRows.length <= 1
+
+  if (isFirstEverLog) {
+    const priorFirstBlood = await sbSelect(
+      env,
+      `notification_events?recipient_user_id=eq.${actorId}&type=eq.FIRST_BLOOD&select=id&limit=1`,
+    )
+
+    if (priorFirstBlood.length === 0) {
+      const event = await createEvent(env, {
+        recipientUserId: actorId,
+        type: 'FIRST_BLOOD',
+        actorUserId: actorId,
+        actorName,
+        payload: { activityType, value: Number(value) || 0, boardId: circleId },
+      })
+      if (event) {
+        created.push(event)
+        firstBloodFired = true
+      }
+    }
+  }
+
   // OVERTAKEN — one war report per fallen rival.
   for (const rival of passed) {
     const rivalRank = rankOf(after, rival.userId)
@@ -431,13 +460,14 @@ async function processSubmission(env, submissionId) {
     }
   }
 
-  // MILESTONE — lifetime (year) round numbers.
+  // MILESTONE — lifetime (year) round numbers. Suppressed when FIRST BLOOD
+  // already owns this log (the first set never double-fires honors).
   const milestones = NOTIFICATIONS_CONFIG.lifetimeMilestones[activityType] ?? []
   const crossed = milestones.find(
     (mark) => actorLifetime >= mark && actorLifetime - (Number(value) || 0) < mark,
   )
 
-  if (crossed) {
+  if (crossed && !firstBloodFired) {
     const event = await createEvent(env, {
       recipientUserId: actorId,
       type: 'MILESTONE',
@@ -479,6 +509,7 @@ async function processSubmission(env, submissionId) {
     actorNewRank,
     rivalsPassed: passed.length,
     actorLifetime,
+    firstBloodFired,
     eventsCreated: created.map((event) => `${event.type}->${event.recipient_user_id}`),
   }
   const outcome =
