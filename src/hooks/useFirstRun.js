@@ -68,15 +68,19 @@ export function useFirstRun() {
     (Boolean(userId) && readFlag(key(FIRST_BLOOD_KEY_PREFIX, userId)))
 
   const introSeen = Boolean(userId) && readFlag(key(CONSCRIPTION_KEY_PREFIX, userId))
+  const isExemptVeteran = Boolean(firstBloodQuery.data?.exempt)
 
   return {
     isAuthenticated,
     userId,
-    // The conscription intro should show: authenticated, not yet seen.
-    showIntro: isAuthenticated && !introSeen,
+    // The conscription intro shows for genuine newcomers only: authenticated,
+    // not yet seen, and NOT a deploy-time veteran. Held back until the
+    // exemption check resolves so it never flashes before we know the cohort.
+    showIntro: isAuthenticated && !introSeen && !firstBloodQuery.isLoading && !isExemptVeteran,
     // First blood still available to draw.
     firstBloodPending: isAuthenticated && !firstBloodDone && !firstBloodQuery.isLoading,
     firstBloodDone,
+    isExemptVeteran,
     markIntroSeen() {
       if (userId) writeFlag(key(CONSCRIPTION_KEY_PREFIX, userId))
     },

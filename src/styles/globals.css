@@ -3532,14 +3532,26 @@ button {
    COLD START — conscription intro + first mission
    ============================================================ */
 
-.conscription {
+/* One solid backdrop for every full-screen overlay — nothing underneath ever
+   bleeds through. */
+.overlay-shell {
   position: fixed;
   inset: 0;
   z-index: 90;
   display: flex;
   align-items: stretch;
-  background: radial-gradient(120% 80% at 50% 0%, rgba(213, 106, 44, 0.18), rgba(8, 5, 4, 0.98));
   animation: macho-takeover-in 0.3s cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+.overlay-shell--solid {
+  /* Opaque base first, accent gradient layered on top — the base stays fully
+     opaque so the dashboard behind can never show through. */
+  background-color: #0a0708;
+  background-image: radial-gradient(120% 80% at 50% 0%, rgba(213, 106, 44, 0.22), rgba(10, 7, 8, 0) 60%);
+}
+
+.conscription {
+  z-index: 95;
 }
 
 .conscription__inner {
