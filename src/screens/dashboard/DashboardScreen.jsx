@@ -20,7 +20,6 @@ import { useWeeklyLeaderMessage } from '../../hooks/useWeeklyLeaderMessage'
 import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
-import { BossBattleCard } from '../../components/BossBattleCard'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
 import { useFirstRun } from '../../hooks/useFirstRun'
@@ -572,8 +571,6 @@ function AuthenticatedDashboard() {
         />
 
         <CrownStandingsCard />
-
-        <BossBattleCard />
 
         <WeeklyLeaderMessageCard
           messageRow={weeklyLeaderMessageQuery.messageRow}

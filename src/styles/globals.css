@@ -2955,7 +2955,7 @@ button {
 }
 
 /* ============================================================
-   SEASON LAYER — warrior levels, combos, boss battle
+   SEASON LAYER — warrior levels, combos
    ============================================================ */
 
 .hero-level {
@@ -3016,62 +3016,6 @@ button {
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.boss-countdown {
-  color: #f7a15c;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  border: 1px solid rgba(213, 106, 44, 0.45);
-  border-radius: 999px;
-  padding: 4px 10px;
-  white-space: nowrap;
-}
-
-.boss-battle__stats {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.boss-battle__stats strong {
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-}
-
-.boss-battle__stats span {
-  color: #f7a15c;
-  font-weight: 800;
-}
-
-.boss-health {
-  height: 14px;
-  border-radius: 7px;
-  border: 1px solid rgba(213, 106, 44, 0.35);
-  background: rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-
-.boss-health__fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8f2f1d, #d56a2c, #f7a15c);
-  box-shadow: 0 0 18px rgba(213, 106, 44, 0.55);
-  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.boss-health__fill--slain {
-  background: linear-gradient(90deg, #2f8f4a, #58d57c);
-  box-shadow: 0 0 18px rgba(88, 213, 124, 0.55);
-}
-
-.boss-battle__cry {
-  margin: 0;
-  color: #fff4ed;
-  font-weight: 800;
-  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
