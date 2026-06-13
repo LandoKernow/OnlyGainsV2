@@ -7,6 +7,13 @@
 
 import { GLOBAL_BOARD_ID } from '../utils/boards'
 
+// The minimum value a log must hit to qualify as a FIRST BLOOD-worthy first
+// mark, for the given discipline.
+export function getFirstBloodFloor(activityType) {
+  const floors = ONBOARDING_CONFIG.firstBlood.minValue
+  return floors[activityType] ?? floors.default ?? 1
+}
+
 export const ONBOARDING_CONFIG = {
   enabled: true,
 
@@ -21,6 +28,17 @@ export const ONBOARDING_CONFIG = {
     enabled: true,
     stat: 'FIRST BLOOD',
     tagline: 'THE BOARD KNOWS YOUR NAME NOW.',
+    // A log only DRAWS first blood if it meets this floor for its discipline.
+    // Blank / 0 / fat-finger entries below the floor never write the durable
+    // event, so a junk first entry (even if deleted) can't burn the once-ever
+    // coronation — it waits for the first real set. Defaults to "any positive
+    // log"; raise per discipline to demand a meatier first mark.
+    minValue: {
+      pressups: 1,
+      pullups: 1,
+      km: 0.5,
+      default: 1,
+    },
   },
 
   // A rival is "beatable" as a first target if they're ahead but within this

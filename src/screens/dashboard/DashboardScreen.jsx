@@ -24,7 +24,7 @@ import { BossBattleCard } from '../../components/BossBattleCard'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
 import { useFirstRun } from '../../hooks/useFirstRun'
-import { ONBOARDING_CONFIG } from '../../config/onboarding'
+import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../../config/onboarding'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
@@ -417,10 +417,13 @@ function AuthenticatedDashboard() {
             pingEventEngine(savedSubmission.id)
           }
 
-          // FIRST BLOOD owns the first-ever log: instant takeover, and the
-          // normal honor takeover is skipped so two reveals never stack. The
+          // FIRST BLOOD owns the first QUALIFYING log (value >= the discipline
+          // floor): instant takeover, normal honor takeover skipped so two
+          // reveals never stack. A junk/below-floor first log fires nothing and
+          // sets no guard — the coronation waits for the first real set. The
           // Worker writes the durable once-ever record + suppresses milestone.
-          if (firstRun.firstBloodPending && !firstBloodArmedRef.current) {
+          const firstBloodFloor = getFirstBloodFloor(activityType)
+          if (firstRun.firstBloodPending && !firstBloodArmedRef.current && value >= firstBloodFloor) {
             firstBloodArmedRef.current = true
             firstRun.markFirstBloodDrawn()
 

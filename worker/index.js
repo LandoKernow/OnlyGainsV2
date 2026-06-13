@@ -23,6 +23,7 @@
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 import { NOTIFICATIONS_CONFIG, getEventConfig } from '../src/config/notifications.js'
 import { CROWNS_CONFIG } from '../src/config/crowns.js'
+import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../src/config/onboarding.js'
 import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
 
 // ---------------------------------------------------------------------------
@@ -383,15 +384,19 @@ async function processSubmission(env, submissionId) {
   const actorName = names[actorId] ?? 'A rival'
   const created = []
 
-  // FIRST BLOOD — the actor's first-ever log, anywhere. Durable once-ever
-  // record (dedup: no prior FIRST_BLOOD event); when it fires it OWNS this
-  // log, so the normal MILESTONE is suppressed. The client fires the visual
-  // takeover instantly; this is the server truth behind it.
+  // FIRST BLOOD — the actor's first QUALIFYING log (value >= the discipline
+  // floor). Blank / 0 / fat-finger entries below the floor never write the
+  // durable event, so a junk first entry (even one later deleted) can't burn
+  // the once-ever coronation — it waits for the first real set. The durable
+  // FIRST_BLOOD event is the cross-device once-ever guard (dedup: no prior
+  // event). When it fires it OWNS this log, so MILESTONE is suppressed. The
+  // client fires the visual takeover instantly; this is the truth behind it.
   let firstBloodFired = false
-  const actorEverRows = await sbSelect(env, `submissions?user_id=eq.${actorId}&select=id&limit=2`)
-  const isFirstEverLog = actorEverRows.length <= 1
+  const firstBloodFloor = getFirstBloodFloor(activityType)
+  const qualifiesForFirstBlood =
+    ONBOARDING_CONFIG.firstBlood.enabled && (Number(value) || 0) >= firstBloodFloor
 
-  if (isFirstEverLog) {
+  if (qualifiesForFirstBlood) {
     const priorFirstBlood = await sbSelect(
       env,
       `notification_events?recipient_user_id=eq.${actorId}&type=eq.FIRST_BLOOD&select=id&limit=1`,
