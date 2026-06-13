@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchProfileYear, getProfileYearQueryKey } from '../api/profileYearSetup'
+import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
 import { useAuth } from '../features/auth/AuthProvider'
 
 const PROFILE_YEAR = 2026
@@ -106,7 +107,10 @@ export function ProfileBuildPrompt() {
     !profileYearQuery.error &&
     !profileYearQuery.data
 
-  if (!shouldShow) {
+  // One overlay at a time: only render if we're the top of the stack.
+  const canShow = useOverlaySlot('profileBuild', OVERLAY_PRIORITY.profileBuild, shouldShow)
+
+  if (!canShow) {
     return null
   }
 

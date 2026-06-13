@@ -8,6 +8,7 @@ import { getLondonPeriodKeys } from '../utils/dates'
 import { shareOnlyGains } from '../utils/shareApp'
 import { getToastMessage } from '../utils/toastCopy'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import {
   getAddToHomeScreenPromptDismissKey,
@@ -165,7 +166,9 @@ export function WeeklySharePrompt() {
     }
   }
 
-  if (!isOpen) {
+  const canShow = useOverlaySlot('weeklyShare', OVERLAY_PRIORITY.weeklyShare, isOpen)
+
+  if (!isOpen || !canShow) {
     return null
   }
 

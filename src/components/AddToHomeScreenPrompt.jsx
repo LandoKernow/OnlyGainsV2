@@ -7,6 +7,7 @@ import { useAuth } from '../features/auth/AuthProvider'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
 import { getProfileBuildPromptDismissKey, hasDismissedProfileBuildPrompt } from './ProfileBuildPrompt'
 
 const PROFILE_YEAR = 2026
@@ -167,7 +168,10 @@ export function AddToHomeScreenPrompt() {
   // Escape = "show me later", not a permanent dismissal.
   useEscapeKey(snoozePrompt, isOpen)
 
-  if (!isOpen) {
+  // One overlay at a time, lowest priority of the prompts.
+  const canShow = useOverlaySlot('addToHomeScreen', OVERLAY_PRIORITY.addToHomeScreen, isOpen)
+
+  if (!isOpen || !canShow) {
     return null
   }
 

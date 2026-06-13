@@ -24,6 +24,7 @@ import { BossBattleCard } from '../../components/BossBattleCard'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
 import { useFirstRun } from '../../hooks/useFirstRun'
+import { OVERLAY_PRIORITY, useOverlaySlot } from '../../components/OverlayController'
 import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../../config/onboarding'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
@@ -149,6 +150,10 @@ function AuthenticatedDashboard() {
   const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
   const firstRun = useFirstRun()
   const firstBloodArmedRef = useRef(false)
+  // Claim the top overlay slot whenever a takeover/war card is on screen, so
+  // app-level prompts (intro, install, share) can never stack on top of a
+  // coronation.
+  useOverlaySlot('takeover', OVERLAY_PRIORITY.takeover, Boolean(takeover) || Boolean(warCard))
 
   // Warm the next takeover image so the reveal never lags.
   useEffect(() => {
