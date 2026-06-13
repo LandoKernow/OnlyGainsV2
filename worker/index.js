@@ -420,6 +420,35 @@ async function processSubmission(env, submissionId) {
     }
   }
 
+  // RECRUIT FIRST BLOOD — when a recruited warrior draws first blood, the
+  // recruiter who dragged them in gets the "army grows" report. Separate
+  // event to a different person; never collides with the recruit's own
+  // coronation. Dormant until the referrals table exists.
+  if (firstBloodFired) {
+    try {
+      const referral = await sbSelect(
+        env,
+        `referrals?recruit_id=eq.${actorId}&select=recruiter_id&limit=1`,
+      )
+      const recruiterId = referral[0]?.recruiter_id
+
+      if (recruiterId) {
+        const event = await createEvent(env, {
+          recipientUserId: recruiterId,
+          type: 'RECRUIT_FIRST_BLOOD',
+          actorUserId: actorId,
+          actorName,
+          payload: { recruitId: actorId },
+        })
+        if (event) {
+          created.push(event)
+        }
+      }
+    } catch {
+      // referrals table not live yet — recruit's first blood is unaffected.
+    }
+  }
+
   // OVERTAKEN — one war report per fallen rival.
   for (const rival of passed) {
     const rivalRank = rankOf(after, rival.userId)

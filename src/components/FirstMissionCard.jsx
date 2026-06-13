@@ -7,9 +7,24 @@ import { ONBOARDING_CONFIG } from '../config/onboarding'
 // chase from minute one — computed from real Global board data. Shown only
 // until they draw FIRST BLOOD, then the standard chase/pressure cards take
 // over. Never a dead end: an empty board flips to "be the one they chase."
-export function FirstMissionCard({ rows, currentUserRow }) {
+export function FirstMissionCard({ rows, currentUserRow, recruiter = null }) {
   const activityType = ONBOARDING_CONFIG.firstTargetActivity
-  const target = pickFirstTarget(rows, currentUserRow, activityType)
+  const target = pickFirstTarget(rows, currentUserRow, activityType, recruiter)
+
+  if (target.framing === 'recruiter') {
+    return (
+      <Card title="🩸 FIRST MISSION" body="Log your first set. Draw FIRST BLOOD.">
+        <div className="first-mission">
+          <span className="first-mission__eyebrow">YOUR FIRST TARGET</span>
+          <strong className="first-mission__target">{target.rival.actorName}</strong>
+          <span className="first-mission__gap">THE ONE WHO DRAGGED YOU IN</span>
+          <p className="first-mission__copy">
+            They recruited you. Now make them regret it — take their spot.
+          </p>
+        </div>
+      </Card>
+    )
+  }
 
   if (target.framing === 'be-hunted' || !target.rival) {
     return (

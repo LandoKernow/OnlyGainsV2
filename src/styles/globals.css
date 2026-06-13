@@ -3616,3 +3616,16 @@ button {
   font-size: 0.9rem;
   line-height: 1.45;
 }
+
+/* RECRUITER honor + recruit CTA */
+.warrior-card__recruiter {
+  color: #f0a36e;
+  font-weight: 800;
+}
+
+.warrior-card__recruit-cta {
+  margin-top: 14px;
+  width: 100%;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}

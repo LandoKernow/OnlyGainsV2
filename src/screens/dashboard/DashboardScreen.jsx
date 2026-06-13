@@ -23,8 +23,10 @@ import { useToast } from '../../components/ToastProvider'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
 import { useFirstRun } from '../../hooks/useFirstRun'
+import { useMyRecruiter, useRecruits } from '../../hooks/useReferrals'
 import { OVERLAY_PRIORITY, useOverlaySlot } from '../../components/OverlayController'
 import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../../config/onboarding'
+import { REFERRALS_CONFIG } from '../../config/referrals'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
@@ -149,10 +151,58 @@ function AuthenticatedDashboard() {
   const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
   const firstRun = useFirstRun()
   const firstBloodArmedRef = useRef(false)
+  const recruiter = useMyRecruiter()
+  const recruits = useRecruits()
+  const recruiterRevealRef = useRef(false)
   // Claim the top overlay slot whenever a takeover/war card is on screen, so
   // app-level prompts (intro, install, share) can never stack on top of a
   // coronation.
   useOverlaySlot('takeover', OVERLAY_PRIORITY.takeover, Boolean(takeover) || Boolean(warCard))
+
+  // RECRUITER honor reveal: when the live recruit count crosses into a new
+  // tier the device hasn't celebrated yet, fire the takeover once. Count is
+  // server-truth; the "last celebrated tier" guard is device-local (same as
+  // crown/first-blood reveals).
+  useEffect(() => {
+    if (!REFERRALS_CONFIG.enabled || recruits.isLoading || !recruits.tier || takeover || recruiterRevealRef.current) {
+      return
+    }
+
+    const seenKey = `only_gains_recruiter_tier_seen_v1_${session.user.id}`
+    let lastSeen = ''
+    try {
+      lastSeen = globalThis.localStorage?.getItem(seenKey) ?? ''
+    } catch {
+      lastSeen = ''
+    }
+
+    if (lastSeen === recruits.tier.title) {
+      return
+    }
+
+    recruiterRevealRef.current = true
+    try {
+      globalThis.localStorage?.setItem(seenKey, recruits.tier.title)
+    } catch {
+      // Restrictive storage: show once anyway.
+    }
+
+    dealCrownImage(session.user.id, 'TREBLE').then((imageSrc) => {
+      if (!imageSrc) {
+        return
+      }
+      setTakeover({
+        imageSrc,
+        stat: recruits.tier.title,
+        sub: `${recruits.count} RECRUITED`,
+        tagline: 'THE ARMY GROWS. YOU BUILT IT.',
+        warriorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'WARRIOR',
+        boardName: activeBoard?.name || 'GLOBAL BOARD',
+        shareState: '',
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recruits.isLoading, recruits.tier?.title, recruits.count, session.user.id])
 
   // Warm the next takeover image so the reveal never lags.
   useEffect(() => {
@@ -538,6 +588,7 @@ function AuthenticatedDashboard() {
           <FirstMissionCard
             rows={leaderboardQuery.rows}
             currentUserRow={leaderboardQuery.currentUserRow}
+            recruiter={REFERRALS_CONFIG.autoRivalry ? recruiter : null}
           />
         ) : null}
 
