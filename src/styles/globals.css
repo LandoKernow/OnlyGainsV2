@@ -3462,3 +3462,68 @@ button {
   padding-left: 4px;
   padding-right: 4px;
 }
+
+/* Crown standings (live) + active title */
+.crown-standings__count {
+  color: #ffd54a;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.crown-standings__verdict {
+  margin: 0 0 10px;
+  color: #f0c9a8;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.crown-standings {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.throne {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 12px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.throne--held {
+  border-color: rgba(255, 213, 74, 0.5);
+  background: rgba(255, 213, 74, 0.08);
+  box-shadow: 0 0 14px rgba(255, 213, 74, 0.12);
+}
+
+.throne__crown {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.throne__label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #bdaea2;
+}
+
+.throne--held .throne__label {
+  color: #ffd54a;
+}
+
+.throne__state {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #8f8077;
+}
+
+.warrior-card__active-title {
+  color: #f0a36e;
+}
