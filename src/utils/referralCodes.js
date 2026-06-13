@@ -3,18 +3,12 @@
 // redirect (localStorage, same origin) and ReferralWatcher claims it after
 // the new account authenticates.
 
+import { buildPublicUrl } from '../lib/publicUrl'
+
 const PENDING_REFERRAL_KEY = 'only_gains_pending_referral'
 
-function getShareOrigin() {
-  if (typeof window === 'undefined') {
-    return 'https://onlygains.club'
-  }
-
-  return window.location.origin
-}
-
 export function buildReferralUrl(referralCode) {
-  return `${getShareOrigin()}/r/${encodeURIComponent(String(referralCode || '').trim().toUpperCase())}`
+  return buildPublicUrl(`/r/${encodeURIComponent(String(referralCode || '').trim().toUpperCase())}`)
 }
 
 export function getPendingReferralCode() {

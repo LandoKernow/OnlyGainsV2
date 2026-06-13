@@ -3,6 +3,7 @@
 // no schema changes, no new storage, stateless and recomputable.
 
 import { getLondonPeriodKeys, getSubmissionPeriodKeys } from './dates'
+import { PUBLIC_BASE_URL } from '../lib/publicUrl'
 
 // Weekly-volume tier ladder. Recomputed from live board data every render,
 // so tiers demote as aggressively as they promote — miss a week, lose the rank.
@@ -208,7 +209,7 @@ export function buildCalloutText({ rivalName, gapLabel }) {
 
 export async function shareCallout({ rivalName, gapLabel }) {
   const text = buildCalloutText({ rivalName, gapLabel })
-  const url = 'https://onlygains.club'
+  const url = PUBLIC_BASE_URL
 
   if (navigator.share) {
     try {

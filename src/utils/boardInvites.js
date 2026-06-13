@@ -1,14 +1,7 @@
 import { getBoardDisplayName } from './boards'
+import { buildPublicUrl } from '../lib/publicUrl'
 
 const PENDING_BOARD_INVITE_KEY = 'only_gains_pending_board_invite'
-
-function getShareOrigin() {
-  if (typeof window === 'undefined') {
-    return 'https://onlygains.club'
-  }
-
-  return window.location.origin
-}
 
 function copyText(text) {
   if (navigator.clipboard?.writeText) {
@@ -42,7 +35,7 @@ export function formatBoardTypeLabel(boardType) {
 }
 
 export function buildBoardInviteUrl(inviteCode) {
-  return `${getShareOrigin()}/join/${encodeURIComponent(String(inviteCode || '').trim())}`
+  return buildPublicUrl(`/join/${encodeURIComponent(String(inviteCode || '').trim())}`)
 }
 
 export function buildBoardInviteQrUrl(inviteCode) {
