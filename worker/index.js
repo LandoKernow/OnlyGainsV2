@@ -23,6 +23,7 @@
 import { buildPushPayload } from '@block65/webcrypto-web-push'
 import { NOTIFICATIONS_CONFIG, getEventConfig } from '../src/config/notifications.js'
 import { CROWNS_CONFIG } from '../src/config/crowns.js'
+import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../src/config/onboarding.js'
 import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
 
 // ---------------------------------------------------------------------------
@@ -383,6 +384,42 @@ async function processSubmission(env, submissionId) {
   const actorName = names[actorId] ?? 'A rival'
   const created = []
 
+  // FIRST BLOOD — the actor's first QUALIFYING log (value >= the discipline
+  // floor). Blank / 0 / fat-finger entries below the floor never write the
+  // durable event, so a junk first entry (even one later deleted) can't burn
+  // the once-ever coronation — it waits for the first real set. The durable
+  // FIRST_BLOOD event is the cross-device once-ever guard (dedup: no prior
+  // event). When it fires it OWNS this log, so MILESTONE is suppressed. The
+  // client fires the visual takeover instantly; this is the truth behind it.
+  let firstBloodFired = false
+  const firstBloodFloor = getFirstBloodFloor(activityType)
+  const qualifiesForFirstBlood =
+    ONBOARDING_CONFIG.firstBlood.enabled && (Number(value) || 0) >= firstBloodFloor
+
+  if (qualifiesForFirstBlood) {
+    // Veteran exemption: accounts that existed at deploy were backfilled into
+    // first_blood_exempt and never draw first blood. Gate is account-identity
+    // only — NO submission-history dependency.
+    const [priorFirstBlood, exemptRows] = await Promise.all([
+      sbSelect(env, `notification_events?recipient_user_id=eq.${actorId}&type=eq.FIRST_BLOOD&select=id&limit=1`),
+      sbSelect(env, `first_blood_exempt?user_id=eq.${actorId}&select=user_id&limit=1`),
+    ])
+
+    if (priorFirstBlood.length === 0 && exemptRows.length === 0) {
+      const event = await createEvent(env, {
+        recipientUserId: actorId,
+        type: 'FIRST_BLOOD',
+        actorUserId: actorId,
+        actorName,
+        payload: { activityType, value: Number(value) || 0, boardId: circleId },
+      })
+      if (event) {
+        created.push(event)
+        firstBloodFired = true
+      }
+    }
+  }
+
   // OVERTAKEN — one war report per fallen rival.
   for (const rival of passed) {
     const rivalRank = rankOf(after, rival.userId)
@@ -431,13 +468,14 @@ async function processSubmission(env, submissionId) {
     }
   }
 
-  // MILESTONE — lifetime (year) round numbers.
+  // MILESTONE — lifetime (year) round numbers. Suppressed when FIRST BLOOD
+  // already owns this log (the first set never double-fires honors).
   const milestones = NOTIFICATIONS_CONFIG.lifetimeMilestones[activityType] ?? []
   const crossed = milestones.find(
     (mark) => actorLifetime >= mark && actorLifetime - (Number(value) || 0) < mark,
   )
 
-  if (crossed) {
+  if (crossed && !firstBloodFired) {
     const event = await createEvent(env, {
       recipientUserId: actorId,
       type: 'MILESTONE',
@@ -479,6 +517,7 @@ async function processSubmission(env, submissionId) {
     actorNewRank,
     rivalsPassed: passed.length,
     actorLifetime,
+    firstBloodFired,
     eventsCreated: created.map((event) => `${event.type}->${event.recipient_user_id}`),
   }
   const outcome =

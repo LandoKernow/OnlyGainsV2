@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
@@ -22,6 +22,9 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 import { BossBattleCard } from '../../components/BossBattleCard'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
+import { FirstMissionCard } from '../../components/FirstMissionCard'
+import { useFirstRun } from '../../hooks/useFirstRun'
+import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../../config/onboarding'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
@@ -144,6 +147,8 @@ function AuthenticatedDashboard() {
   const streak = calculateStreak(leaderboardQuery.data, session.user.id)
   const warriorLevel = useWarriorXp({ circleId, userId: session.user.id })
   const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
+  const firstRun = useFirstRun()
+  const firstBloodArmedRef = useRef(false)
 
   // Warm the next takeover image so the reveal never lags.
   useEffect(() => {
@@ -412,6 +417,29 @@ function AuthenticatedDashboard() {
             pingEventEngine(savedSubmission.id)
           }
 
+          // FIRST BLOOD owns the first QUALIFYING log (value >= the discipline
+          // floor): instant takeover, normal honor takeover skipped so two
+          // reveals never stack. A junk/below-floor first log fires nothing and
+          // sets no guard — the coronation waits for the first real set. The
+          // Worker writes the durable once-ever record + suppresses milestone.
+          const firstBloodFloor = getFirstBloodFloor(activityType)
+          if (firstRun.firstBloodPending && !firstBloodArmedRef.current && value >= firstBloodFloor) {
+            firstBloodArmedRef.current = true
+            firstRun.markFirstBloodDrawn()
+
+            const imageSrc = await dealCrownImage(session.user.id, 'TREBLE')
+            setTakeover({
+              imageSrc,
+              stat: ONBOARDING_CONFIG.firstBlood.stat,
+              sub: 'YOUR FIRST MARK',
+              tagline: ONBOARDING_CONFIG.firstBlood.tagline,
+              warriorName: pendingWarCard.warriorName,
+              boardName: pendingWarCard.boardName,
+              shareState: '',
+            })
+            return
+          }
+
           // Earned moment? Full takeover replaces the standard war card so
           // two reveals never stack. Toast-level repeats keep the war card.
           const tookOver = await maybeFireMachoTakeover({ value, pendingWarCard })
@@ -502,6 +530,13 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
+        {ONBOARDING_CONFIG.enabled && firstRun.firstBloodPending ? (
+          <FirstMissionCard
+            rows={leaderboardQuery.rows}
+            currentUserRow={leaderboardQuery.currentUserRow}
+          />
+        ) : null}
+
         <HeroStatus
           profile={profileQuery.data}
           currentUserRow={leaderboardQuery.currentUserRow}
