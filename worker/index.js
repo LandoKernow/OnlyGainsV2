@@ -674,6 +674,105 @@ function pickChampion(userStats) {
   })[0]
 }
 
+// Maps a crown outcome to a constraint-legal vault_awards row (see
+// db/migrations/2026-06-13_crown_awards_parity.sql). Every value here is
+// proven against the widened CHECK constraints.
+function buildCrownAwardRow({ boardId, userId, type, period, window, wonDisciplines, disciplineStats, actorName }) {
+  const monthly = period === 'monthly'
+  const periodEnd = shiftDayKey(window.endExclusive, -1)
+  const sum = (keys) => keys.reduce((total, key) => total + (Number(disciplineStats[key]) || 0), 0)
+
+  let awardType
+  let activityType
+  let unit
+  let valueNumeric
+  let title
+
+  if (type === 'TREBLE') {
+    awardType = monthly ? 'treble_monthly_win' : 'treble_weekly_win'
+    activityType = 'combined'
+    unit = 'mixed'
+    valueNumeric = sum(wonDisciplines)
+    title = 'TREBLE CROWN'
+  } else if (type === 'DOUBLE_CROWN') {
+    awardType = monthly ? 'double_monthly_win' : 'double_weekly_win'
+    activityType = 'combined'
+    unit = 'mixed'
+    valueNumeric = sum(wonDisciplines)
+    title = 'DOUBLE CROWN'
+  } else {
+    const discipline = wonDisciplines[0]
+    awardType = monthly ? 'monthly_win' : 'weekly_win'
+    activityType = discipline
+    unit = discipline === 'km' ? 'km' : 'reps'
+    valueNumeric = Number(disciplineStats[discipline]) || 0
+    title = `${(DISCIPLINE_LABELS[discipline] || discipline).toUpperCase()} CROWN`
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    circle_id: boardId,
+    award_type: awardType,
+    activity_type: activityType,
+    period_type: period,
+    period_start: window.start,
+    period_end: periodEnd,
+    record_type: `crown_${type.toLowerCase()}`,
+    value_numeric: valueNumeric,
+    value_seconds: null,
+    unit,
+    source_type: 'crown',
+    source_id: null,
+    title,
+    quote:
+      type === 'TREBLE'
+        ? 'ALL THREE THRONES. BOW.'
+        : type === 'DOUBLE_CROWN'
+          ? `TWO THRONES, ONE ${monthly ? 'MONTH' : 'WEEK'}.`
+          : 'THE THRONE IS THEIRS. DEFEND IT.',
+    image_path: '/images/macho-toasts/crown-arnold.webp',
+    metadata: { disciplines: wonDisciplines, stats: disciplineStats, periodKey: window.periodKey, tier: type },
+    created_at: new Date().toISOString(),
+  }
+}
+
+// Writes the shareable vault_awards row for a crown, deduped on
+// (circle_id, user_id, period_type, period_start) for source_type='crown'
+// (check-before-insert + the partial unique index as a hard backstop).
+// Returns 'created' | 'exists' | 'error'. A failure here never breaks the
+// crown honor — it's logged and reported.
+async function recordCrownAward(env, args) {
+  try {
+    const { boardId, userId, period, window } = args
+    const existing = await sbSelect(
+      env,
+      `vault_awards?circle_id=eq.${boardId}&user_id=eq.${userId}&period_type=eq.${period}&period_start=eq.${window.start}&source_type=eq.crown&select=id&limit=1`,
+    )
+
+    if (existing.length > 0) {
+      return 'exists'
+    }
+
+    const response = await sb(env, 'vault_awards', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=ignore-duplicates' },
+      body: JSON.stringify([buildCrownAwardRow(args)]),
+    })
+
+    if (!response.ok) {
+      const body = (await response.text().catch(() => '')).slice(0, 200)
+      console.log('[engine] crown award insert failed', response.status, body)
+      return 'error'
+    }
+
+    return 'created'
+  } catch (error) {
+    console.log('[engine] crown award insert threw', String(error?.message || error))
+    return 'error'
+  }
+}
+
 async function runCrownsSweep(env, period, { current = false } = {}) {
   const window = getCrownWindow(period, { current })
   const sweepId = `crowns:${period}:${window.periodKey}`
@@ -713,7 +812,7 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
       discipline.set(row.user_id, existing)
     }
 
-    const stats = { boards: totals.size, crowns: 0, doubles: 0, trebles: 0, reports: 0, skippedDuplicates: 0, standings: [] }
+    const stats = { boards: totals.size, crowns: 0, doubles: 0, trebles: 0, reports: 0, skippedDuplicates: 0, awards: 0, awardsSkipped: 0, standings: [] }
 
     for (const [boardId, disciplines] of totals) {
       const boardMembers = new Set()
@@ -763,62 +862,74 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
 
       for (const [userId, wonDisciplines] of crownsByUser) {
         const type = wonDisciplines.length >= 3 ? 'TREBLE' : wonDisciplines.length === 2 ? 'DOUBLE_CROWN' : 'CROWN'
+        const disciplineStats = championTotals[userId] ?? {}
 
+        // --- Honor side (notification_events), deduped on its own key. ---
         if (await crownAlreadyAwarded(env, userId, type, boardId, window.periodKey)) {
           stats.skippedDuplicates += 1
-          continue
-        }
+        } else {
+          const payload = {
+            period,
+            periodKey: window.periodKey,
+            boardId,
+            disciplines: wonDisciplines,
+            discipline: wonDisciplines.map((d) => DISCIPLINE_LABELS[d]).join(' + '),
+            stats: disciplineStats,
+          }
 
-        const disciplineStats = championTotals[userId] ?? {}
-        const payload = {
-          period,
-          periodKey: window.periodKey,
-          boardId,
-          boardName: undefined,
-          disciplines: wonDisciplines,
-          discipline: wonDisciplines.map((d) => DISCIPLINE_LABELS[d]).join(' + '),
-          // All three figures travel with the treble so the war card can show
-          // the full coronation; doubles/singles carry what they hold.
-          stats: disciplineStats,
-        }
+          const event = await createEvent(env, {
+            recipientUserId: userId,
+            type,
+            actorUserId: userId,
+            actorName: names[userId] ?? 'A warrior',
+            payload,
+          })
 
-        const event = await createEvent(env, {
-          recipientUserId: userId,
-          type,
-          actorUserId: userId,
-          actorName: names[userId] ?? 'A warrior',
-          payload,
-        })
+          if (event) {
+            if (type === 'TREBLE') stats.trebles += 1
+            else if (type === 'DOUBLE_CROWN') stats.doubles += 1
+            else stats.crowns += 1
+          }
 
-        if (event) {
-          if (type === 'TREBLE') stats.trebles += 1
-          else if (type === 'DOUBLE_CROWN') stats.doubles += 1
-          else stats.crowns += 1
-        }
+          // Doubles and trebles broadcast to every other board member.
+          if (type !== 'CROWN') {
+            for (const member of boardMembers) {
+              if (member === userId) {
+                continue
+              }
 
-        // Doubles and trebles broadcast to every other board member — nobody
-        // misses a treble coronation.
-        if (type !== 'CROWN') {
-          for (const member of boardMembers) {
-            if (member === userId) {
-              continue
+              if (await crownAlreadyAwarded(env, member, 'CROWN_REPORT', boardId, `${window.periodKey}:${userId}`)) {
+                continue
+              }
+
+              const report = await createEvent(env, {
+                recipientUserId: member,
+                type: 'CROWN_REPORT',
+                actorUserId: userId,
+                actorName: names[userId] ?? 'A warrior',
+                payload: { period, periodKey: `${window.periodKey}:${userId}`, boardId, honor: type },
+              })
+
+              if (report) stats.reports += 1
             }
-
-            if (await crownAlreadyAwarded(env, member, 'CROWN_REPORT', boardId, `${window.periodKey}:${userId}`)) {
-              continue
-            }
-
-            const report = await createEvent(env, {
-              recipientUserId: member,
-              type: 'CROWN_REPORT',
-              actorUserId: userId,
-              actorName: names[userId] ?? 'A warrior',
-              payload: { period, periodKey: `${window.periodKey}:${userId}`, boardId, honor: type },
-            })
-
-            if (report) stats.reports += 1
           }
         }
+
+        // --- Shareable artifact (vault_awards), deduped INDEPENDENTLY so a
+        // champion whose honor already existed (e.g. cron ran before parity
+        // shipped) still gets their /award/ page backfilled. ---
+        const awardResult = await recordCrownAward(env, {
+          boardId,
+          userId,
+          type,
+          period,
+          window,
+          wonDisciplines,
+          disciplineStats,
+          actorName: names[userId] ?? 'A warrior',
+        })
+        if (awardResult === 'created') stats.awards += 1
+        else if (awardResult === 'exists') stats.awardsSkipped += 1
       }
     }
 
@@ -930,6 +1041,43 @@ export default {
         })
 
         return json({ created: Boolean(event), event })
+      } catch (error) {
+        return json({ error: String(error?.message || error) }, 500)
+      }
+    }
+
+    // Admin manual override: run the crown sweep now. Same logic as the cron,
+    // safe against double-award (recordCrownAward + crownAlreadyAwarded dedupe).
+    // Auth = the caller's own Supabase JWT must satisfy is_current_user_admin
+    // (reuses the app's existing admin gate; no shared secret in the client).
+    if (url.pathname === '/api/admin/run-crowns' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') || ''
+
+      if (!authHeader.toLowerCase().startsWith('bearer ')) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+
+      try {
+        const adminCheck = await fetch(`${supabaseBaseUrl(env)}/rest/v1/rpc/is_current_user_admin`, {
+          method: 'POST',
+          headers: {
+            apikey: String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+            Authorization: authHeader, // the caller's user JWT -> auth.uid()
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        })
+
+        const isAdmin = adminCheck.ok && (await adminCheck.json()) === true
+
+        if (!isAdmin) {
+          return json({ error: 'admin only' }, 403)
+        }
+
+        const body = await request.json().catch(() => ({}))
+        const period = body.period === 'monthly' ? 'monthly' : 'weekly'
+        const result = await runCrownsSweep(env, period, { current: Boolean(body.current) })
+        return json(result)
       } catch (error) {
         return json({ error: String(error?.message || error) }, 500)
       }

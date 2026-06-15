@@ -1,16 +1,5 @@
 import { supabase } from '../lib/supabase'
 
-function isMissingRpc(error) {
-  const message = String(error?.message || '').toLowerCase()
-
-  return (
-    error?.code === 'PGRST202' ||
-    error?.code === '42883' ||
-    message.includes('finalize_period_awards_all_admin') && message.includes('could not find') ||
-    message.includes('function') && message.includes('does not exist')
-  )
-}
-
 export function isAdminOnlyError(error) {
   const message = String(error?.message || '').toLowerCase()
 
@@ -21,26 +10,42 @@ export function isAdminOnlyError(error) {
   )
 }
 
-export async function finalizePeriodAwardsAllAdmin({ circleId, periodType, periodStart }) {
+// Manual override: run the Crown sweep now (same logic the cron runs), via the
+// admin-gated Worker endpoint. Awards crowns + shareable vault_awards rows,
+// deduped server-side so it can never double-award. Replaces the retired
+// legacy finalize_period_awards_all_admin path.
+export async function runCrownSweepAdmin({ period = 'weekly' } = {}) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
-  const { data, error } = await supabase.rpc('finalize_period_awards_all_admin', {
-    p_circle_id: circleId,
-    p_period_type: periodType,
-    p_period_start: periodStart,
-  })
+  const { data: sessionData } = await supabase.auth.getSession()
+  const accessToken = sessionData?.session?.access_token
 
-  if (error) {
-    if (isMissingRpc(error)) {
-      const rpcError = new Error('Admin RPC not ready.')
-      rpcError.code = 'RPC_NOT_READY'
-      throw rpcError
-    }
-
-    throw error
+  if (!accessToken) {
+    const authError = new Error('Not signed in.')
+    authError.code = '42501'
+    throw authError
   }
 
-  return Array.isArray(data) ? data : data ? [data] : []
+  const response = await fetch('/api/admin/run-crowns', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ period }),
+  })
+
+  if (response.status === 401 || response.status === 403) {
+    const adminError = new Error('Admin only.')
+    adminError.code = '42501'
+    throw adminError
+  }
+
+  if (!response.ok) {
+    throw new Error(`Crown sweep failed (${response.status}).`)
+  }
+
+  return response.json()
 }
