@@ -8,7 +8,7 @@ import { useAuth } from '../../features/auth/AuthProvider'
 import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useProfileYearSetup } from '../../hooks/useProfileYearSetup'
 import { useIsAdmin } from '../../hooks/useIsAdmin'
-import { useAdminAwardFinalization, getAdminAwardFinalizationErrorCopy } from '../../hooks/useAdminAwardFinalization'
+import { useCrownSweepAdmin, getAdminAwardFinalizationErrorCopy } from '../../hooks/useAdminAwardFinalization'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
@@ -568,7 +568,7 @@ function AdminAwardControls() {
   const { circleId } = useBoardMeta()
   const { showToast } = useToast()
   const isAdminQuery = useIsAdmin()
-  const finalizeMutation = useAdminAwardFinalization(circleId)
+  const crownSweepMutation = useCrownSweepAdmin(circleId)
 
   const lastWeekStart = getLastCompletedWeekStart()
   const lastMonthStart = getLastCompletedMonthStart()
@@ -586,17 +586,14 @@ function AdminAwardControls() {
     return null
   }
 
-  async function handleFinalize(periodType, periodStart) {
+  async function handleRunCrownSweep(period) {
     try {
-      const rows = await finalizeMutation.mutateAsync({
-        circleId,
-        periodType,
-        periodStart,
-      })
+      const result = await crownSweepMutation.mutateAsync({ period })
+      const awarded = (result?.crowns ?? 0) + (result?.doubles ?? 0) + (result?.trebles ?? 0)
 
       showToast({
         tone: 'success',
-        message: rows.length > 0 ? 'Awards finalised.' : 'No completed awards found.',
+        message: awarded > 0 ? `Crown sweep done. ${awarded} crown(s) awarded.` : 'Crown sweep done. Nothing new to award.',
       })
     } catch (error) {
       showToast({
@@ -620,7 +617,7 @@ function AdminAwardControls() {
         </button>
         {isExpanded ? (
           <div className="stack">
-            <p className="muted">Finalise awards.</p>
+            <p className="muted">Run the crown sweep (manual override). Crowns + shareable awards, all three disciplines. Safe to re-run — never double-awards.</p>
             <div className="profile-identity-grid">
               <div className="profile-identity-grid__row">
                 <span className="muted">Last completed week</span>
@@ -629,10 +626,10 @@ function AdminAwardControls() {
               <button
                 className="button"
                 type="button"
-                disabled={finalizeMutation.isPending}
-                onClick={() => handleFinalize('weekly', lastWeekStart)}
+                disabled={crownSweepMutation.isPending}
+                onClick={() => handleRunCrownSweep('weekly')}
               >
-                {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last week'}
+                {crownSweepMutation.isPending ? 'Running...' : 'Run crown sweep — week'}
               </button>
               <div className="profile-identity-grid__row">
                 <span className="muted">Last completed month</span>
@@ -641,15 +638,12 @@ function AdminAwardControls() {
               <button
                 className="button"
                 type="button"
-                disabled={finalizeMutation.isPending}
-                onClick={() => handleFinalize('monthly', lastMonthStart)}
+                disabled={crownSweepMutation.isPending}
+                onClick={() => handleRunCrownSweep('monthly')}
               >
-                {finalizeMutation.isPending ? 'Finalising...' : 'Finalise last month'}
+                {crownSweepMutation.isPending ? 'Running...' : 'Run crown sweep — month'}
               </button>
             </div>
-            <Link className="button button--ghost" to="/admin/awards">
-              Manual SQL helper
-            </Link>
             <Link className="button button--ghost" to="/dashboard?takeover=demo">
               Preview the macho takeover
             </Link>
