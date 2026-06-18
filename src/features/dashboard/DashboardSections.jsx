@@ -296,8 +296,8 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
       <div className="stack hero-fight-card">
         <div className="hero-war-banner">
           <div className="hero-war-banner__tier">
-            <span className="hero-war-banner__tier-label">TIER</span>
-            <strong className="hero-war-banner__tier-name">{tier}</strong>
+            <span className="hero-war-banner__tier-label">RANK</span>
+            <strong className="hero-war-banner__tier-name">{level?.name ? `LVL ${level.level} ${level.name}` : tier}</strong>
           </div>
           <div className={streak?.atRisk ? 'hero-war-banner__streak hero-war-banner__streak--risk' : 'hero-war-banner__streak'}>
             <strong className="hero-war-banner__streak-value">
@@ -313,7 +313,7 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
         {level?.name && !level.isLoading ? (
           <div className="hero-level">
             <div className="hero-level__row">
-              <strong className="hero-level__name">LVL {level.level} {level.name}</strong>
+              <strong className="hero-level__name">SEASON XP</strong>
               <span className="hero-level__xp">
                 {level.nextLevelName
                   ? `${level.xpToNextLevel.toLocaleString('en-GB')} XP TO ${level.nextLevelName}`

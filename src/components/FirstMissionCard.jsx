@@ -46,7 +46,7 @@ export function FirstMissionCard({ rows, currentUserRow, recruiter = null }) {
       <div className="first-mission">
         <span className="first-mission__eyebrow">YOUR FIRST TARGET</span>
         <strong className="first-mission__target">{target.rival.actorName || 'A WARRIOR'}</strong>
-        <span className="first-mission__gap">{gapLabel} AHEAD · HUNT THEM DOWN</span>
+        <span className="first-mission__gap">{gapLabel} to overtake · HUNT THEM DOWN</span>
         <p className="first-mission__copy">
           {target.beatable
             ? 'Catchable this week. Close the gap and take the spot.'

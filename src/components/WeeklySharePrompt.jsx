@@ -9,6 +9,8 @@ import { shareOnlyGains } from '../utils/shareApp'
 import { getToastMessage } from '../utils/toastCopy'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
+import { useFirstRun } from '../hooks/useFirstRun'
+import { hasShownFollowupThisSession, markFollowupShownThisSession } from '../utils/sessionPrompts'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import {
   getAddToHomeScreenPromptDismissKey,
@@ -51,6 +53,7 @@ export function WeeklySharePrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
   const { showToast, activeToastCount, activeMachoToastCount } = useToast()
+  const firstRun = useFirstRun()
   const userId = session?.user?.id ?? ''
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
   const weekKey = getLondonPeriodKeys(new Date()).weekKey
@@ -112,6 +115,10 @@ export function WeeklySharePrompt() {
       profileYearQuery.isLoading ||
       profilePromptBlocks ||
       addToHomeScreenPromptBlocks ||
+      // First-run gauntlet fix: defer until after the first qualifying log, and
+      // only one follow-up prompt (install OR share) per session.
+      !firstRun.firstBloodDone ||
+      hasShownFollowupThisSession() ||
       activeMachoToastCount > 0 ||
       activeToastCount > 0
     ) {
@@ -119,6 +126,10 @@ export function WeeklySharePrompt() {
     }
 
     const timer = window.setTimeout(() => {
+      if (hasShownFollowupThisSession()) {
+        return
+      }
+      markFollowupShownThisSession()
       setIsOpen(true)
     }, 2600)
 
@@ -128,6 +139,7 @@ export function WeeklySharePrompt() {
   }, [
     activeMachoToastCount,
     activeToastCount,
+    firstRun.firstBloodDone,
     isAuthenticated,
     isAwardRoute,
     addToHomeScreenPromptBlocks,

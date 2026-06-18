@@ -8,6 +8,8 @@ import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
 import { useEscapeKey } from '../hooks/useEscapeKey'
 import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
+import { useFirstRun } from '../hooks/useFirstRun'
+import { hasShownFollowupThisSession, markFollowupShownThisSession } from '../utils/sessionPrompts'
 import { getProfileBuildPromptDismissKey, hasDismissedProfileBuildPrompt } from './ProfileBuildPrompt'
 
 const PROFILE_YEAR = 2026
@@ -45,6 +47,7 @@ export function AddToHomeScreenPrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
   const { activeToastCount, activeMachoToastCount } = useToast()
+  const firstRun = useFirstRun()
   const userId = session?.user?.id ?? ''
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
   const dismissKey = useMemo(
@@ -109,6 +112,10 @@ export function AddToHomeScreenPrompt() {
       profileYearQuery.isLoading ||
       profileYearQuery.isFetching ||
       profilePromptBlocks ||
+      // First-run gauntlet fix: never interrupt before the first qualifying
+      // log, and only one follow-up prompt (install OR share) per session.
+      !firstRun.firstBloodDone ||
+      hasShownFollowupThisSession() ||
       activeMachoToastCount > 0 ||
       activeToastCount > 0
     ) {
@@ -116,6 +123,10 @@ export function AddToHomeScreenPrompt() {
     }
 
     const timer = window.setTimeout(() => {
+      if (hasShownFollowupThisSession()) {
+        return
+      }
+      markFollowupShownThisSession()
       setIsOpen(true)
     }, 1800)
 
@@ -125,6 +136,7 @@ export function AddToHomeScreenPrompt() {
   }, [
     activeMachoToastCount,
     activeToastCount,
+    firstRun.firstBloodDone,
     hasPendingInviteJoin,
     isAuthenticated,
     isBlockedRoute,

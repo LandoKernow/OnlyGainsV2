@@ -422,7 +422,9 @@ function AuthenticatedDashboard() {
       boardName: activeBoard?.name || 'GLOBAL BOARD',
       activityType,
       value,
-      tier: getWarTier(weeklyTotal, activityType),
+      // Rank identity = the XP warrior level (single source of truth, matches
+      // the hero + profile). The weekly volume tier is no longer shown here.
+      tier: warriorLevel?.name ? `LVL ${warriorLevel.level} ${warriorLevel.name}` : getWarTier(weeklyTotal, activityType),
       rank,
       weeklyTotal,
       streakDays,
