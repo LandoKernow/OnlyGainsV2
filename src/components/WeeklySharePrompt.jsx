@@ -54,6 +54,7 @@ export function WeeklySharePrompt() {
   const location = useLocation()
   const { showToast, activeToastCount, activeMachoToastCount } = useToast()
   const firstRun = useFirstRun()
+  const [imageFailed, setImageFailed] = useState(false)
   const userId = session?.user?.id ?? ''
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
   const weekKey = getLondonPeriodKeys(new Date()).weekKey
@@ -193,13 +194,16 @@ export function WeeklySharePrompt() {
         aria-labelledby="weekly-share-prompt-title"
         aria-describedby="weekly-share-prompt-body"
       >
-        <div className="prompt-modal__image-shell">
-          <img
-            className="prompt-modal__image"
-            src="/images/macho-toasts/vault-rocky.webp"
-            alt="Only Gains share prompt"
-          />
-        </div>
+        {imageFailed ? null : (
+          <div className="prompt-modal__image-shell">
+            <img
+              className="prompt-modal__image"
+              src="/images/macho-toasts/vault-rocky.webp"
+              alt="Only Gains share prompt"
+              onError={() => setImageFailed(true)}
+            />
+          </div>
+        )}
         <div className="stack prompt-modal__content">
           <div>
             <p className="eyebrow prompt-modal__eyebrow">RAISE THE BAR</p>

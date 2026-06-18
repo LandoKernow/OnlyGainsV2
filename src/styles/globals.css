@@ -3629,3 +3629,23 @@ button {
   font-weight: 800;
   letter-spacing: 0.1em;
 }
+
+/* Batch 2 polish: trophy name clipping (#5) + scroll-flash insurance (#7) */
+.trophy {
+  /* Grid items default to min-width:auto, which lets a long holder name force
+     the track wider / clip at the card edge. Allow the cell to shrink. */
+  min-width: 0;
+}
+
+.trophy__holder,
+.trophy__value,
+.trophy__label,
+.trophy__tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* Any mid-scroll repaint gap shows the dark theme, never a pure-black frame. */
+#root {
+  background: var(--bg);
+}
