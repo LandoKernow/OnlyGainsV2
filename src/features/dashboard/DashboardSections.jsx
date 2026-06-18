@@ -604,11 +604,8 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
     <Card title={compact ? 'MINI RANKS' : 'Ranks'} body={compact ? 'Top 3 plus your spot.' : cardBody}>
       {!compact ? (
         <div className="placeholder-tabs">
-          {ACTIVITY_TYPES.map((type) => (
-            <span key={type} className={normalizeActivityType(activityType) === type ? 'pill pill--active' : 'pill'}>
-              {ACTIVITY_META[type].label}
-            </span>
-          ))}
+          {/* Activity tabs live on the screen-level toggle (LeaderboardScreen);
+              this header only owns the period buttons — no duplicate set. */}
           {periods.map((item) => (
             <button
               key={item.key}

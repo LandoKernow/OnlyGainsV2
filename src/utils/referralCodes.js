@@ -42,27 +42,39 @@ export function clearPendingReferralCode() {
   window.localStorage.removeItem(PENDING_REFERRAL_KEY)
 }
 
-// War-voice share of the recruiter's own link. Native sheet -> clipboard.
+// War-voice share of the recruiter's own link. Copies FIRST so there's
+// deterministic feedback on every platform (desktop browsers with no/cancelled
+// share sheet still end with the link on the clipboard), then offers the
+// native sheet where available. Returns 'shared' | 'copied' | 'unavailable'.
 export async function shareReferral(referralCode) {
   const url = buildReferralUrl(referralCode)
   const text = 'You think you train? Get on the board. First one to fold loses.'
+
+  let copied = false
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(`${text}\n${url}`)
+      copied = true
+    } catch {
+      copied = false
+    }
+  }
 
   if (navigator.share) {
     try {
       await navigator.share({ title: 'Only Gains', text, url })
       return 'shared'
     } catch (error) {
+      // Cancelled or failed sheet — the link is already on the clipboard, so
+      // the user still gets a usable result + feedback.
+      if (copied) {
+        return 'copied'
+      }
       if (error?.name === 'AbortError') {
         return 'cancelled'
       }
-      throw error
     }
   }
 
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(`${text}\n${url}`)
-    return 'copied'
-  }
-
-  return 'unavailable'
+  return copied ? 'copied' : 'unavailable'
 }

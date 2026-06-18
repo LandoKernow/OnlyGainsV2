@@ -32,6 +32,7 @@ export function AppShell({ children }) {
   const isLeaderboardRoute = location.pathname.startsWith('/leaderboard')
   const isChaseRoute = location.pathname.startsWith('/chase')
   const isVaultRoute = location.pathname.startsWith('/vault')
+  const isAlertsRoute = location.pathname.startsWith('/alerts')
   const isProfileRoute = location.pathname.startsWith('/profile')
   const isImmersiveRoute = isAwardRoute || isJoinRoute || isBoardInviteRoute
   const showBottomNav = status === 'authenticated' && !isImmersiveRoute
@@ -45,9 +46,11 @@ export function AppShell({ children }) {
         ? 'Close the gap.'
         : isVaultRoute
           ? 'Records are remembered.'
-          : isProfileRoute
-            ? "Who you're becoming."
-            : 'Only Gains.'
+          : isAlertsRoute
+            ? 'The board is watching.'
+            : isProfileRoute
+              ? "Who you're becoming."
+              : 'Only Gains.'
   const headerClassName = isDashboardRoute && status === 'authenticated'
     ? 'app-header app-header--primary'
     : 'app-header app-header--secondary'

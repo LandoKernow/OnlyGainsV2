@@ -269,7 +269,6 @@ export default function VaultScreen() {
     <div className={isPublicVisitor ? 'screen screen--vault screen--vault-public' : 'screen screen--vault'}>
       <div className="stack-lg">
         <div className="vault-kicker">
-          <p className="vault-kicker__eyebrow">ONLY GAINS</p>
           <h2 className="vault-kicker__title">THE VAULT</h2>
           {isPublicVisitor ? (
             <Link className="button vault-kicker__cta" to="/dashboard">

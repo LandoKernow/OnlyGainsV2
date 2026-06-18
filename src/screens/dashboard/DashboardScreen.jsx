@@ -151,6 +151,7 @@ function AuthenticatedDashboard() {
   const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
   const firstRun = useFirstRun()
   const firstBloodArmedRef = useRef(false)
+  const [optimisticHero, setOptimisticHero] = useState(null)
   const recruiter = useMyRecruiter()
   const recruits = useRecruits()
   const recruiterRevealRef = useRef(false)
@@ -468,6 +469,17 @@ function AuthenticatedDashboard() {
             setManualError('')
           }
 
+          // Optimistic hero: reflect the just-logged set on the hero card
+          // immediately, so it never sits on "QUIET / Log to be seen" while the
+          // leaderboard query catches up (replica lag on a fresh account).
+          // Display-only; cleared once the live row overtakes it.
+          setOptimisticHero({
+            activityType: normalizeActivityType(activityType),
+            total: pendingWarCard.weeklyTotal,
+            todayTotal: (leaderboardQuery.currentUserRow?.todayTotal ?? 0) + value,
+            rank: pendingWarCard.rank,
+          })
+
           // Wake the notification engine (fire-and-forget; never blocks UI).
           if (savedSubmission?.id) {
             pingEventEngine(savedSubmission.id)
@@ -583,6 +595,24 @@ function AuthenticatedDashboard() {
     )
   }
 
+  // Hero row prefers the optimistic projection right after a log (same view),
+  // until the live leaderboard row catches up to or passes it.
+  const liveUserRow = leaderboardQuery.currentUserRow
+  const heroCurrentUserRow =
+    optimisticHero &&
+    optimisticHero.activityType === normalizeActivityType(activityType) &&
+    (!liveUserRow || (liveUserRow.total ?? 0) < optimisticHero.total)
+      ? {
+          userId: session.user.id,
+          actorName: profileQuery.data?.name || session.user.email?.split('@')[0] || 'You',
+          total: optimisticHero.total,
+          todayTotal: optimisticHero.todayTotal,
+          rank: optimisticHero.rank,
+          isCurrentUser: true,
+          pending: false,
+        }
+      : liveUserRow
+
   return (
     <>
       <div className="stack-lg">
@@ -596,7 +626,7 @@ function AuthenticatedDashboard() {
 
         <HeroStatus
           profile={profileQuery.data}
-          currentUserRow={leaderboardQuery.currentUserRow}
+          currentUserRow={heroCurrentUserRow}
           chase={chase}
           rows={leaderboardQuery.rows}
           activityType={activityType}

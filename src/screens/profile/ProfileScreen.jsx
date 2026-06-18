@@ -17,7 +17,7 @@ import { useCrownHonors } from '../../hooks/useCrownHonors'
 import { useWarriorXp } from '../../hooks/useWarriorXp'
 import { useMyReferralCode, useRecruits } from '../../hooks/useReferrals'
 import { REFERRALS_CONFIG } from '../../config/referrals'
-import { shareReferral } from '../../utils/referralCodes'
+import { buildReferralUrl, shareReferral } from '../../utils/referralCodes'
 import { calculateStreak } from '../../utils/war'
 import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
 import { formatActivityGap } from '../../utils/activity'
@@ -67,10 +67,13 @@ function ProfileSummary() {
   async function handleRecruit() {
     try {
       const result = await shareReferral(referralCode)
-      if (result === 'copied') {
-        showToast({ tone: 'success', message: 'RECRUIT LINK COPIED. BRING ENEMIES.' })
-      } else if (result === 'shared') {
+      if (result === 'shared') {
         showToast({ tone: 'success', message: 'SENT. THE ARMY GROWS.' })
+      } else if (result === 'copied') {
+        showToast({ tone: 'success', message: 'RECRUIT LINK COPIED. BRING ENEMIES.' })
+      } else {
+        // 'unavailable' — no share, no clipboard. Surface the link itself.
+        showToast({ tone: 'error', message: `COPY YOUR LINK: ${buildReferralUrl(referralCode)}` })
       }
     } catch {
       showToast({ tone: 'error', message: "COULDN'T SHARE THE LINK. TRY AGAIN." })
