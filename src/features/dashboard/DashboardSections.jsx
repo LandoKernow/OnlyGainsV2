@@ -664,7 +664,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                   <div className="leaderboard-copy">
                     <strong>
                       {row.actorName}
-                      <span className="leaderboard-tier">{getWarTier(row.total, activityType)}</span>
+                      <span className="leaderboard-tier">FORM · {getWarTier(row.total, activityType)}</span>
                     </strong>
                     {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
                     <div className="row-chip-list">
@@ -722,7 +722,7 @@ export function HallOfShameCard({ rows = [], activityType = 'pressups' }) {
             <div className="shame-row__copy">
               <strong>
                 {row.actorName}
-                <span className="leaderboard-tier leaderboard-tier--shame">{getWarTier(row.total, activityType)}</span>
+                <span className="leaderboard-tier leaderboard-tier--shame">FORM · {getWarTier(row.total, activityType)}</span>
               </strong>
               <span className="shame-row__meta">
                 {row.todayTotal > 0 ? 'Scraping by today.' : 'Silent today. The board noticed.'}
@@ -775,7 +775,7 @@ export function BattleReplayCard({ chase, isLoading, activityType = 'pressups' }
       <div className={role === 'you' ? 'replay-side replay-side--you' : 'replay-side'}>
         <span className="replay-side__role">{role === 'you' ? 'YOU' : isChasing ? 'TARGET' : 'HUNTER'}</span>
         <strong className="replay-side__name">{getSafeName(row.actorName)}</strong>
-        <span className="replay-side__tier">{getWarTier(row.total, activityType)}</span>
+        <span className="replay-side__tier">FORM · {getWarTier(row.total, activityType)}</span>
         <div className="replay-side__stats">
           <span className="replay-side__rank">{getSafeRank(row.rank)}</span>
           <strong className="replay-side__total">{formatActivityValue(row.total, activityType)}</strong>
