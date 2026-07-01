@@ -22,9 +22,9 @@ export const AIR_SQUAT_ASSAULT_CONFIG = {
   name: 'AIR SQUAT ASSAULT',
   activityType: 'squats',
 
-  // The moment the arena opens. Set to the REAL launch datetime before ship.
-  // The countdown is computed from this vs now.
-  launchAt: '2026-07-08T18:00:00Z',
+  // The moment the arena opens: Monday 6 July 2026, 00:00 London (BST = UTC+1),
+  // so 23:00Z the night before. The countdown is computed from this vs now.
+  launchAt: '2026-07-05T23:00:00Z',
 
   // Event runs for this many days once LIVE (arena closes launchAt + duration).
   durationDays: 7,
@@ -32,7 +32,7 @@ export const AIR_SQUAT_ASSAULT_CONFIG = {
   // Collective arena goal — the whole board vs this number of cumulative
   // squats. Trivially adjustable MID-EVENT: change this number, redeploy the
   // one-line config, and every counter/threshold recomputes live.
-  collectiveTarget: 1_000_000,
+  collectiveTarget: 10_000,
 
   // Min squats a warrior must log to earn the participation badge if the
   // collective target falls (drives the strong to recruit the weak).
