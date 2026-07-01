@@ -9,6 +9,8 @@ const STATUS_THRESHOLDS = {
   pressups: { war: 100, rising: 30, danger: 20 },
   pullups: { war: 25, rising: 8, danger: 5 },
   km: { war: 8, rising: 3, danger: 0.5 },
+  // Squats accumulate fastest — heat thresholds scale up accordingly.
+  squats: { war: 300, rising: 100, danger: 60 },
 }
 
 function getThresholds(activityType) {

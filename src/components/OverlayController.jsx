@@ -82,6 +82,7 @@ export function useOverlaySlot(id, priority, wants) {
 export const OVERLAY_PRIORITY = {
   takeover: 100, // FIRST BLOOD / crown / milestone coronations
   intro: 90, // conscription first-run sequence
+  eventTakeover: 80, // timed-event announcement (Air Squat Assault, etc.)
   profileBuild: 40,
   weeklyShare: 30,
   addToHomeScreen: 20,
