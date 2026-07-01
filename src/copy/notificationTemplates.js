@@ -80,6 +80,14 @@ const TEMPLATES = {
     url: '/profile',
   }),
 
+  // Copy travels in the payload (source of truth is the event's own copy file),
+  // so the same template serves any timed-event launch broadcast.
+  EVENT_LAUNCH: (event) => ({
+    title: p(event).title || '⚔️ THE ARENA IS OPEN.',
+    body: p(event).body || 'GO.',
+    url: p(event).url || '/dashboard',
+  }),
+
   RECRUIT_FIRST_BLOOD: (event) => ({
     title: '⚔️ THE ARMY GROWS.',
     body: `${name(event)} — THE WARRIOR YOU DRAGGED IN — JUST DREW FIRST BLOOD. YOUR RANKS ARE SWELLING.`,
