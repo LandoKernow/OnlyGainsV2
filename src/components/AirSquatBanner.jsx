@@ -4,6 +4,7 @@ import { useToast } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useEventCountdown } from '../hooks/useEventCountdown'
 import { armPushAlerts, isPushSupported, needsIosInstall } from '../utils/pushManager'
+import { recordEventOptIn } from '../api/eventOptins'
 import { openAddToHomeScreenPrompt } from '../utils/community'
 import { AIR_SQUAT_ASSAULT_CONFIG, getLaunchTime, isTease, isEnded } from '../config/airSquatAssault'
 import { AIR_SQUAT_ASSAULT_COPY } from '../copy/airSquatAssaultCopy'
@@ -68,6 +69,11 @@ export function AirSquatBanner() {
 
     markAnswered(userId)
     setAnswered(true)
+
+    // Record the opt-in server-side so the launch broadcast can target ONLY
+    // this list. Dormant-safe: if the table isn't live yet, the local answer
+    // still stands.
+    void recordEventOptIn(userId, AIR_SQUAT_ASSAULT_CONFIG.eventKey)
 
     // Arm push if supported so they're on the launch-day list. Being "in"
     // doesn't depend on it — the intent is captured either way.

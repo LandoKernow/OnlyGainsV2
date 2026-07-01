@@ -31,6 +31,9 @@ export const NOTIFICATIONS_CONFIG = {
     FIRST_BLOOD: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
     // Fires to the RECRUITER when their recruit draws first blood.
     RECRUIT_FIRST_BLOOD: { priority: 'medium', category: 'milestone', cooldownMinutes: 0 },
+    // One-off timed-event launch broadcast (Air Squat Assault, etc.) to the
+    // opt-in list only. High priority = push.
+    EVENT_LAUNCH: { priority: 'high', category: 'milestone', cooldownMinutes: 0 },
   },
 
   // CHASE_CLOSING fires when the rival behind you closes within EITHER bound.

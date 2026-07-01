@@ -9,6 +9,7 @@ import { useCurrentProfile } from '../../hooks/useCurrentProfile'
 import { useProfileYearSetup } from '../../hooks/useProfileYearSetup'
 import { useIsAdmin } from '../../hooks/useIsAdmin'
 import { useCrownSweepAdmin, getAdminAwardFinalizationErrorCopy } from '../../hooks/useAdminAwardFinalization'
+import { fireEventLaunchBroadcast } from '../../api/eventBroadcast'
 import { useToast } from '../../components/ToastProvider'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
@@ -568,10 +569,26 @@ function getLastCompletedMonthStart() {
 
 function AdminAwardControls() {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [broadcasting, setBroadcasting] = useState(false)
   const { circleId } = useBoardMeta()
   const { showToast } = useToast()
   const isAdminQuery = useIsAdmin()
   const crownSweepMutation = useCrownSweepAdmin(circleId)
+
+  async function handleFireLaunchBroadcast() {
+    setBroadcasting(true)
+    try {
+      const result = await fireEventLaunchBroadcast()
+      showToast({
+        tone: 'success',
+        message: `Launch broadcast: ${result.sent} sent, ${result.skipped} already notified (${result.optins} opted in).`,
+      })
+    } catch (error) {
+      showToast({ tone: 'error', message: error?.code === '42501' ? 'Admin only.' : 'Broadcast failed. Try again.' })
+    } finally {
+      setBroadcasting(false)
+    }
+  }
 
   const lastWeekStart = getLastCompletedWeekStart()
   const lastMonthStart = getLastCompletedMonthStart()
@@ -650,6 +667,14 @@ function AdminAwardControls() {
             <Link className="button button--ghost" to="/dashboard?takeover=demo">
               Preview the macho takeover
             </Link>
+            <button
+              className="button"
+              type="button"
+              disabled={broadcasting}
+              onClick={handleFireLaunchBroadcast}
+            >
+              {broadcasting ? 'Firing...' : 'Fire AIR SQUAT ASSAULT launch broadcast'}
+            </button>
           </div>
         ) : null}
       </div>

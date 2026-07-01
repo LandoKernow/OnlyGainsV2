@@ -55,6 +55,14 @@ export const AIR_SQUAT_ASSAULT_COPY = {
     cry: 'EVERY SQUAT COUNTS. DROP.',
   },
 
+  // Launch-day broadcast push — fired ONCE (manually) to the ANSWER THE CALL
+  // opt-in list when the arena goes LIVE. Deep-links to the arena.
+  launchPush: {
+    title: '⚔️ THE ARENA IS OPEN.',
+    body: 'YOUR LEGS HAVE NOWHERE TO HIDE. AIR SQUAT ASSAULT — GO.',
+    url: '/dashboard',
+  },
+
   // ENDED phase.
   ended: {
     eyebrow: 'AIR SQUAT ASSAULT · CLOSED',

@@ -24,6 +24,8 @@ import { buildPushPayload } from '@block65/webcrypto-web-push'
 import { NOTIFICATIONS_CONFIG, getEventConfig } from '../src/config/notifications.js'
 import { CROWNS_CONFIG } from '../src/config/crowns.js'
 import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../src/config/onboarding.js'
+import { AIR_SQUAT_ASSAULT_CONFIG } from '../src/config/airSquatAssault.js'
+import { AIR_SQUAT_ASSAULT_COPY } from '../src/copy/airSquatAssaultCopy.js'
 import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
 
 // ---------------------------------------------------------------------------
@@ -942,6 +944,59 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// EVENT LAUNCH BROADCAST — one-off push to a timed event's opt-in list only
+// ---------------------------------------------------------------------------
+
+// Targets ONLY event_optins for the event (never the whole user base). Idempotent:
+// a per-recipient EVENT_LAUNCH dedupe on the event key means firing twice sends
+// each warrior exactly once. Copy is the event's own launchPush.
+async function runEventLaunchBroadcast(env) {
+  const eventKey = AIR_SQUAT_ASSAULT_CONFIG.eventKey
+  const copy = AIR_SQUAT_ASSAULT_COPY.launchPush
+  const optins = await sbSelectAll(env, `event_optins?event_key=eq.${eventKey}&select=user_id`)
+
+  let sent = 0
+  let skipped = 0
+
+  for (const row of optins) {
+    const userId = row.user_id
+
+    const prior = await sbSelect(
+      env,
+      `notification_events?recipient_user_id=eq.${userId}&type=eq.EVENT_LAUNCH&payload->>eventKey=eq.${eventKey}&select=id&limit=1`,
+    )
+
+    if (prior.length > 0) {
+      skipped += 1
+      continue
+    }
+
+    const event = await createEvent(env, {
+      recipientUserId: userId,
+      type: 'EVENT_LAUNCH',
+      actorUserId: userId,
+      actorName: '',
+      payload: { eventKey, title: copy.title, body: copy.body, url: copy.url },
+    })
+
+    if (event) {
+      sent += 1
+    } else {
+      skipped += 1
+    }
+  }
+
+  await logOutcome(env, `event_launch:${eventKey}`, 'event_launch_broadcast', {
+    eventKey,
+    optins: optins.length,
+    sent,
+    skipped,
+  })
+
+  return { eventKey, optins: optins.length, sent, skipped }
+}
+
+// ---------------------------------------------------------------------------
 // HTTP surface
 // ---------------------------------------------------------------------------
 
@@ -1077,6 +1132,39 @@ export default {
         const body = await request.json().catch(() => ({}))
         const period = body.period === 'monthly' ? 'monthly' : 'weekly'
         const result = await runCrownsSweep(env, period, { current: Boolean(body.current) })
+        return json(result)
+      } catch (error) {
+        return json({ error: String(error?.message || error) }, 500)
+      }
+    }
+
+    // Timed-event launch broadcast — one-off push to the opt-in list only.
+    // Admin-gated by the caller's own JWT (same pattern as run-crowns).
+    if (url.pathname === '/api/event/launch-broadcast' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') || ''
+
+      if (!authHeader.toLowerCase().startsWith('bearer ')) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+
+      try {
+        const adminCheck = await fetch(`${supabaseBaseUrl(env)}/rest/v1/rpc/is_current_user_admin`, {
+          method: 'POST',
+          headers: {
+            apikey: String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+            Authorization: authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        })
+
+        const isAdmin = adminCheck.ok && (await adminCheck.json()) === true
+
+        if (!isAdmin) {
+          return json({ error: 'admin only' }, 403)
+        }
+
+        const result = await runEventLaunchBroadcast(env)
         return json(result)
       } catch (error) {
         return json({ error: String(error?.message || error) }, 500)

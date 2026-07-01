@@ -22,6 +22,9 @@ export const AIR_SQUAT_ASSAULT_CONFIG = {
   name: 'AIR SQUAT ASSAULT',
   activityType: 'squats',
 
+  // Stable key for this event's opt-in list + launch-broadcast dedupe.
+  eventKey: 'air_squat_assault',
+
   // The moment the arena opens: Monday 6 July 2026, 00:00 London (BST = UTC+1),
   // so 23:00Z the night before. The countdown is computed from this vs now.
   launchAt: '2026-07-05T23:00:00Z',
