@@ -22,6 +22,9 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
+import { AirSquatBanner } from '../../components/AirSquatBanner'
+import { AirSquatArenaCard } from '../../components/AirSquatArenaCard'
+import { getSquatMilestone, isLive as isSquatEventLive } from '../../config/airSquatAssault'
 import { useFirstRun } from '../../hooks/useFirstRun'
 import { useMyRecruiter, useRecruits } from '../../hooks/useReferrals'
 import { OVERLAY_PRIORITY, useOverlaySlot } from '../../components/OverlayController'
@@ -508,6 +511,28 @@ function AuthenticatedDashboard() {
             return
           }
 
+          // AIR SQUAT ASSAULT: a crossed cumulative-squat milestone fires its
+          // own escalating takeover (LIVE only). Owns this log's reveal.
+          if (isSquatEventLive() && normalizeActivityType(activityType) === 'squats') {
+            const prevSquat = leaderboardQuery.currentUserRow?.total ?? 0
+            const milestone = getSquatMilestone(prevSquat, prevSquat + value)
+            if (milestone) {
+              const imageSrc = await dealCrownImage(session.user.id, milestone.at >= 5000 ? 'TREBLE' : 'DOUBLE_CROWN')
+              if (imageSrc) {
+                setTakeover({
+                  imageSrc,
+                  stat: `${milestone.at.toLocaleString('en-GB')}`,
+                  sub: 'SQUATS · CUMULATIVE',
+                  tagline: milestone.line,
+                  warriorName: pendingWarCard.warriorName,
+                  boardName: pendingWarCard.boardName,
+                  shareState: '',
+                })
+                return
+              }
+            }
+          }
+
           // Earned moment? Full takeover replaces the standard war card so
           // two reveals never stack. Toast-level repeats keep the war card.
           const tookOver = await maybeFireMachoTakeover({ value, pendingWarCard })
@@ -616,6 +641,9 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
+        <AirSquatArenaCard />
+        <AirSquatBanner />
+
         {ONBOARDING_CONFIG.enabled && firstRun.firstBloodPending ? (
           <FirstMissionCard
             rows={leaderboardQuery.rows}

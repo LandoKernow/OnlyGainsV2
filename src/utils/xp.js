@@ -9,6 +9,9 @@ export const XP_WEIGHTS = {
   pressups: 1,
   pullups: 4,
   km: 20,
+  // Air squats accumulate fast — low XP each so a squat sprint doesn't outrank
+  // a season of the harder lifts.
+  squats: 0.5,
 }
 
 // The season ladder. Climb is brutal by design — GOD OF WAR is a year of

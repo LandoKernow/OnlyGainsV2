@@ -38,10 +38,22 @@ const KM_TIERS = [
   { min: 0, name: 'RECRUIT' },
 ]
 
+// Air squats accumulate fastest of the rep lifts — weekly volume runs high.
+const SQUAT_TIERS = [
+  { min: 5000, name: 'IMMORTAL' },
+  { min: 2500, name: 'WARLORD' },
+  { min: 1500, name: 'GLADIATOR' },
+  { min: 750, name: 'VETERAN' },
+  { min: 300, name: 'ENFORCER' },
+  { min: 1, name: 'SOLDIER' },
+  { min: 0, name: 'RECRUIT' },
+]
+
 const TIER_LADDERS = {
   pressups: PRESSUP_TIERS,
   pullups: PULLUP_TIERS,
   km: KM_TIERS,
+  squats: SQUAT_TIERS,
 }
 
 export function getWarTier(weeklyTotal, activityType = 'pressups') {

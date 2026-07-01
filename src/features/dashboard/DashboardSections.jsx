@@ -45,6 +45,7 @@ const FEED_INTENSITY_THRESHOLDS = {
   pressups: { skull: 200, fire: 100 },
   pullups: { skull: 50, fire: 25 },
   km: { skull: 15, fire: 8 },
+  squats: { skull: 500, fire: 250 },
 }
 
 function getFeedIntensity(value, activityType) {
@@ -129,6 +130,10 @@ function getLeaderboardBody(period, activityType) {
     return 'Current war.'
   }
 
+  if (period === 'weekly' && activityType === 'squats') {
+    return 'Legs of war.'
+  }
+
   return "The table doesn't care."
 }
 
@@ -209,6 +214,14 @@ function getFightActionCopy({ state, gapToCatch, gapToDefend, activityType }) {
     }
 
     return 'Add pressure. Move the board.'
+  }
+
+  if (activityType === 'squats') {
+    if (gapToCatch != null && gapToCatch <= 50) {
+      return 'One more drop breaks them.'
+    }
+
+    return 'Legs decide this. Keep dropping.'
   }
 
   if (gapToCatch != null && gapToCatch <= 25) {
