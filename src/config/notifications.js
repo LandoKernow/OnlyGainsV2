@@ -34,6 +34,12 @@ export const NOTIFICATIONS_CONFIG = {
     // One-off timed-event launch broadcast (Air Squat Assault, etc.) to the
     // opt-in list only. High priority = push.
     EVENT_LAUNCH: { priority: 'high', category: 'milestone', cooldownMinutes: 0 },
+    // Inactivity consequence system. Warnings/fallen/wipe dedupe per cycle in
+    // the sweep itself (cooldown 0). All high = these must reach lock screens.
+    INACTIVITY_WARNING: { priority: 'high', category: 'streak', cooldownMinutes: 0 },
+    FALLEN: { priority: 'high', category: 'streak', cooldownMinutes: 0 },
+    WIPED: { priority: 'high', category: 'streak', cooldownMinutes: 0 },
+    RISEN: { priority: 'medium', category: 'streak', cooldownMinutes: 0 },
   },
 
   // CHASE_CLOSING fires when the rival behind you closes within EITHER bound.
