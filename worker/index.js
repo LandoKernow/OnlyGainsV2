@@ -27,6 +27,8 @@ import { ONBOARDING_CONFIG, getFirstBloodFloor } from '../src/config/onboarding.
 import { AIR_SQUAT_ASSAULT_CONFIG } from '../src/config/airSquatAssault.js'
 import { AIR_SQUAT_ASSAULT_COPY } from '../src/copy/airSquatAssaultCopy.js'
 import { getNotificationCopy } from '../src/copy/notificationTemplates.js'
+import { INACTIVITY_CONFIG } from '../src/config/inactivity.js'
+import { runInactivitySweep, restoreWipedUser } from './inactivity.js'
 
 // ---------------------------------------------------------------------------
 // Supabase REST (service role) helpers
@@ -419,6 +421,28 @@ async function processSubmission(env, submissionId) {
         created.push(event)
         firstBloodFired = true
       }
+    }
+  }
+
+  // RISEN — any qualifying log instantly restores a FALLEN (or wiped) warrior
+  // to the boards and resets their inactivity clock. Failure here never
+  // affects the log itself.
+  if (INACTIVITY_CONFIG.enabled && (Number(value) || 0) >= firstBloodFloor) {
+    try {
+      const stateRows = await sbSelect(env, `inactivity_state?user_id=eq.${actorId}&select=status&limit=1`)
+      const status = stateRows[0]?.status
+
+      if (status === 'fallen' || status === 'wiped') {
+        await sb(env, 'inactivity_state', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates' },
+          body: JSON.stringify([{ user_id: actorId, status: 'active', last_warned_stage: 0, cycle_key: todayKey, fallen_at: null, updated_at: new Date().toISOString() }]),
+        })
+        const event = await createEvent(env, { recipientUserId: actorId, type: 'RISEN', payload: { via: 'log' } })
+        if (event) created.push(event)
+      }
+    } catch {
+      // Inactivity tables not live / transient error — the log is unaffected.
     }
   }
 
@@ -944,6 +968,14 @@ async function runCrownsSweep(env, period, { current = false } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// INACTIVITY SWEEP CONTEXT — dependency bundle for worker/inactivity.js
+// ---------------------------------------------------------------------------
+
+function buildInactivityContext(env) {
+  return { env, sb, sbSelect, sbSelectAll, sbInsert, createEvent, logOutcome, londonDayKey, shiftDayKey }
+}
+
+// ---------------------------------------------------------------------------
 // EVENT LAUNCH BROADCAST — one-off push to a timed event's opt-in list only
 // ---------------------------------------------------------------------------
 
@@ -1087,6 +1119,14 @@ export default {
           return json(await runCrownsSweep(env, body.crowns === 'monthly' ? 'monthly' : 'weekly', { current: Boolean(body.current) }))
         }
 
+        // Inactivity sweep: { "inactivity": true, "dryRun": true } — dryRun
+        // computes + audits the full decision matrix while acting on nothing,
+        // and works even while the system is disabled (that's how it's tested
+        // and reviewed before enabling).
+        if (body.inactivity) {
+          return json(await runInactivitySweep(buildInactivityContext(env), { dryRun: body.dryRun !== false }))
+        }
+
         const event = await createEvent(env, {
           recipientUserId: body.recipientUserId,
           type: body.type || 'OVERTAKEN',
@@ -1171,6 +1211,44 @@ export default {
       }
     }
 
+    // Admin-only restore of a wrongful wipe, inside the quarantine window.
+    // Same JWT admin gate as run-crowns. Body: { "userId": "<uuid>" }.
+    if (url.pathname === '/api/admin/restore-wipe' && request.method === 'POST') {
+      const authHeader = request.headers.get('Authorization') || ''
+
+      if (!authHeader.toLowerCase().startsWith('bearer ')) {
+        return json({ error: 'unauthorized' }, 401)
+      }
+
+      try {
+        const adminCheck = await fetch(`${supabaseBaseUrl(env)}/rest/v1/rpc/is_current_user_admin`, {
+          method: 'POST',
+          headers: {
+            apikey: String(env.SUPABASE_SERVICE_ROLE_KEY || '').trim(),
+            Authorization: authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: '{}',
+        })
+
+        const isAdmin = adminCheck.ok && (await adminCheck.json()) === true
+
+        if (!isAdmin) {
+          return json({ error: 'admin only' }, 403)
+        }
+
+        const body = await request.json().catch(() => ({}))
+
+        if (!body.userId) {
+          return json({ error: 'userId required' }, 400)
+        }
+
+        return json(await restoreWipedUser(buildInactivityContext(env), body.userId))
+      } catch (error) {
+        return json({ error: String(error?.message || error) }, 500)
+      }
+    }
+
     // Anything else under /api is unknown; everything else is static assets.
     if (url.pathname.startsWith('/api/')) {
       return json({ error: 'not found' }, 404)
@@ -1192,6 +1270,13 @@ export default {
       return
     }
 
-    ctx.waitUntil(runStreakSweep(env))
+    // Evening crons: streak sweep + (when enabled) the inactivity sweep.
+    // Inactivity no-ops entirely while INACTIVITY_CONFIG.enabled is false.
+    ctx.waitUntil(
+      Promise.allSettled([
+        runStreakSweep(env),
+        runInactivitySweep(buildInactivityContext(env), { dryRun: false }),
+      ]),
+    )
   },
 }
