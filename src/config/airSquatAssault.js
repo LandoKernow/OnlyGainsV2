@@ -17,7 +17,7 @@
 
 export const AIR_SQUAT_ASSAULT_CONFIG = {
   // TEASE | LIVE | ENDED
-  phase: 'TEASE',
+  phase: 'LIVE',
 
   name: 'AIR SQUAT ASSAULT',
   activityType: 'squats',
