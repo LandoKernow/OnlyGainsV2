@@ -80,8 +80,8 @@ const TEMPLATES = {
     url: '/profile',
   }),
 
-  // Copy travels in the payload (source of truth is the event's own copy file),
-  // so the same template serves any timed-event launch broadcast.
+  // No longer sent. Kept so past launch alerts already in users' feeds still
+  // render their own copy (it travels in the payload).
   EVENT_LAUNCH: (event) => ({
     title: p(event).title || '⚔️ THE ARENA IS OPEN.',
     body: p(event).body || 'GO.',

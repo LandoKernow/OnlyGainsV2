@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import { getLondonDateParts } from '../utils/dates'
+import { isActiveActivityType } from '../utils/activityTypes'
 
 const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
@@ -156,7 +157,9 @@ export async function fetchRecentSubmissions({ circleId, limit }) {
   const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
   const profilesByUserId = await fetchProfilesByUserIds(userIds)
 
-  return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
+  return (data ?? [])
+    .filter((row) => isActiveActivityType(row.activity_type))
+    .map((row) => mapSubmission(row, profilesByUserId))
 }
 
 function isMissingBoardFeedRpc(error) {
@@ -233,6 +236,7 @@ export async function fetchBoardActivityFeed({ boardId, limit, diagnosticsUserId
   }
 
   const mappedRows = (data ?? [])
+    .filter((row) => isActiveActivityType(row.activity_type))
     .map(mapBoardActivityFeedRow)
     .sort((left, right) => {
       const leftCreatedAt = Date.parse(left.createdAt || left.activityDate || 0)

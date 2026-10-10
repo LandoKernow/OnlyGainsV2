@@ -6,7 +6,6 @@ import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatch
 import { ConscriptionWatcher } from '../components/ConscriptionWatcher'
 import { ConscriptionIntro } from '../components/ConscriptionIntro'
 import { ReferralWatcher } from '../components/ReferralWatcher'
-import { AirSquatTakeover } from '../components/AirSquatTakeover'
 import { AddToHomeScreenPrompt } from '../components/AddToHomeScreenPrompt'
 import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
 import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
@@ -59,7 +58,6 @@ export default function App() {
           <ConscriptionWatcher />
           <ReferralWatcher />
           <ConscriptionIntro />
-          <AirSquatTakeover />
           <ProfileBuildPrompt />
           <AddToHomeScreenPrompt />
           <WeeklySharePrompt />
