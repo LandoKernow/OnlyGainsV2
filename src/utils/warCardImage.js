@@ -5,6 +5,7 @@
 import { formatActivityValue } from './activity'
 import { shareOnlyGains } from './shareApp'
 import { PUBLIC_BASE_URL } from '../lib/publicUrl'
+import { BRAND_FONT_STACK, drawEffortMark, drawWordmark, ensureBrandFonts } from './brandCanvas'
 
 const W = 1080
 const H = 1920
@@ -26,7 +27,7 @@ function roundRectPath(ctx, x, y, width, height, radius) {
 }
 
 function font(weight, size) {
-  return `${weight} ${size}px "Segoe UI", system-ui, -apple-system, sans-serif`
+  return `${weight} ${size}px ${BRAND_FONT_STACK}`
 }
 
 function drawCentered(ctx, text, x, y, fillStyle, fontSpec, letterSpacing = 0) {
@@ -65,63 +66,52 @@ export async function renderWarCardImage(card) {
     throw new Error('Canvas unavailable')
   }
 
-  // Base background.
-  const base = ctx.createLinearGradient(0, 0, 0, H)
-  base.addColorStop(0, '#1c1310')
-  base.addColorStop(1, '#0a0708')
-  ctx.fillStyle = base
-  ctx.fillRect(0, 0, W, H)
+  await ensureBrandFonts()
 
-  // Orange glow from the top.
-  const glow = ctx.createRadialGradient(W / 2, -120, 120, W / 2, -120, 1000)
-  glow.addColorStop(0, 'rgba(213, 106, 44, 0.55)')
-  glow.addColorStop(1, 'rgba(213, 106, 44, 0)')
-  ctx.fillStyle = glow
+  // Obsidian base.
+  ctx.fillStyle = '#050505'
   ctx.fillRect(0, 0, W, H)
 
   // Scanlines.
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.03)'
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.025)'
   for (let y = 0; y < H; y += 6) {
     ctx.fillRect(0, y, W, 2)
   }
 
   // Border frame.
-  ctx.strokeStyle = 'rgba(213, 106, 44, 0.55)'
-  ctx.lineWidth = 4
-  roundRectPath(ctx, 24, 24, W - 48, H - 48, 48)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)'
+  ctx.lineWidth = 3
+  roundRectPath(ctx, 24, 24, W - 48, H - 48, 40)
   ctx.stroke()
 
   const pad = 96
 
   // Brand + tier row.
-  drawCentered(ctx, 'ONLY GAINS', pad + 150, 180, '#d56a2c', font(700, 34), 10)
+  await drawWordmark(ctx, pad, 160, 340, 'left')
 
   const tierText = String(card.tier || 'RECRUIT')
   ctx.font = font(800, 34)
   const tierWidth = ctx.measureText(tierText).width + 70
   const tierX = W - pad - tierWidth
-  const tierGrad = ctx.createLinearGradient(tierX, 0, tierX + tierWidth, 0)
-  tierGrad.addColorStop(0, '#d56a2c')
-  tierGrad.addColorStop(1, '#f7a15c')
-  ctx.fillStyle = tierGrad
+  ctx.fillStyle = '#ffffff'
   roundRectPath(ctx, tierX, 150, tierWidth, 56, 28)
   ctx.fill()
-  drawCentered(ctx, tierText, tierX + tierWidth / 2, 190, '#140d0a', font(800, 30), 4)
+  drawCentered(ctx, tierText, tierX + tierWidth / 2, 190, '#0e0e0e', font(800, 30), 4)
 
   // Hit block.
-  drawCentered(ctx, 'REP COUNTED. WEAKNESS DENIED.', W / 2, 620, '#bdaea2', font(600, 32), 6)
+  drawCentered(ctx, 'REP COUNTED. WEAKNESS DENIED.', W / 2, 620, '#8a8a8a', font(600, 32), 6)
 
   ctx.save()
-  ctx.shadowColor = 'rgba(213, 106, 44, 0.65)'
-  ctx.shadowBlur = 60
+  ctx.shadowColor = 'rgba(255, 255, 255, 0.2)'
+  ctx.shadowBlur = 40
   const hitText = `+${formatActivityValue(card.value, card.activityType)}`
-  drawCentered(ctx, hitText, W / 2, 820, '#fff7f1', font(800, 200))
+  drawCentered(ctx, hitText, W / 2, 820, '#ffffff', font(800, 200))
   ctx.restore()
 
-  drawCentered(ctx, String(card.warriorName || 'WARRIOR').toUpperCase(), W / 2, 920, '#f7f1eb', font(700, 48), 3)
+  drawCentered(ctx, String(card.warriorName || 'WARRIOR').toUpperCase(), W / 2, 920, '#ffffff', font(700, 48), 3)
 
   if (card.levelLabel) {
-    drawCentered(ctx, String(card.levelLabel).toUpperCase(), W / 2, 975, '#d56a2c', font(700, 32), 5)
+    drawCentered(ctx, String(card.levelLabel).toUpperCase(), W / 2, 975, '#ffffff', font(700, 32), 5)
   }
 
   let cursorY = 1030
@@ -133,13 +123,13 @@ export async function renderWarCardImage(card) {
 
   // Milestone banner.
   if (card.milestone) {
-    ctx.fillStyle = 'rgba(213, 106, 44, 0.16)'
-    ctx.strokeStyle = 'rgba(213, 106, 44, 0.5)'
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)'
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'
     ctx.lineWidth = 2
     roundRectPath(ctx, pad, cursorY, W - pad * 2, 96, 24)
     ctx.fill()
     ctx.stroke()
-    drawCentered(ctx, card.milestone, W / 2, cursorY + 60, '#ffe8d4', font(800, 32))
+    drawCentered(ctx, card.milestone, W / 2, cursorY + 60, '#ffffff', font(800, 32))
     cursorY += 150
   }
 
@@ -163,8 +153,8 @@ export async function renderWarCardImage(card) {
     roundRectPath(ctx, x, boxY, boxWidth, boxHeight, 28)
     ctx.fill()
     ctx.stroke()
-    drawCentered(ctx, stat.label, x + boxWidth / 2, boxY + 60, '#bdaea2', font(700, 28), 5)
-    drawCentered(ctx, stat.value, x + boxWidth / 2, boxY + 150, '#fff4ed', font(800, 76))
+    drawCentered(ctx, stat.label, x + boxWidth / 2, boxY + 60, '#8a8a8a', font(700, 28), 5)
+    drawCentered(ctx, stat.value, x + boxWidth / 2, boxY + 150, '#ffffff', font(800, 76))
   })
 
   cursorY = boxY + boxHeight + 120
@@ -173,6 +163,8 @@ export async function renderWarCardImage(card) {
   drawCentered(ctx, String(card.tagline || 'THE BOARD SAW IT.').toUpperCase(), W / 2, cursorY, '#ffffff', font(800, 44), 2)
 
   // Footer.
+  drawEffortMark(ctx, W / 2, H - 290, 96)
+
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
   ctx.lineWidth = 2
   ctx.beginPath()
@@ -182,12 +174,12 @@ export async function renderWarCardImage(card) {
 
   ctx.save()
   ctx.font = font(700, 30)
-  ctx.fillStyle = '#bdaea2'
+  ctx.fillStyle = '#8a8a8a'
   ctx.textBaseline = 'alphabetic'
   ctx.textAlign = 'left'
   ctx.fillText(String(card.boardName || 'GLOBAL BOARD').toUpperCase(), pad, H - 140)
   ctx.textAlign = 'right'
-  ctx.fillStyle = '#d56a2c'
+  ctx.fillStyle = '#ffffff'
   ctx.fillText('onlygains.club', W - pad, H - 140)
   ctx.restore()
 
@@ -224,7 +216,7 @@ export async function shareCardBlob(blob, { filename, text }) {
       try {
         await navigator.share({
           files: [file],
-          title: 'Only Gains',
+          title: 'ONLYGAINS',
           text,
         })
         return 'shared'
@@ -257,7 +249,7 @@ export async function shareWarCardImage(card) {
   }
 
   return shareCardBlob(blob, {
-    filename: 'only-gains-war-card.png',
-    text: `Logged. No hiding now. Only Gains: ${PUBLIC_BASE_URL}`,
+    filename: 'onlygains-war-card.png',
+    text: `Logged. No hiding now. ONLYGAINS: ${PUBLIC_BASE_URL}`,
   })
 }

@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { Card } from '../../components/Card'
+import { Wordmark } from '../../components/Brand'
 import { useToast } from '../../components/ToastProvider'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { useVaultAward } from '../../hooks/useVaultAwards'
@@ -78,7 +79,7 @@ function AwardShareContent() {
               <img className="award-share-card__image" src={getAwardImagePath(award)} alt="" />
             </div>
             <div className="award-share-card__content">
-              <p className="award-share-card__brand eyebrow">ONLY GAINS</p>
+              <div className="award-share-card__brand"><Wordmark /></div>
               <h2 className="award-share-card__title">{award.title}</h2>
               <p className="award-share-card__winner">{award.actorName || 'Unknown'}</p>
               <p className="award-share-card__summary">{formatAwardMetricLine(award)}</p>

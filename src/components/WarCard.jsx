@@ -1,5 +1,6 @@
 import { formatActivityValue } from '../utils/activity'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { Wordmark } from './Brand'
 
 // The screenshot artifact. Pops after a log. Designed to be screamed at a
 // camera roll and posted to a story — so it carries the brand + URL on it.
@@ -42,7 +43,7 @@ export function WarCard({ card, onShare, onCallout, onClose }) {
         <div className="war-card__scanlines" aria-hidden="true" />
 
         <div className="war-card__head">
-          <span className="war-card__brand">ONLY GAINS</span>
+          <span className="war-card__brand"><Wordmark /></span>
           <span className="war-card__tier">{tier}</span>
         </div>
 

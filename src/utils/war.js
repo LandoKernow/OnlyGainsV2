@@ -202,7 +202,7 @@ const CALLOUT_LINES = [
 export function buildCalloutText({ rivalName, gapLabel }) {
   const line = CALLOUT_LINES[Math.floor(Math.random() * CALLOUT_LINES.length)]
   const opener = rivalName ? `${rivalName}.` : 'You.'
-  const gap = gapLabel ? ` I'm ${gapLabel} behind you on Only Gains.` : ' I see your name above mine on Only Gains.'
+  const gap = gapLabel ? ` I'm ${gapLabel} behind you on ONLYGAINS.` : ' I see your name above mine on ONLYGAINS.'
 
   return `${opener}${gap} ${line}`
 }
@@ -213,7 +213,7 @@ export async function shareCallout({ rivalName, gapLabel }) {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Only Gains', text, url })
+      await navigator.share({ title: 'ONLYGAINS', text, url })
       return 'shared'
     } catch (error) {
       if (error?.name === 'AbortError') {

@@ -22,11 +22,11 @@ function copyText(text) {
 }
 
 export function buildOnlyGainsSharePayload() {
-  const text = 'Know someone who can raise the bar?\n\nOnly Gains:'
+  const text = 'Know someone who can raise the bar?\n\nONLYGAINS:'
   const url = LIVE_SHARE_ORIGIN
 
   return {
-    title: 'Only Gains',
+    title: 'ONLYGAINS',
     text,
     url,
     clipboardText: `${text}\n${url}`,

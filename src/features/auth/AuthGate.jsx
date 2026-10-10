@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Card } from '../../components/Card'
+import { BrandLockup } from '../../components/Brand'
 import { useAuth } from './AuthProvider'
 
 export function AuthGate({ children }) {
@@ -175,7 +176,8 @@ export function AuthGate({ children }) {
 
   return (
     <div className="auth-gate">
-      <img className="auth-brand-logo" src="/logo-auth.png" alt="Only Gains logo" />
+      <BrandLockup className="auth-brand-logo" />
+      <p className="auth-brand-disciplines">RUN · LIFT · HYROX · REPEAT</p>
       <Card title={title} body={body}>
         <form className="stack" onSubmit={handleSubmit}>
         <label className="stack">

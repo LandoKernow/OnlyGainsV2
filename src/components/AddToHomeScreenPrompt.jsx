@@ -200,14 +200,14 @@ export function AddToHomeScreenPrompt() {
           <img
             className="prompt-modal__image"
             src="/images/macho-toasts/vault-rocky.webp"
-            alt="Only Gains home screen guidance"
+            alt="ONLYGAINS home screen guidance"
           />
         </div>
         <div className="stack prompt-modal__content">
           <div>
-            <p className="eyebrow prompt-modal__eyebrow">ONLY GAINS</p>
+            <p className="eyebrow prompt-modal__eyebrow">ONLYGAINS</p>
             <h2 id="add-to-home-screen-title" className="prompt-modal__title">
-              ADD ONLY GAINS
+              ADD ONLYGAINS
               <br />
               TO YOUR HOME SCREEN
             </h2>

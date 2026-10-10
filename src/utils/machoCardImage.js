@@ -4,12 +4,13 @@
 
 import { shareCardBlob } from './warCardImage'
 import { PUBLIC_BASE_URL } from '../lib/publicUrl'
+import { BRAND_FONT_STACK, drawEffortMark, drawWordmark, ensureBrandFonts } from './brandCanvas'
 
 const W = 1080
 const H = 1920
 
 function font(weight, size) {
-  return `${weight} ${size}px "Segoe UI", system-ui, -apple-system, sans-serif`
+  return `${weight} ${size}px ${BRAND_FONT_STACK}`
 }
 
 function loadImage(src) {
@@ -65,13 +66,18 @@ export async function renderMachoCardImage(card) {
     throw new Error('Canvas unavailable')
   }
 
-  // Photo background (falls back to flat dark if the image fails).
-  ctx.fillStyle = '#0a0708'
+  await ensureBrandFonts()
+
+  // Photo background (falls back to flat obsidian if the image fails).
+  ctx.fillStyle = '#050505'
   ctx.fillRect(0, 0, W, H)
 
   try {
     const image = await loadImage(card.imageSrc)
+    // Mono brand. Browsers without canvas filter support draw the photo as-is.
+    ctx.filter = 'grayscale(1) contrast(1.06)'
     drawCover(ctx, image)
+    ctx.filter = 'none'
   } catch {
     // Flat dark background already painted.
   }
@@ -79,23 +85,24 @@ export async function renderMachoCardImage(card) {
   // Legibility gradients: heavy at the bottom (where the stat lives),
   // light at the top (brand).
   const top = ctx.createLinearGradient(0, 0, 0, 360)
-  top.addColorStop(0, 'rgba(8, 5, 4, 0.85)')
-  top.addColorStop(1, 'rgba(8, 5, 4, 0)')
+  top.addColorStop(0, 'rgba(6, 6, 6, 0.85)')
+  top.addColorStop(1, 'rgba(6, 6, 6, 0)')
   ctx.fillStyle = top
   ctx.fillRect(0, 0, W, 360)
 
   const bottom = ctx.createLinearGradient(0, H - 980, 0, H)
-  bottom.addColorStop(0, 'rgba(8, 5, 4, 0)')
-  bottom.addColorStop(0.45, 'rgba(8, 5, 4, 0.78)')
-  bottom.addColorStop(1, 'rgba(8, 5, 4, 0.95)')
+  bottom.addColorStop(0, 'rgba(6, 6, 6, 0)')
+  bottom.addColorStop(0.45, 'rgba(6, 6, 6, 0.78)')
+  bottom.addColorStop(1, 'rgba(6, 6, 6, 0.95)')
   ctx.fillStyle = bottom
   ctx.fillRect(0, H - 980, W, 980)
 
   // Brand.
-  drawCentered(ctx, 'ONLY GAINS', 150, '#d56a2c', font(800, 44), 12)
+  await drawWordmark(ctx, W / 2, 110, 440)
+  drawEffortMark(ctx, W / 2, 222, 64)
 
   // Crown cards are visually distinct: a tier band + a three-discipline stat
-  // row, instead of one giant number. Treble gets the gold treatment.
+  // row, instead of one giant number.
   if (card.crown) {
     return finishCrownCard(ctx, canvas, card)
   }
@@ -106,13 +113,13 @@ export async function renderMachoCardImage(card) {
   ctx.save()
   ctx.shadowColor = 'rgba(0, 0, 0, 0.9)'
   ctx.shadowBlur = 40
-  drawCentered(ctx, String(card.stat ?? ''), cursorY, '#fff7f1', font(800, 190))
+  drawCentered(ctx, String(card.stat ?? ''), cursorY, '#ffffff', font(800, 190))
   ctx.restore()
 
   cursorY += 90
 
   if (card.sub) {
-    drawCentered(ctx, String(card.sub).toUpperCase(), cursorY, '#f0c9a8', font(700, 42), 6)
+    drawCentered(ctx, String(card.sub).toUpperCase(), cursorY, '#cfcfcf', font(700, 42), 6)
     cursorY += 110
   }
 
@@ -122,7 +129,7 @@ export async function renderMachoCardImage(card) {
   }
 
   if (card.warriorName) {
-    drawCentered(ctx, String(card.warriorName).toUpperCase(), cursorY, '#bdaea2', font(700, 38), 4)
+    drawCentered(ctx, String(card.warriorName).toUpperCase(), cursorY, '#8a8a8a', font(700, 38), 4)
   }
 
   // Footer.
@@ -130,10 +137,10 @@ export async function renderMachoCardImage(card) {
   ctx.font = font(700, 30)
   ctx.textBaseline = 'alphabetic'
   ctx.textAlign = 'left'
-  ctx.fillStyle = '#bdaea2'
+  ctx.fillStyle = '#8a8a8a'
   ctx.fillText(String(card.boardName || 'GLOBAL BOARD').toUpperCase(), 96, H - 110)
   ctx.textAlign = 'right'
-  ctx.fillStyle = '#d56a2c'
+  ctx.fillStyle = '#ffffff'
   ctx.fillText('onlygains.club', W - 96, H - 110)
   ctx.restore()
 
@@ -148,19 +155,18 @@ export async function renderMachoCardImage(card) {
   })
 }
 
-// Distinct crown war card: tier band, three-discipline stat row, treble gold.
+// Distinct crown war card: tier band, three-discipline stat row.
 // card.crown = { tier, isTreble, stats: { pressups, pullups, km }, period }
 function finishCrownCard(ctx, canvas, card) {
   const crown = card.crown
-  const gold = crown.isTreble
-  const accent = gold ? '#ffd54a' : '#f0a36e'
+  const accent = '#ffffff'
   const crownGlyphs = crown.isTreble ? '👑 👑 👑' : crown.tier === 'DOUBLE_CROWN' ? '👑 👑' : '👑'
   const tierLabel = crown.isTreble ? 'TREBLE CROWN' : crown.tier === 'DOUBLE_CROWN' ? 'DOUBLE CROWN' : 'CROWN'
 
   // Tier band.
   drawCentered(ctx, crownGlyphs, H - 760, accent, font(800, 110))
   drawCentered(ctx, tierLabel, H - 630, accent, font(800, 96), 4)
-  drawCentered(ctx, `${(crown.period === 'monthly' ? 'MONTH' : 'WEEK')} ${crown.isTreble ? '· ALL THREE THRONES' : 'CHAMPION'}`, H - 560, '#f0c9a8', font(700, 36), 6)
+  drawCentered(ctx, `${(crown.period === 'monthly' ? 'MONTH' : 'WEEK')} ${crown.isTreble ? '· ALL THREE THRONES' : 'CHAMPION'}`, H - 560, '#cfcfcf', font(700, 36), 6)
 
   // Three-discipline stat row.
   const cols = [
@@ -176,11 +182,11 @@ function finishCrownCard(ctx, canvas, card) {
     const held = col.value != null
     ctx.save()
     ctx.textAlign = 'center'
-    ctx.fillStyle = held ? '#fff7f1' : '#564c45'
+    ctx.fillStyle = held ? '#ffffff' : '#3d3d3d'
     ctx.font = font(800, 96)
     const display = !held ? '—' : col.label === 'DIST' ? String(Number(col.value).toFixed(col.value % 1 ? 1 : 0)) : String(Math.round(col.value))
     ctx.fillText(display, cx, rowY)
-    ctx.fillStyle = held ? accent : '#564c45'
+    ctx.fillStyle = held ? accent : '#3d3d3d'
     ctx.font = font(700, 34)
     ctx.fillText(col.label, cx, rowY + 56)
     ctx.restore()
@@ -193,10 +199,10 @@ function finishCrownCard(ctx, canvas, card) {
   ctx.font = font(700, 30)
   ctx.textBaseline = 'alphabetic'
   ctx.textAlign = 'left'
-  ctx.fillStyle = '#bdaea2'
+  ctx.fillStyle = '#8a8a8a'
   ctx.fillText(String(card.boardName || 'GLOBAL BOARD').toUpperCase(), 96, H - 110)
   ctx.textAlign = 'right'
-  ctx.fillStyle = '#d56a2c'
+  ctx.fillStyle = '#ffffff'
   ctx.fillText('onlygains.club', W - 96, H - 110)
   ctx.restore()
 
@@ -222,7 +228,7 @@ export async function shareMachoCardImage(card) {
   }
 
   return shareCardBlob(blob, {
-    filename: 'only-gains-war-card.png',
-    text: `${card.tagline || 'EARNED.'} Only Gains: ${PUBLIC_BASE_URL}`,
+    filename: 'onlygains-war-card.png',
+    text: `${card.tagline || 'EARNED.'} ONLYGAINS: ${PUBLIC_BASE_URL}`,
   })
 }

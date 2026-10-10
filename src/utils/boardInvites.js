@@ -46,10 +46,10 @@ export function buildBoardInviteQrUrl(inviteCode) {
 export function buildBoardInviteSharePayload(board) {
   const inviteUrl = buildBoardInviteUrl(board?.inviteCode)
   const boardName = getBoardDisplayName(board)
-  const text = `This board is live.\n\nJoin ${boardName} on Only Gains:`
+  const text = `This board is live.\n\nJoin ${boardName} on ONLYGAINS:`
 
   return {
-    title: 'Only Gains Board',
+    title: 'ONLYGAINS Board',
     text,
     url: inviteUrl,
     clipboardText: `${text}\n${inviteUrl}`,

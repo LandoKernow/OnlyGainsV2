@@ -3,7 +3,7 @@
 // the single source of truth.
 export const TELEGRAM_URL = 'https://t.me/+WQbCN0cj7yJmMWQ8'
 export const IS_TELEGRAM_CONFIGURED = true
-export const REPORT_ISSUE_TEMPLATE = 'Only Gains 2.0 feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No'
+export const REPORT_ISSUE_TEMPLATE = 'ONLYGAINS feedback:\nDevice:\nBrowser:\nWhat happened:\nScreenshot attached? Yes/No'
 export const OPEN_ADD_TO_HOME_SCREEN_EVENT = 'only_gains_open_add_to_home_screen'
 
 export async function copyText(text) {

@@ -132,7 +132,7 @@ export function ProfileBuildPrompt() {
         </div>
         <div className="stack prompt-modal__content">
           <div>
-            <p className="eyebrow prompt-modal__eyebrow">ONLY GAINS</p>
+            <p className="eyebrow prompt-modal__eyebrow">ONLYGAINS</p>
             <h2 id="profile-build-prompt-title" className="prompt-modal__title">
               BUILD YOUR
               <br />

@@ -62,7 +62,7 @@ export async function shareReferral(referralCode) {
 
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Only Gains', text, url })
+      await navigator.share({ title: 'ONLYGAINS', text, url })
       return 'shared'
     } catch (error) {
       // Cancelled or failed sheet — the link is already on the clipboard, so

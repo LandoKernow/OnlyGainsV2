@@ -82,11 +82,11 @@ function BoardInviteContent() {
       ) : (
         <div className="board-stage">
           <article className="board-stage__card">
-            <p className="eyebrow">ONLY GAINS</p>
+            <p className="eyebrow">ONLYGAINS</p>
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
             <p className="board-stage__name">{getBoardDisplayName(board)}</p>
             <p className="board-stage__meta">{getBoardDisplayTypeLabel(board)}</p>
-            {isGlobalBoard(board) ? <p className="board-stage__global-copy">Everyone on Only Gains.</p> : null}
+            {isGlobalBoard(board) ? <p className="board-stage__global-copy">Everyone on ONLYGAINS.</p> : null}
             {!isGlobalBoard(board) && board.memberCount > 0 ? <p className="board-stage__member-count">{board.memberCount} on this board</p> : null}
             <p className="board-stage__copy">Scan. Join. Get ranked.</p>
             <p className="board-stage__microcopy">No hiding now.</p>
