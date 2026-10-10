@@ -1,8 +1,7 @@
 import { supabase } from '../lib/supabase'
-import { getLondonDateParts } from '../utils/dates'
-import { isActiveActivityType } from '../utils/activityTypes'
-
-const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
+import { getLondonDateParts, getSubmissionPeriodKeys } from '../utils/dates'
+import { getActivityUnit, isActiveActivityType } from '../utils/activityTypes'
+import { isBoardLiveDiagnosticsUser } from '../lib/diagnostics'
 
 function logSubmissionDebug(step, details) {
   if (!import.meta.env.DEV) {
@@ -12,16 +11,8 @@ function logSubmissionDebug(step, details) {
   console.debug('[Only Gains Logging]', step, details)
 }
 
-function canLogBoardLiveDiagnostics(userId) {
-  if (import.meta.env.DEV) {
-    return true
-  }
-
-  return String(userId || '').trim() === BOARD_LIVE_DIAGNOSTICS_USER_ID
-}
-
 function logBoardLiveDebug(step, details, userId) {
-  if (!canLogBoardLiveDiagnostics(userId)) {
+  if (!isBoardLiveDiagnosticsUser(userId)) {
     return
   }
 
@@ -75,21 +66,37 @@ function mapBoardLeaderboardRow(row) {
   }
 }
 
+// Each id is a 36-char UUID in the request URL; batching keeps big boards
+// well under URL length limits instead of failing the whole name lookup.
+const PROFILE_LOOKUP_BATCH_SIZE = 100
+
 async function fetchProfilesByUserIds(userIds) {
   if (userIds.length === 0) {
     return {}
   }
 
-  const { data: profiles, error: profilesError } = await supabase
-    .from('profiles')
-    .select('id, name')
-    .in('id', userIds)
+  const batches = []
 
-  if (profilesError) {
-    return {}
+  for (let index = 0; index < userIds.length; index += PROFILE_LOOKUP_BATCH_SIZE) {
+    batches.push(userIds.slice(index, index + PROFILE_LOOKUP_BATCH_SIZE))
   }
 
-  return Object.fromEntries((profiles ?? []).map((profile) => [profile.id, profile]))
+  const results = await Promise.all(
+    batches.map((batch) => supabase.from('profiles').select('id, name').in('id', batch)),
+  )
+  const profilesByUserId = {}
+
+  for (const { data: profiles, error: profilesError } of results) {
+    if (profilesError) {
+      continue
+    }
+
+    for (const profile of profiles ?? []) {
+      profilesByUserId[profile.id] = profile
+    }
+  }
+
+  return profilesByUserId
 }
 
 export async function createSubmission(payload) {
@@ -381,27 +388,115 @@ export async function debugSubmissionPropagation({
   }
 }
 
+// PostgREST silently caps every response (Supabase default: 1000 rows). A
+// busy board passes that well inside a year, and the capped read used to drop
+// rows without a word: yearly totals, XP levels, streaks and best-day records
+// all undercounted. Same fix the Worker got in PR #8 — read the exact count,
+// then fetch every remaining page in parallel.
+const SUBMISSION_PAGE_SIZE = 1000
+
+// buildQuery(withCount) must return a fully filtered submissions select,
+// ordered oldest-first with an id tiebreak, so a log landing mid-read appends
+// to the end instead of shifting rows between pages. Rows must carry `id`.
+export async function fetchAllSubmissionPages(buildQuery) {
+  const firstPage = await buildQuery(true).range(0, SUBMISSION_PAGE_SIZE - 1)
+
+  if (firstPage.error) {
+    throw firstPage.error
+  }
+
+  const rows = [...(firstPage.data ?? [])]
+  const total = Number.isFinite(firstPage.count) ? firstPage.count : rows.length
+  // The server cap may be lower than the page we asked for — step by what it
+  // actually returned.
+  const step = rows.length
+
+  if (step > 0 && total > rows.length) {
+    const offsets = []
+
+    for (let offset = rows.length; offset < total; offset += step) {
+      offsets.push(offset)
+    }
+
+    const pages = await Promise.all(offsets.map((offset) => buildQuery(false).range(offset, offset + step - 1)))
+
+    for (const page of pages) {
+      if (page.error) {
+        throw page.error
+      }
+
+      rows.push(...(page.data ?? []))
+    }
+  }
+
+  const seenIds = new Set()
+
+  return rows.filter((row) => {
+    if (seenIds.has(row.id)) {
+      return false
+    }
+
+    seenIds.add(row.id)
+    return true
+  })
+}
+
+// Only what the derivations read. circle_id / activity_type are the query
+// filters and get filled back in below, so the row shape is unchanged.
+const LEADERBOARD_SUBMISSION_COLUMNS = 'id, user_id, value, source, activity_date, created_at'
+
 export async function fetchLeaderboardSubmissions({ circleId, year, activityType = 'pressups' }) {
   if (!supabase) {
     throw new Error('Supabase client is not configured.')
   }
 
-  const { data, error } = await supabase
-    .from('submissions')
-    .select('id, circle_id, user_id, activity_type, value, unit, source, activity_date, created_at, note, year')
-    .eq('circle_id', circleId)
-    .eq('activity_type', activityType)
-    .eq('year', year)
-    .order('created_at', { ascending: false })
+  const rows = await fetchAllSubmissionPages((withCount) =>
+    supabase
+      .from('submissions')
+      .select(LEADERBOARD_SUBMISSION_COLUMNS, withCount ? { count: 'exact' } : undefined)
+      .eq('circle_id', circleId)
+      .eq('activity_type', activityType)
+      .eq('year', year)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true }),
+  )
+  const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))]
+  const profilesByUserId = await fetchProfilesByUserIds(userIds)
+  const unit = getActivityUnit(activityType)
 
-  if (error) {
-    throw error
+  // Newest first — the order every consumer has always received.
+  return rows
+    .reverse()
+    .map((row) => mapSubmission({ ...row, circle_id: circleId, activity_type: activityType, unit }, profilesByUserId))
+}
+
+// The user's own training days this year across EVERY board and discipline —
+// the same scope the Worker's STREAK_AT_RISK sweep reads. Returns London day
+// keys (YYYY-MM-DD), oldest first, de-duplicated.
+export async function fetchOwnTrainingDayKeys({ userId, year }) {
+  if (!supabase) {
+    throw new Error('Supabase client is not configured.')
   }
 
-  const userIds = [...new Set((data ?? []).map((row) => row.user_id).filter(Boolean))]
-  const profilesByUserId = await fetchProfilesByUserIds(userIds)
+  const rows = await fetchAllSubmissionPages((withCount) =>
+    supabase
+      .from('submissions')
+      .select('id, activity_date', withCount ? { count: 'exact' } : undefined)
+      .eq('user_id', userId)
+      .eq('year', year)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true }),
+  )
 
-  return (data ?? []).map((row) => mapSubmission(row, profilesByUserId))
+  const dayKeys = new Set()
+
+  for (const row of rows) {
+    if (row.activity_date) {
+      dayKeys.add(getSubmissionPeriodKeys(row.activity_date).todayKey)
+    }
+  }
+
+  return [...dayKeys]
 }
 
 export async function fetchPressupLeaderboardSubmissions({ circleId, year }) {

@@ -14,11 +14,10 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
-import { useWarriorXp } from '../../hooks/useWarriorXp'
+import { useWarriorSeason } from '../../hooks/useWarriorSeason'
 import { useMyReferralCode, useRecruits } from '../../hooks/useReferrals'
 import { REFERRALS_CONFIG } from '../../config/referrals'
 import { buildReferralUrl, shareReferral } from '../../utils/referralCodes'
-import { calculateStreak } from '../../utils/war'
 import { getBoardCreateErrorCopy, getBoardJoinErrorCopy, getBoardLeaveErrorCopy, useCreateBoard, useJoinBoard, useLeaveBoard } from '../../hooks/useBoards'
 import { formatActivityGap } from '../../utils/activity'
 import { getRowStatus, getStatusTone } from '../../utils/status'
@@ -61,7 +60,8 @@ function ProfileSummary() {
   const recruits = useRecruits()
   const referralCode = useMyReferralCode()
   const { showToast } = useToast()
-  const warriorLevel = useWarriorXp({ circleId, userId: session?.user?.id })
+  // Same hybrid season record as the dashboard hero: XP level + any-discipline streak.
+  const { level: warriorLevel, streak } = useWarriorSeason({ circleId, userId: session?.user?.id })
   const profileYearSetup = useProfileYearSetup(2026)
 
   async function handleRecruit() {
@@ -97,7 +97,6 @@ function ProfileSummary() {
   const currentRow = leaderboardQuery.currentUserRow
   const statusLabel = currentRow ? getRowStatus(currentRow, leaderboardQuery.rows, 'pressups') : 'QUIET'
   const rivalRow = chase.rowAbove || chase.rowBelow
-  const streak = calculateStreak(leaderboardQuery.data ?? [], session?.user?.id)
   const recordCount = profileYearSetup.recordEntries.length
   const profileYearState = !profileYearSetup.profileYear
     ? 'NOT STARTED'

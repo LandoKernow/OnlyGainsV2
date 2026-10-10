@@ -1,14 +1,6 @@
 import { Suspense, lazy } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './layout/AppShell'
-import { AwardCelebrationWatcher } from '../components/AwardCelebrationWatcher'
-import { PendingBoardInviteWatcher } from '../components/PendingBoardInviteWatcher'
-import { ConscriptionWatcher } from '../components/ConscriptionWatcher'
-import { ConscriptionIntro } from '../components/ConscriptionIntro'
-import { ReferralWatcher } from '../components/ReferralWatcher'
-import { AddToHomeScreenPrompt } from '../components/AddToHomeScreenPrompt'
-import { ProfileBuildPrompt } from '../components/ProfileBuildPrompt'
-import { WeeklySharePrompt } from '../components/WeeklySharePrompt'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { ScreenFallback } from '../components/ScreenFallback'
 
@@ -28,11 +20,17 @@ const VaultScreen = lazy(() => import('../screens/vault/VaultScreen'))
 const ResetPasswordScreen = lazy(() => import('../screens/reset/ResetPasswordScreen'))
 const AlertsScreen = lazy(() => import('../screens/alerts/AlertsScreen'))
 const ReferralLandingScreen = lazy(() => import('../screens/referral/ReferralLandingScreen'))
+const DeferredOverlays = lazy(() => import('./DeferredOverlays'))
 
 export default function App() {
+  const location = useLocation()
+
   return (
     <AppShell>
-      <ErrorBoundary fallback={<ScreenFallback title="Screen offline" body="The shell is still alive. Pick another route." />}>
+      <ErrorBoundary
+        resetKey={location.pathname}
+        fallback={<ScreenFallback title="Screen offline" body="The shell is still alive. Pick another route." />}
+      >
         <Suspense fallback={<ScreenFallback title="Loading" body="Board booting up." />}>
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -53,14 +51,14 @@ export default function App() {
             <Route path="/r/:refCode" element={<ReferralLandingScreen />} />
             <Route path="/reset-password" element={<ResetPasswordScreen />} />
           </Routes>
-          <AwardCelebrationWatcher />
-          <PendingBoardInviteWatcher />
-          <ConscriptionWatcher />
-          <ReferralWatcher />
-          <ConscriptionIntro />
-          <ProfileBuildPrompt />
-          <AddToHomeScreenPrompt />
-          <WeeklySharePrompt />
+        </Suspense>
+      </ErrorBoundary>
+      {/* Own boundary + null fallback: while this chunk loads, the screen
+          above keeps rendering instead of flipping to "Loading". A crash in a
+          prompt never takes the board down with it. */}
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={null}>
+          <DeferredOverlays />
         </Suspense>
       </ErrorBoundary>
     </AppShell>

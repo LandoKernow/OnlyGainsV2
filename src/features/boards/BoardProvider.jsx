@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { appEnv } from '../../lib/env'
 import { useAuth } from '../auth/AuthProvider'
 import { useMyBoards } from '../../hooks/useBoards'
@@ -38,7 +38,11 @@ function readStoredBoardId(userId) {
     return ''
   }
 
-  return window.localStorage.getItem(getStorageKey(userId)) || ''
+  try {
+    return window.localStorage.getItem(getStorageKey(userId)) || ''
+  } catch {
+    return ''
+  }
 }
 
 function writeStoredBoardId(userId, boardId) {
@@ -48,12 +52,18 @@ function writeStoredBoardId(userId, boardId) {
 
   const key = getStorageKey(userId)
 
-  if (!boardId) {
-    window.localStorage.removeItem(key)
-    return
-  }
+  // Restrictive storage (private mode, locked-down webviews) must never break
+  // a board switch — the choice just won't survive a reload.
+  try {
+    if (!boardId) {
+      window.localStorage.removeItem(key)
+      return
+    }
 
-  window.localStorage.setItem(key, boardId)
+    window.localStorage.setItem(key, boardId)
+  } catch {
+    // Ignore.
+  }
 }
 
 export function BoardProvider({ children }) {
@@ -105,22 +115,33 @@ export function BoardProvider({ children }) {
     setActiveBoardIdState(boards[0]?.id || '')
   }, [boards, session?.user?.id])
 
-  function setActiveBoardId(nextBoardId) {
-    const normalizedBoardId = String(nextBoardId || '').trim()
-    setActiveBoardIdState(normalizedBoardId)
-    writeStoredBoardId(session?.user?.id, normalizedBoardId)
-  }
+  const userId = session?.user?.id
 
-  function resolveFallbackBoardId(excludedBoardId = '') {
-    const normalizedExcludedBoardId = String(excludedBoardId || '').trim()
-    const nextBoards = boards.filter((board) => board.id !== normalizedExcludedBoardId)
+  // Stable callbacks: the context value below only changes when the boards or
+  // the active board actually change, so every useBoard() consumer (the whole
+  // app) isn't re-rendered on unrelated provider renders.
+  const setActiveBoardId = useCallback(
+    (nextBoardId) => {
+      const normalizedBoardId = String(nextBoardId || '').trim()
+      setActiveBoardIdState(normalizedBoardId)
+      writeStoredBoardId(userId, normalizedBoardId)
+    },
+    [userId],
+  )
 
-    if (GLOBAL_BOARD_ID && nextBoards.some((board) => board.id === GLOBAL_BOARD_ID)) {
-      return GLOBAL_BOARD_ID
-    }
+  const resolveFallbackBoardId = useCallback(
+    (excludedBoardId = '') => {
+      const normalizedExcludedBoardId = String(excludedBoardId || '').trim()
+      const nextBoards = boards.filter((board) => board.id !== normalizedExcludedBoardId)
 
-    return nextBoards[0]?.id || fallbackBoard?.id || appEnv.defaultCircleId || ''
-  }
+      if (GLOBAL_BOARD_ID && nextBoards.some((board) => board.id === GLOBAL_BOARD_ID)) {
+        return GLOBAL_BOARD_ID
+      }
+
+      return nextBoards[0]?.id || fallbackBoard?.id || appEnv.defaultCircleId || ''
+    },
+    [boards, fallbackBoard],
+  )
 
   const activeBoard =
     boards.find((board) => board.id === activeBoardId) ||
@@ -141,7 +162,15 @@ export function BoardProvider({ children }) {
       timezone: 'Europe/London',
       appName: appEnv.appName,
     }),
-    [activeBoard, boards, myBoardsQuery.error, myBoardsQuery.featureReady, myBoardsQuery.isLoading, resolveFallbackBoardId],
+    [
+      activeBoard,
+      boards,
+      myBoardsQuery.error,
+      myBoardsQuery.featureReady,
+      myBoardsQuery.isLoading,
+      resolveFallbackBoardId,
+      setActiveBoardId,
+    ],
   )
 
   return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>

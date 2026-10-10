@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchLeaderboardSubmissions } from '../api/submissions'
 import { useAuth } from '../features/auth/AuthProvider'
 import { useBoardMeta } from './useBoardMeta'
+import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { useProfileYearSetup } from './useProfileYearSetup'
 import { getLondonDateParts } from '../utils/dates'
 import { aggregateEligibleSubmissionsByDay, aggregateEligibleSubmissionsByWeek } from '../utils/recordAggregation'
@@ -62,21 +63,22 @@ export function usePersonalRecords(year = 2026) {
   const isEnabled = status === 'authenticated' && Boolean(userId) && Boolean(circleId)
 
   const pressupsQuery = useQuery({
-    queryKey: ['personal-records', 'submissions', circleId, currentYear, 'pressups'],
+    // Same key + fetch as the board leaderboards: a cache hit after the dashboard.
+    queryKey: getActivityLeaderboardQueryKey(circleId, currentYear, 'pressups'),
     queryFn: () => fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType: 'pressups' }),
     enabled: isEnabled,
     staleTime: 30_000,
   })
 
   const pullupsQuery = useQuery({
-    queryKey: ['personal-records', 'submissions', circleId, currentYear, 'pullups'],
+    queryKey: getActivityLeaderboardQueryKey(circleId, currentYear, 'pullups'),
     queryFn: () => fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType: 'pullups' }),
     enabled: isEnabled,
     staleTime: 30_000,
   })
 
   const kmQuery = useQuery({
-    queryKey: ['personal-records', 'submissions', circleId, currentYear, 'km'],
+    queryKey: getActivityLeaderboardQueryKey(circleId, currentYear, 'km'),
     queryFn: () => fetchLeaderboardSubmissions({ circleId, year: currentYear, activityType: 'km' }),
     enabled: isEnabled,
     staleTime: 30_000,

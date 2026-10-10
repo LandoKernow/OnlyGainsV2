@@ -6,7 +6,6 @@ import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useChase } from '../../hooks/useChase'
 import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { ACTIVITY_META, ACTIVITY_TYPES } from '../../utils/activityTypes'
- 
 
 function ChaseContent() {
   const [period, setPeriod] = useState('weekly')
@@ -30,6 +29,7 @@ function ChaseContent() {
             key={type}
             className={activityType === type ? 'pill-button pill-button--active' : 'pill-button'}
             type="button"
+            aria-pressed={activityType === type}
             onClick={() => setActivityType(type)}
           >
             {ACTIVITY_META[type].label}

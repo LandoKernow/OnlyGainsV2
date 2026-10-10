@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   fetchBoardLeaderboard,
@@ -6,10 +7,36 @@ import {
   isUnsupportedActivityTypeRpcError,
 } from '../api/submissions'
 import { calculateLeaderboard } from '../logic/leaderboard/calculateLeaderboard'
-import { getLondonDateParts } from '../utils/dates'
+import { getLondonDateKey, getLondonDateParts } from '../utils/dates'
+
+const EMPTY_ROWS = []
 
 export function getActivityLeaderboardQueryKey(circleId, year, activityType) {
   return ['leaderboard', activityType, circleId, year]
+}
+
+// Canonical RPC rows arrive pre-ranked; the legacy fallback returns raw
+// submissions that still need aggregating. Cache shape is a plain array in
+// both cases (the contract) — distinguish by row shape, not by query state.
+function deriveLeaderboard(rawRows, { source, period, currentUserId }) {
+  const hasPreRankedRows = rawRows.length === 0 || Number.isFinite(rawRows[0]?.rank)
+
+  if (source === 'canonical' && hasPreRankedRows) {
+    const currentRow = rawRows.find((row) => row.userId === currentUserId)
+
+    return {
+      rows: rawRows.map((row) => ({
+        ...row,
+        isCurrentUser: row.userId === currentUserId,
+      })),
+      currentUserRow: currentRow ? { ...currentRow, isCurrentUser: true } : null,
+    }
+  }
+
+  return calculateLeaderboard(rawRows, {
+    period,
+    currentUserId,
+  })
 }
 
 export function useActivityLeaderboard({
@@ -54,26 +81,17 @@ export function useActivityLeaderboard({
     staleTime: 15_000,
   })
 
-  const rawRows = query.data ?? []
-  // Canonical RPC rows arrive pre-ranked; the legacy fallback returns raw
-  // submissions that still need aggregating. Cache shape is a plain array in
-  // both cases (the contract) — distinguish by row shape, not by query state.
-  const hasPreRankedRows = rawRows.length === 0 || Number.isFinite(rawRows[0]?.rank)
-  const calculated = source === 'canonical' && hasPreRankedRows
-    ? {
-        rows: rawRows.map((row) => ({
-          ...row,
-          isCurrentUser: row.userId === currentUserId,
-        })),
-        currentUserRow: (() => {
-          const currentRow = rawRows.find((row) => row.userId === currentUserId)
-          return currentRow ? { ...currentRow, isCurrentUser: true } : null
-        })(),
-      }
-    : calculateLeaderboard(rawRows, {
-        period,
-        currentUserId,
-      })
+  const rawRows = query.data ?? EMPTY_ROWS
+  // Re-rank at London midnight even when no data changed ("today" totals and
+  // the week boundary move with the clock).
+  const todayKey = getLondonDateKey()
+  // Ranking walks every submission of the year; only redo it when the rows,
+  // the view or the day actually changes — not on every keystroke or toast.
+  const calculated = useMemo(
+    () => deriveLeaderboard(rawRows, { source, period, currentUserId }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rawRows, source, period, currentUserId, todayKey],
+  )
 
   return {
     ...query,

@@ -68,7 +68,37 @@ export function getLondonPeriodKeys(date = new Date()) {
   }
 }
 
+// Every leaderboard, streak and record derivation keys each submission row by
+// its London day/week/month — thousands of Intl calls per render on a busy
+// board. activity_date strings repeat heavily (one per day), so memoise them.
+const submissionPeriodKeyCache = new Map()
+const SUBMISSION_PERIOD_KEY_CACHE_LIMIT = 5000
+
 export function getSubmissionPeriodKeys(activityDate) {
+  const cacheKey = typeof activityDate === 'string' ? activityDate : null
+
+  if (cacheKey !== null) {
+    const cached = submissionPeriodKeyCache.get(cacheKey)
+
+    if (cached) {
+      return cached
+    }
+  }
+
+  const keys = computeSubmissionPeriodKeys(activityDate)
+
+  if (cacheKey !== null) {
+    if (submissionPeriodKeyCache.size >= SUBMISSION_PERIOD_KEY_CACHE_LIMIT) {
+      submissionPeriodKeyCache.clear()
+    }
+
+    submissionPeriodKeyCache.set(cacheKey, keys)
+  }
+
+  return keys
+}
+
+function computeSubmissionPeriodKeys(activityDate) {
   const parts = getLondonDateParts(new Date(activityDate))
   const date = createUtcDateFromParts(parts)
   const dayOfWeek = date.getUTCDay()
@@ -76,7 +106,8 @@ export function getSubmissionPeriodKeys(activityDate) {
   const weekStartDate = new Date(date)
   weekStartDate.setUTCDate(date.getUTCDate() - daysFromMonday)
 
-  return {
+  // Frozen: cached instances are shared across every caller.
+  return Object.freeze({
     todayKey: formatDateKey(parts),
     weekKey: formatDateKey({
       year: weekStartDate.getUTCFullYear(),
@@ -85,5 +116,5 @@ export function getSubmissionPeriodKeys(activityDate) {
     }),
     monthKey: `${parts.year}-${pad2(parts.month)}`,
     yearKey: String(parts.year),
-  }
+  })
 }

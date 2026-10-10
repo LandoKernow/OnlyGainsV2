@@ -1,41 +1,54 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { deleteSubmissionById } from '../api/submissions'
 import { useToast } from '../components/ToastProvider'
+import { ACTIVITY_TYPES } from '../utils/activityTypes'
 import { getLondonDateParts } from '../utils/dates'
 import { getToastMessage } from '../utils/toastCopy'
-import { getPressupLeaderboardQueryKey } from './usePressupLeaderboard'
 import { getActivityLeaderboardQueryKey } from './useActivityLeaderboard'
 import { getRecentSubmissionsQueryKey } from './useRecentSubmissions'
+
+// Every leaderboard read (legacy per-discipline and canonical) plus the
+// cross-board streak days — a removed entry must leave all of them.
+function isBoardDerivedQuery(query) {
+  const [scope] = Array.isArray(query.queryKey) ? query.queryKey : []
+  return scope === 'leaderboard' || scope === 'streak'
+}
 
 export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
   const recentQueryKey = getRecentSubmissionsQueryKey(circleId, limit)
   const currentYear = getLondonDateParts(new Date()).year
-  const leaderboardQueryKey = getPressupLeaderboardQueryKey(circleId, currentYear)
-  const leaderboardQueryKeyKm = getActivityLeaderboardQueryKey(circleId, currentYear, 'km')
+  // The entry can belong to any discipline, so optimistically drop it from
+  // every discipline's board (pull-ups were previously left stale).
+  const leaderboardQueryKeys = ACTIVITY_TYPES.map((activityType) =>
+    getActivityLeaderboardQueryKey(circleId, currentYear, activityType),
+  )
 
   return useMutation({
     mutationFn: ({ submissionId }) => deleteSubmissionById(submissionId, userId),
     onMutate: async ({ submissionId }) => {
-      await queryClient.cancelQueries({ queryKey: recentQueryKey })
-      await queryClient.cancelQueries({ queryKey: leaderboardQueryKey })
-      await queryClient.cancelQueries({ queryKey: leaderboardQueryKeyKm })
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: recentQueryKey }),
+        ...leaderboardQueryKeys.map((queryKey) => queryClient.cancelQueries({ queryKey })),
+      ])
 
       const previousRecentRows = queryClient.getQueryData(recentQueryKey) ?? []
-      const previousLeaderboardRows = queryClient.getQueryData(leaderboardQueryKey) ?? []
-      const previousLeaderboardRowsKm = queryClient.getQueryData(leaderboardQueryKeyKm) ?? []
+      const previousLeaderboardRows = leaderboardQueryKeys.map((queryKey) => queryClient.getQueryData(queryKey))
 
       queryClient.setQueryData(recentQueryKey, (currentRows = []) =>
         currentRows.filter((row) => (row.legacySubmissionId || row.id) !== submissionId),
       )
-      queryClient.setQueryData(leaderboardQueryKey, (currentRows = []) => currentRows.filter((row) => row.id !== submissionId))
-      queryClient.setQueryData(leaderboardQueryKeyKm, (currentRows = []) => currentRows.filter((row) => row.id !== submissionId))
+
+      for (const queryKey of leaderboardQueryKeys) {
+        if (queryClient.getQueryData(queryKey) !== undefined) {
+          queryClient.setQueryData(queryKey, (currentRows = []) => currentRows.filter((row) => row.id !== submissionId))
+        }
+      }
 
       return {
         previousRecentRows,
         previousLeaderboardRows,
-        previousLeaderboardRowsKm,
       }
     },
     onSuccess: (_data, variables) => {
@@ -46,14 +59,20 @@ export function useDeleteSubmission({ circleId, userId, limit = 5 }) {
     },
     onError: (_error, _variables, context) => {
       queryClient.setQueryData(recentQueryKey, context?.previousRecentRows ?? [])
-      queryClient.setQueryData(leaderboardQueryKey, context?.previousLeaderboardRows ?? [])
-      queryClient.setQueryData(leaderboardQueryKeyKm, context?.previousLeaderboardRowsKm ?? [])
+
+      leaderboardQueryKeys.forEach((queryKey, index) => {
+        const previousRows = context?.previousLeaderboardRows?.[index]
+
+        if (previousRows !== undefined) {
+          queryClient.setQueryData(queryKey, previousRows)
+        }
+      })
+
       showToast({ tone: 'error', message: getToastMessage('delete_error') })
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: recentQueryKey })
-      queryClient.invalidateQueries({ queryKey: leaderboardQueryKey })
-      queryClient.invalidateQueries({ queryKey: leaderboardQueryKeyKm })
+      queryClient.invalidateQueries({ predicate: isBoardDerivedQuery })
     },
   })
 }

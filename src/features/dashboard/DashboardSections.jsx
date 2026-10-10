@@ -2,23 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from '../../components/Card'
 import { formatActivityGap, formatActivityValue, formatKm, formatRelativeTime } from '../../utils/activity'
-import { getRecentActivityCopy, getChaseCopy } from '../../logic/leaderboard/comments'
+import { getRecentActivityCopy } from '../../logic/leaderboard/comments'
 import { ACTIVITY_META, ACTIVITY_TYPES, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { getMomentumChip, getRowStatus, getStatusTone } from '../../utils/status'
 import { isLeaderMessagePermissionError } from '../../api/leaderMessages'
 import { ProfilePreviewModal } from '../../components/ProfilePreviewModal'
 import { getWarTier } from '../../utils/war'
 import { useEscapeKey } from '../../hooks/useEscapeKey'
-
-const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
-
-function canLogBoardLiveDiagnostics(userId) {
-  if (import.meta.env.DEV) {
-    return true
-  }
-
-  return String(userId || '').trim() === BOARD_LIVE_DIAGNOSTICS_USER_ID
-}
+import { isBoardLiveDiagnosticsUser } from '../../lib/diagnostics'
 
 function getSafeName(name) {
   return name || 'Someone'
@@ -347,26 +338,6 @@ export function HeroStatus({ profile, currentUserRow, chase, rows = [], activity
   )
 }
 
-export function ProfileReadinessCard({ profile, isLoading, error }) {
-  if (isLoading) {
-    return (
-      <Card title="Loading" body="Getting your profile ready.">
-        <p className="muted">One moment.</p>
-      </Card>
-    )
-  }
-
-  if (error) {
-    return (
-      <Card title="Profile error" body="Could not load your profile.">
-        <p className="muted">Try again.</p>
-      </Card>
-    )
-  }
-
-  return null
-}
-
 export function LogActivityCard({
   quickValues,
   manualValue,
@@ -389,6 +360,7 @@ export function LogActivityCard({
             key={type}
             className={activityType === type ? 'pill-button pill-button--active' : 'pill-button'}
             type="button"
+            aria-pressed={activityType === type}
             onClick={() => onActivityTypeChange?.(type)}
           >
             {ACTIVITY_META[type].label}
@@ -418,7 +390,11 @@ export function LogActivityCard({
             type="number"
             min={isKm ? '0.01' : '1'}
             step={isKm ? '0.01' : '1'}
-            inputMode="decimal"
+            // Reps get the plain number pad (no decimal key); KM keeps the dot.
+            inputMode={isKm ? 'decimal' : 'numeric'}
+            pattern={isKm ? undefined : '[0-9]*'}
+            enterKeyHint="send"
+            autoComplete="off"
             value={manualValue}
             onChange={(event) => onManualValueChange(event.target.value)}
             placeholder={meta.inputPlaceholder}
@@ -429,22 +405,7 @@ export function LogActivityCard({
           {isSaving ? 'Saving...' : 'Log'}
         </button>
       </form>
-      {manualError ? <p className="muted">{manualError}</p> : null}
-    </Card>
-  )
-}
-
-export function LeaderboardPlaceholder() {
-  return (
-    <Card title="Leaderboard" body="Weekly, monthly, and yearly board views will mount here without re-rendering the full shell.">
-      <div className="placeholder-tabs">
-        <span className="pill pill--active">Press Ups</span>
-        <span className="pill">KM</span>
-        <span className="pill pill--active">Weekly</span>
-        <span className="pill">Monthly</span>
-        <span className="pill">Yearly</span>
-      </div>
-      <p className="muted">Leaderboard totals will appear once the board warms up.</p>
+      {manualError ? <p className="muted" role="alert">{manualError}</p> : null}
     </Card>
   )
 }
@@ -600,6 +561,20 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
     return [...topThree, currentUserRow]
   }, [compact, currentUserRow, rows])
 
+  // Status, pressure gap and chips each scan the whole board per row — derive
+  // them once per data change, not again when a preview modal opens/closes.
+  const decoratedRows = useMemo(
+    () =>
+      compactRows.map((row) => ({
+        row,
+        status: getRowStatus(row, rows, activityType),
+        pressureContext: getPressureContext(row, rows, activityType),
+        chips: buildLeaderboardChips(row, rows, activityType),
+        tier: getWarTier(row.total, activityType),
+      })),
+    [activityType, compactRows, rows],
+  )
+
   return (
     <Card title={compact ? 'MINI RANKS' : 'Ranks'} body={compact ? 'Top 3 plus your spot.' : cardBody}>
       {!compact ? (
@@ -611,6 +586,7 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
               key={item.key}
               className={item.key === period ? 'pill-button pill-button--active' : 'pill-button'}
               type="button"
+              aria-pressed={item.key === period}
               onClick={() => onPeriodChange(item.key)}
             >
               {item.label}
@@ -633,12 +609,10 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
       {error && rows.length === 0 ? <p className="muted">Board failed to load. Refresh.</p> : null}
       {isLoading ? <p className="muted">Loading...</p> : null}
       {!isLoading && compact && rows.length === 0 ? <p className="muted">Log first. Make yourself visible.</p> : null}
-      {(compact ? compactRows : rows).length > 0 ? (
+      {decoratedRows.length > 0 ? (
         <>
           <ol className={compact ? 'leaderboard-list leaderboard-list--board' : 'leaderboard-list'}>
-            {(compact ? compactRows : rows).map((row) => {
-              const status = getRowStatus(row, rows, activityType)
-              const pressureContext = getPressureContext(row, rows, activityType)
+            {decoratedRows.map(({ row, status, pressureContext, chips, tier }) => {
               const rowClassName = [
                 'leaderboard-row',
                 row.isCurrentUser ? 'leaderboard-row--current' : '',
@@ -661,11 +635,11 @@ export function PressupLeaderboardCard({ period, onPeriodChange, rows, currentUs
                   <div className="leaderboard-copy">
                     <strong>
                       {row.actorName}
-                      <span className="leaderboard-tier">FORM · {getWarTier(row.total, activityType)}</span>
+                      <span className="leaderboard-tier">FORM · {tier}</span>
                     </strong>
                     {pressureContext ? <span className="pressure-gap">{pressureContext}</span> : null}
                     <div className="row-chip-list">
-                      {buildLeaderboardChips(row, rows, activityType).map((chip) => (
+                      {chips.map((chip) => (
                         <span
                           key={`${row.userId}-${chip.label}`}
                           className={chip.tone ? `row-chip row-chip--${chip.tone}` : 'row-chip'}
@@ -802,30 +776,6 @@ export function BattleReplayCard({ chase, isLoading, activityType = 'pressups' }
   )
 }
 
-export function ChaseCard({ chase, isLoading, period, compact = false, activityType = 'pressups' }) {
-  const isKm = activityType === 'km'
-
-  if (isLoading) {
-    return (
-      <Card title="Chase" body="Computing pressure.">
-        <p className="muted">One moment...</p>
-      </Card>
-    )
-  }
-
-  const copy = getChaseCopy(chase, activityType)
-
-  return (
-    <Card title={copy.title} body={copy.primary}>
-      <div className={compact ? 'stack chase-stack chase-stack--compact' : 'stack chase-stack'}>
-        <strong>{copy.primary}</strong>
-        {copy.secondary ? <span>{copy.secondary}</span> : null}
-        {copy.action ? <span>{copy.action}</span> : null}
-      </div>
-    </Card>
-  )
-}
-
 export function PressureCard({ chase, isLoading, activityType = 'pressups', variant = 'board' }) {
   if (isLoading) {
     return (
@@ -903,14 +853,6 @@ export function PressureCard({ chase, isLoading, activityType = 'pressups', vari
   )
 }
 
-export function ChasePlaceholder() {
-  return (
-    <Card title="The Chase" body="Ahead and behind rival logic will use precomputed board ranks instead of row-level recalculation.">
-      <p className="muted">You&apos;re hunting somebody. Somebody is hunting you.</p>
-    </Card>
-  )
-}
-
 export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRequestRemove }) {
   const [showAll, setShowAll] = useState(false)
 
@@ -942,7 +884,7 @@ export function RecentActivityCard({ rows, isLoading, error, currentUserId, onRe
     )
   }
 
-  if (canLogBoardLiveDiagnostics(currentUserId)) {
+  if (isBoardLiveDiagnosticsUser(currentUserId)) {
     console.debug('[Only Gains Board Live]', 'RecentActivityCard render', {
       isLoading,
       hasError: Boolean(error),

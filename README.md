@@ -1,139 +1,69 @@
-# Only Gains 2.0
+# ONLYGAINS — Hybrid Training Club
 
-Clean rebuild for Phase 1 of the Only Gains board experience.
+RUN · LIFT · HYROX · REPEAT. A competitive training board: log press-ups,
+pull-ups and kilometres, climb the weekly ranks, hold the crowns, keep the
+streak alive. Live at https://onlygains.club.
 
-## Current Phase 1 scope
+## Stack
 
-- React + Vite app shell
-- Supabase auth/session handling
-- Profile basics from `public.profiles`
-- Press-up logging hot path
-- Optimistic Recent Activity
-- Press-up leaderboard
-- Chase derived from leaderboard data
-- Delete own recent activity entry
-- Lightweight personality copy
-- No Arena
-- No The 1%
-- No awards
-- No reactions
-- No service worker yet
+- React 19 + Vite 7 single-page app (mobile-first PWA)
+- Supabase (auth, Postgres, RPCs) via `@supabase/supabase-js`
+- TanStack Query for server state; React Router for routes
+- Cloudflare Worker (`worker/index.js`) for the notification engine, web push
+  and the scheduled crown / streak sweeps — static assets are served from
+  `dist/` by Workers Static Assets
 
 ## Commands
 
 ```bash
 npm install
-npm run dev
-npm run build
+npm run dev       # local dev server on :5173 (regenerates the macho image manifest)
+npm test          # vitest — leaderboard, streak, XP, chase, paging logic
+npm run build     # production build into dist/
 npm run preview
 ```
 
-## Required environment variables
+## Environment
 
 Copy `.env.example` to `.env` for local work.
 
 ```env
-VITE_SUPABASE_URL=
+VITE_SUPABASE_URL=https://your-project.supabase.co   # project root, not /rest/v1/
 VITE_SUPABASE_ANON_KEY=
 VITE_DEFAULT_CIRCLE_ID=
-VITE_APP_NAME=Only Gains 2.0
+VITE_APP_NAME=ONLYGAINS
 VITE_APP_ENV=development
+VITE_PUBLIC_BASE_URL=   # optional: override the share-link origin (preview envs)
 ```
 
-Use the Supabase project root URL, not the REST endpoint.
+Worker secrets (Cloudflare dashboard): `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`,
+`VAPID_SUBJECT`, `TEST_FIRE_TOKEN`. `keep_vars` in `wrangler.jsonc` keeps them
+across deploys.
 
-Correct:
+## Where things live
 
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-```
+| Area | Files |
+| --- | --- |
+| Logging write path (keep it boring) | `screens/dashboard` → `hooks/useActivityLogger` → `api/submissions.createSubmission` |
+| Disciplines registry | `src/utils/activityTypes.js` — add activities here |
+| Ranks / chase / tiers / streaks / XP | `src/logic/leaderboard`, `src/utils/war.js`, `src/utils/xp.js` |
+| Tuning surfaces | `src/config/*.js` (onboarding, crowns, notifications, macho takeover, referrals) |
+| Brand | `src/components/Brand.jsx`, `scripts/build_brand_assets.py`, tokens in `src/styles/globals.css` |
+| DB migrations (run by hand in Supabase SQL editor) | `db/migrations/` |
 
-Not this:
+Leaderboard caches are plain arrays keyed `['leaderboard', activityType, boardId, year]`;
+the optimistic logging updates depend on that shape.
 
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co/rest/v1/
-```
+## Supabase auth redirect URLs
 
-## Build and deploy
+Add each origin the app runs on under Authentication → URL Configuration:
+`http://localhost:5173/*` (and neighbouring Vite ports), `https://onlygains.club/*`,
+`https://v2.onlygains.club/*`, and the Workers preview domain.
 
-This project is deployed to Cloudflare Workers using Wrangler or a CI that publishes a Worker build artifact. The live staging URL for V2 is:
+## Caching
 
-- https://onlygainsv2.gautie.workers.dev
-
-Recommended deploy flows
-
-- Local publish (manual testing):
-
-	1. Build the app: `npm run build`
-	2. Publish with Wrangler (configured to upload `dist` or the Worker bundle): `npx wrangler publish`
-
-- CI / GitHub-triggered deploy (preferred):
-
-	- Configure GitHub Actions or your CI to run `npm ci && npm run build` and publish with `wrangler publish` or push the artifact to Cloudflare via the Wrangler GitHub Action. This provides repeatable, auditable deploys and is the recommended path for staging and production.
-
-Notes on routing and Workers
-
-- When deployed as a Cloudflare Worker you do not rely on `public/_redirects` (Cloudflare Pages). Ensure your Worker routes send SPA requests to the built `index.html` (or serve the static assets) so routes like `/dashboard` and `/leaderboard` resolve properly.
-
-- If you use a Cloudflare Worker that sits behind a custom hostname, make sure that hostname is allowed in your Supabase redirect URLs (see below).
-
-## Supabase auth redirect URL checklist
-
-In Supabase `Authentication -> URL Configuration`, add redirect URLs for:
-
-### Local development
-
-- `http://localhost:5173/*`
-- `http://localhost:5174/*`
-- `http://localhost:5175/*`
-- `http://localhost:5176/*`
-
-Notes:
-
-- Vite may move ports if one is already occupied.
-- Add the exact active local URL when needed.
-
-### Staging
-
-- `https://onlygainsv2.gautie.workers.dev/*`
-- `https://v2.onlygains.club/*`
-
-### Production
-
-- `https://onlygains.club/*`
-- `https://v2.onlygains.club/*`
-
-The app requests magic-link return to `/dashboard` on the current origin, so the active deployed origin must be allowed in Supabase.
-
-## Mobile-first staging checklist
-
-Test on a real mobile device:
-
-1. Open the staging URL on mobile.
-2. Sign in by magic link.
-3. Confirm the redirect returns to V2 staging, not V1.
-4. Tap `+10`.
-5. Confirm instant tap feedback.
-6. Confirm Recent Activity updates.
-7. Confirm Leaderboard updates.
-8. Confirm Chase updates.
-9. Delete your own entry.
-10. Toggle weekly/monthly/yearly.
-11. Fast scroll Dashboard and Ranks.
-12. Close and reopen the browser.
-13. Confirm session persists.
-
-## Performance guardrails for staging
-
-- Mobile-first shell
-- No service worker yet
-- No hidden heavy screens
-- No blocking image assets
-- Logging tap feedback should stay under 100ms
-- Dashboard should remain fast under repeated quick logs
-
-## Release-prep notes
-
-- App code does not depend on local file paths for runtime behavior.
-- Remaining `localhost` references are in docs, build artifacts, or third-party packages rather than app runtime logic.
-- Profile screen exposes a lightweight build marker for easier staging verification.
+`public/_headers` marks Vite's content-hashed `/assets/*` as immutable, so
+repeat visits only download what a deploy actually changed. A tab left open
+across a deploy reloads itself onto the new build the first time it needs a
+lazy screen (`vite:preloadError` handler in `src/main.jsx`).

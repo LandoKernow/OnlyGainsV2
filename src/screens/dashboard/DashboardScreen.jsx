@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AuthGate } from '../../features/auth/AuthGate'
 import { useAuth } from '../../features/auth/AuthProvider'
@@ -30,7 +30,8 @@ import { REFERRALS_CONFIG } from '../../config/referrals'
 import { MachoTakeover } from '../../components/MachoTakeover'
 import { WarCard } from '../../components/WarCard'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
-import { useWarriorXp } from '../../hooks/useWarriorXp'
+import { useWarriorSeason } from '../../hooks/useWarriorSeason'
+import { isBoardLiveDiagnosticsUser } from '../../lib/diagnostics'
 import { parseKmValue, formatActivityGap } from '../../utils/activity'
 import { ACTIVITY_META, getActivityQuickValues, isRepActivity, normalizeActivityType } from '../../utils/activityTypes'
 import { MACHO_TAKEOVER_CONFIG } from '../../config/machoTakeover'
@@ -39,12 +40,11 @@ import { dealCrownImage, dealMachoImage, preloadNextMachoImage } from '../../uti
 import { evaluateMachoTrigger, markMachoFired, resolveMachoPresentation } from '../../utils/machoTriggers'
 import { pingEventEngine } from '../../api/notifications'
 import { getToastMessage } from '../../utils/toastCopy'
-import { calculateCombo, calculateStreak, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
+import { calculateCombo, getMilestone, getWarCardTagline, getWarTier, shareCallout } from '../../utils/war'
 import { shareWarCardImage } from '../../utils/warCardImage'
 import { getWarriorLevel, getXpForLog } from '../../utils/xp'
 
 const BOARD_LIVE_FEED_LIMIT = 20
-const BOARD_LIVE_DIAGNOSTICS_USER_ID = '69e4c6a4-9d17-41bd-a3d3-245205e9c9fb'
 
 function parseManualValue(value, activityType) {
   const trimmed = value.trim()
@@ -121,34 +121,34 @@ function AuthenticatedDashboard() {
     userId: session.user.id,
     limit: BOARD_LIVE_FEED_LIMIT,
   })
-  const diagnosticsEnabled = import.meta.env.DEV || session.user.id === BOARD_LIVE_DIAGNOSTICS_USER_ID
+  // Board Live diagnostics: dev builds + the owner's account only. Logged when
+  // the board context changes, not on every render.
+  const diagnosticsEnabled = isBoardLiveDiagnosticsUser(session.user.id)
+  const boardIdsKey = boards.map((board) => board.id).join(',')
 
   useEffect(() => {
-    console.info('[Only Gains Board Live] diagnostics active', {
-      currentUserId: session.user.id ?? null,
-      diagnosticsEnabled,
-      selectedBoardId: activeBoard?.id ?? null,
-      selectedBoardName: activeBoard?.name ?? null,
-      appEnv: import.meta.env.VITE_APP_ENV ?? null,
-      buildMode: import.meta.env.MODE ?? null,
-    })
-  }, [activeBoard?.id, activeBoard?.name, diagnosticsEnabled, session.user.id])
+    if (!diagnosticsEnabled) {
+      return
+    }
 
-  if (diagnosticsEnabled) {
     console.debug('[Only Gains Board Live]', 'Dashboard board context', {
+      currentUserId: session.user.id ?? null,
       selectedBoardName: activeBoard?.name ?? null,
       selectedBoardId: activeBoard?.id ?? null,
       boardIdPassedToUseRecentSubmissions: circleId ?? null,
-      availableBoards: boards.map((board) => ({
-        id: board.id,
-        name: board.name,
-      })),
+      availableBoardIds: boardIdsKey ? boardIdsKey.split(',') : [],
+      appEnv: import.meta.env.VITE_APP_ENV ?? null,
+      buildMode: import.meta.env.MODE ?? null,
     })
-  }
-  const isNewThisWeek = !leaderboardQuery.isLoading && !leaderboardQuery.currentUserRow
-  const streak = calculateStreak(leaderboardQuery.data, session.user.id)
-  const warriorLevel = useWarriorXp({ circleId, userId: session.user.id })
-  const combo = calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType))
+  }, [activeBoard?.id, activeBoard?.name, boardIdsKey, circleId, diagnosticsEnabled, session.user.id])
+
+  // Hybrid season record: XP level + the any-discipline training streak (the
+  // same streak the "dies at midnight" push quotes).
+  const { level: warriorLevel, streak } = useWarriorSeason({ circleId, userId: session.user.id })
+  const combo = useMemo(
+    () => calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType)),
+    [activityType, leaderboardQuery.data, session.user.id],
+  )
   const firstRun = useFirstRun()
   const firstBloodArmedRef = useRef(false)
   const [optimisticHero, setOptimisticHero] = useState(null)
@@ -411,7 +411,6 @@ function AuthenticatedDashboard() {
     ).length
     const rank = rivalsAhead + 1
 
-    const streak = calculateStreak(leaderboardQuery.data, session.user.id)
     const streakDays = streak.activeToday ? streak.streakDays : streak.streakDays + 1
 
     const rival = chase?.rowAbove ?? chase?.rowBelow ?? null
@@ -433,7 +432,7 @@ function AuthenticatedDashboard() {
       gapLabel,
       tagline: getWarCardTagline(`${session.user.id}:${weeklyTotal}`),
       milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType }),
-      combo: calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType)),
+      combo,
       levelLabel: warriorLevel?.name ? `LVL ${warriorLevel.level} ${warriorLevel.name}` : '',
       shareState: '',
     }

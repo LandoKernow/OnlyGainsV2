@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { fetchProfileYear, getProfileYearQueryKey } from '../api/profileYearSetup'
 import { OVERLAY_PRIORITY, useOverlaySlot } from './OverlayController'
 import { useAuth } from '../features/auth/AuthProvider'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 
 const PROFILE_YEAR = 2026
 const DISMISS_KEY_PREFIX = 'only_gains_profile_build_prompt_dismissed_v1'
@@ -65,24 +66,6 @@ export function ProfileBuildPrompt() {
     staleTime: 60_000,
   })
 
-  useEffect(() => {
-    if (!isAuthenticated || isDismissed || isProfileYearRoute) {
-      return
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        dismissPrompt()
-      }
-    }
-
-    globalThis.window?.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      globalThis.window?.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [isAuthenticated, isDismissed, isProfileYearRoute])
-
   function dismissPrompt() {
     if (!dismissKey) {
       return
@@ -109,6 +92,11 @@ export function ProfileBuildPrompt() {
 
   // One overlay at a time: only render if we're the top of the stack.
   const canShow = useOverlaySlot('profileBuild', OVERLAY_PRIORITY.profileBuild, shouldShow)
+
+  // Escape = "Later", but ONLY while the prompt is actually on screen. The old
+  // always-on listener let any Escape (closing a war card, a modal) silently
+  // and permanently dismiss a prompt the warrior had never seen.
+  useEscapeKey(dismissPrompt, canShow)
 
   if (!canShow) {
     return null
