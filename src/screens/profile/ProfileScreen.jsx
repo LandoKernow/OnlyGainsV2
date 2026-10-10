@@ -15,6 +15,7 @@ import { useActivityLeaderboard } from '../../hooks/useActivityLeaderboard'
 import { useChase } from '../../hooks/useChase'
 import { useCrownHonors } from '../../hooks/useCrownHonors'
 import { useWarriorSeason } from '../../hooks/useWarriorSeason'
+import { useMonthlyStandard } from '../../hooks/useMonthlyStandard'
 import { useMyReferralCode, useRecruits } from '../../hooks/useReferrals'
 import { REFERRALS_CONFIG } from '../../config/referrals'
 import { buildReferralUrl, shareReferral } from '../../utils/referralCodes'
@@ -63,6 +64,8 @@ function ProfileSummary() {
   // Same hybrid season record as the dashboard hero: XP level + any-discipline streak.
   const { level: warriorLevel, streak } = useWarriorSeason({ circleId, userId: session?.user?.id })
   const profileYearSetup = useProfileYearSetup(2026)
+  const standard = useMonthlyStandard({ circleId, userId: session?.user?.id })
+  const standardTotal = standard.me?.total ?? 0
 
   async function handleRecruit() {
     try {
@@ -156,6 +159,13 @@ function ProfileSummary() {
         )}
 
         <div className="profile-identity-grid warrior-card__grid">
+          <div className="profile-identity-grid__row">
+            <span className="muted">THE STANDARD · {standard.calendar.monthName}</span>
+            <strong>
+              {standardTotal.toLocaleString('en-GB')}/{standard.target.toLocaleString('en-GB')} ·{' '}
+              {standard.me?.status === 'MET' ? 'MET ✓' : standard.me?.status ?? 'SILENT'}
+            </strong>
+          </div>
           <div className="profile-identity-grid__row">
             <span className="muted">BAR WORK</span>
             <strong>{pullupsRow ? `${Math.round(pullupsRow.total)} · #${pullupsRow.rank}` : '0'}</strong>

@@ -13,7 +13,8 @@ export const ACTIVITY_META = {
     id: 'pressups',
     label: 'Press Ups',
     unit: 'reps',
-    quickValues: [10, 20, 50],
+    // Sized for the monthly Standard (2,000 ≈ 65 a day): a few quick sets.
+    quickValues: [10, 20, 30],
     inputLabel: 'Reps',
     inputPlaceholder: 'e.g. 25',
     emptyError: 'Enter a press-up count.',
