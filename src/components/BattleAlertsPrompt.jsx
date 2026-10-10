@@ -121,7 +121,7 @@ export function BattleAlertsPrompt({ trigger = 'alerts' }) {
       </strong>
       <p className="alerts-prompt__body">
         {iosInstallNeeded
-          ? 'iPhone rule: alerts only reach installed warriors. Add Only Gains to your home screen first.'
+          ? 'iPhone rule: alerts only reach installed warriors. Add ONLYGAINS to your home screen first.'
           : 'Rivals closing in. Streaks about to die. Thrones overtaken. Straight to your lock screen.'}
       </p>
       <div className="alerts-prompt__actions">

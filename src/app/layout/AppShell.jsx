@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { BoardSwitcher } from '../../components/BoardSwitcher'
 import { NotificationBell } from '../../components/NotificationBell'
+import { EffortMark, Wordmark } from '../../components/Brand'
 import { getPermissionState, registerServiceWorker } from '../../utils/pushManager'
 
 const navItems = [
@@ -50,7 +51,7 @@ export function AppShell({ children }) {
             ? 'The board is watching.'
             : isProfileRoute
               ? "Who you're becoming."
-              : 'Only Gains.'
+              : 'Built for the work.'
   const headerClassName = isDashboardRoute && status === 'authenticated'
     ? 'app-header app-header--primary'
     : 'app-header app-header--secondary'
@@ -61,7 +62,10 @@ export function AppShell({ children }) {
         <>
           <header className={headerClassName}>
             <div>
-              <p className="eyebrow">ONLY GAINS</p>
+              <div className="app-header__brand">
+                <Wordmark />
+                <EffortMark />
+              </div>
               <h1>{headerTitle}</h1>
             </div>
             <div className="app-header__meta">

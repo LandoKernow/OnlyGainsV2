@@ -112,12 +112,12 @@ function JoinBoardContent() {
       ) : (
         <div className="board-stage">
           <article className="board-stage__card">
-            <p className="eyebrow">ONLY GAINS</p>
+            <p className="eyebrow">ONLYGAINS</p>
             <h2 className="board-stage__title">THIS BOARD IS LIVE</h2>
             <p className="board-stage__name">{getBoardDisplayName(previewQuery.board)}</p>
             <p className="board-stage__meta">{getBoardDisplayTypeLabel(previewQuery.board)}</p>
             {isGlobalBoard(previewQuery.board) ? (
-              <p className="board-stage__global-copy">Everyone on Only Gains. No hiding.</p>
+              <p className="board-stage__global-copy">Everyone on ONLYGAINS. No hiding.</p>
             ) : null}
             {!isGlobalBoard(previewQuery.board) && previewQuery.board.memberCount > 0 ? (
               <p className="board-stage__member-count">{previewQuery.board.memberCount} on this board</p>

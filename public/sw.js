@@ -1,4 +1,4 @@
-// Only Gains service worker — receives war reports and lands them on the
+// ONLYGAINS service worker — receives war reports and lands them on the
 // lock screen. Deliberately minimal: no caching strategy here (the app shell
 // stays network-served), just push + click handling.
 
@@ -16,14 +16,14 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data ? event.data.json() : {}
   } catch {
-    data = { title: 'ONLY GAINS', body: 'The board moved. Go look.' }
+    data = { title: 'ONLYGAINS', body: 'The board moved. Go look.' }
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'ONLY GAINS', {
+    self.registration.showNotification(data.title || 'ONLYGAINS', {
       body: data.body || 'The board moved. Go look.',
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
       tag: data.eventId || undefined, // same event never stacks twice
       data: { url: data.url || '/dashboard' },
       vibrate: [40, 60, 90],

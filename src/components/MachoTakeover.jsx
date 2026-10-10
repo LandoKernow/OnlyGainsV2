@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MACHO_TAKEOVER_CONFIG } from '../config/machoTakeover'
 import { useEscapeKey } from '../hooks/useEscapeKey'
+import { EffortMark, Wordmark } from './Brand'
 
 // The full-screen earned-moment takeover. Macho image slams in, the stat
 // lands on top of it, haptics fire, and the whole thing IS the share card —
@@ -41,7 +42,10 @@ export function MachoTakeover({ takeover, onShare, onClose }) {
       <img className="macho-takeover__image" src={imageSrc} alt="" aria-hidden="true" />
       <div className="macho-takeover__shade" aria-hidden="true" />
 
-      <div className="macho-takeover__brand">ONLY GAINS</div>
+      <div className="macho-takeover__brand">
+        <Wordmark />
+        <EffortMark />
+      </div>
 
       <div className="macho-takeover__slam">
         <strong className="macho-takeover__stat">{stat}</strong>

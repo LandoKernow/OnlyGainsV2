@@ -175,7 +175,7 @@ export function WeeklySharePrompt() {
         message: result === 'shared' ? getToastMessage('share_success') : getToastMessage('copy_success'),
       })
     } catch {
-      showToast({ tone: 'error', message: 'Could not share Only Gains.' })
+      showToast({ tone: 'error', message: 'Could not share ONLYGAINS.' })
     }
   }
 
@@ -199,7 +199,7 @@ export function WeeklySharePrompt() {
             <img
               className="prompt-modal__image"
               src="/images/macho-toasts/vault-rocky.webp"
-              alt="Only Gains share prompt"
+              alt="ONLYGAINS share prompt"
               onError={() => setImageFailed(true)}
             />
           </div>
@@ -227,7 +227,7 @@ export function WeeklySharePrompt() {
 
           <div className="prompt-modal__actions">
             <button className="button" type="button" onClick={handleShare}>
-              Share Only Gains
+              Share ONLYGAINS
             </button>
             <button className="button button--ghost" type="button" onClick={dismissPrompt}>
               Not now
