@@ -6,19 +6,7 @@
 // DB contract: `submissions.activity_type` stores these exact ids as text.
 // Rep-based activities share unit 'reps'; km stores 'km'.
 
-import { isTease } from '../config/airSquatAssault'
-
-// Every discipline the DATA MODEL knows — squats is permanent so squat rows
-// always normalize/render correctly, even while its tab/logging is gated.
-export const ALL_ACTIVITY_TYPES = ['pressups', 'pullups', 'km', 'squats']
-
-// The SELECTABLE list (leaderboard tabs + log toggle). Squats stays hidden and
-// unloggable during the Air Squat Assault TEASE phase, then joins permanently
-// when the event goes LIVE — flipping the phase flag surfaces it everywhere
-// this list is mapped, no per-screen change.
-export const ACTIVITY_TYPES = isTease()
-  ? ['pressups', 'pullups', 'km']
-  : ['pressups', 'pullups', 'km', 'squats']
+export const ACTIVITY_TYPES = ['pressups', 'pullups', 'km']
 
 export const ACTIVITY_META = {
   pressups: {
@@ -52,25 +40,19 @@ export const ACTIVITY_META = {
     inputLabel: 'KM',
     inputPlaceholder: 'e.g. 5.2',
   },
-  squats: {
-    id: 'squats',
-    label: 'Air Squats',
-    unit: 'reps',
-    // Squats accumulate fast — bigger quick chips than the other rep lifts.
-    quickValues: [25, 50, 100],
-    inputLabel: 'Reps',
-    inputPlaceholder: 'e.g. 50',
-    emptyError: 'Enter a squat count.',
-    wholeNumberError: 'Squats must be a whole number.',
-    positiveError: 'Squats must be greater than 0.',
-  },
 }
 
 // Unknown or legacy values collapse to press-ups — same behaviour the old
-// binary ternaries had. Uses ALL_ACTIVITY_TYPES so squat data always
-// normalizes correctly even while the squat tab is gated off.
+// binary ternaries had.
 export function normalizeActivityType(activityType) {
-  return ALL_ACTIVITY_TYPES.includes(activityType) ? activityType : 'pressups'
+  return ACTIVITY_TYPES.includes(activityType) ? activityType : 'pressups'
+}
+
+// Mixed-discipline reads (the board feed) must drop rows of retired
+// disciplines (e.g. 'squats' from the July 2026 event, still in the DB) rather
+// than normalize them — normalizing would relabel them as press-ups.
+export function isActiveActivityType(activityType) {
+  return ACTIVITY_TYPES.includes(activityType)
 }
 
 export function isRepActivity(activityType) {
