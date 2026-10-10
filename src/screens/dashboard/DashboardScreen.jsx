@@ -21,6 +21,10 @@ import { useRecentSubmissions } from '../../hooks/useRecentSubmissions'
 import { useBoardMeta } from '../../hooks/useBoardMeta'
 import { useToast } from '../../components/ToastProvider'
 import { CrownStandingsCard } from '../../components/CrownStandingsCard'
+import { StandardCard } from '../../components/StandardCard'
+import { useMonthlyStandard } from '../../hooks/useMonthlyStandard'
+import { STANDARD_CONFIG } from '../../config/standard'
+import { crossesStandard, getStandardMilestone } from '../../utils/standard'
 import { FirstMissionCard } from '../../components/FirstMissionCard'
 import { useFirstRun } from '../../hooks/useFirstRun'
 import { useMyRecruiter, useRecruits } from '../../hooks/useReferrals'
@@ -145,6 +149,8 @@ function AuthenticatedDashboard() {
   // Hybrid season record: XP level + the any-discipline training streak (the
   // same streak the "dies at midnight" push quotes).
   const { level: warriorLevel, streak } = useWarriorSeason({ circleId, userId: session.user.id })
+  // THE STANDARD: 2,000 press-ups a month, everyone. Leads the dashboard.
+  const standard = useMonthlyStandard({ circleId, userId: session.user.id })
   const combo = useMemo(
     () => calculateCombo(leaderboardQuery.data, session.user.id, normalizeActivityType(activityType)),
     [activityType, leaderboardQuery.data, session.user.id],
@@ -414,6 +420,8 @@ function AuthenticatedDashboard() {
     const streakDays = streak.activeToday ? streak.streakDays : streak.streakDays + 1
 
     const rival = chase?.rowAbove ?? chase?.rowBelow ?? null
+    const standardBefore =
+      normalizeActivityType(activityType) === STANDARD_CONFIG.activityType ? standard.me?.total ?? 0 : null
     const gapValue = chase?.rowAbove ? chase?.gapToCatch : chase?.gapToDefend
     const gapLabel = gapValue != null ? formatActivityGap(gapValue, activityType) : ''
 
@@ -431,7 +439,12 @@ function AuthenticatedDashboard() {
       rivalName: rival?.actorName || '',
       gapLabel,
       tagline: getWarCardTagline(`${session.user.id}:${weeklyTotal}`),
-      milestone: getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType }),
+      // The Standard outranks the weekly marks: crossing 1,000 / 1,500 / 2,000
+      // this month claims the banner.
+      milestone:
+        (standardBefore != null && getStandardMilestone(standardBefore, standardBefore + value)) ||
+        getMilestone({ previousWeeklyTotal, weeklyTotal, streakDays, activityType }),
+      standardBefore,
       combo,
       levelLabel: warriorLevel?.name ? `LVL ${warriorLevel.level} ${warriorLevel.name}` : '',
       shareState: '',
@@ -505,6 +518,40 @@ function AuthenticatedDashboard() {
               shareState: '',
             })
             return
+          }
+
+          // THE STANDARD MET: the log that crosses 2,000 this month gets the
+          // full-screen coronation — once per warrior per month, always.
+          if (
+            pendingWarCard.standardBefore != null &&
+            crossesStandard(pendingWarCard.standardBefore, pendingWarCard.standardBefore + value)
+          ) {
+            const seenKey = `only_gains_standard_met_v1_${session.user.id}_${standard.calendar.monthKey}`
+            let alreadyCelebrated = false
+
+            try {
+              alreadyCelebrated = globalThis.localStorage?.getItem(seenKey) === 'true'
+              globalThis.localStorage?.setItem(seenKey, 'true')
+            } catch {
+              // Restrictive storage: celebrate anyway.
+            }
+
+            if (!alreadyCelebrated) {
+              const imageSrc = await dealCrownImage(session.user.id, 'TREBLE')
+
+              if (imageSrc) {
+                setTakeover({
+                  imageSrc,
+                  stat: (pendingWarCard.standardBefore + value).toLocaleString('en-GB'),
+                  sub: `THE STANDARD · ${standard.calendar.monthName}`,
+                  tagline: STANDARD_CONFIG.takeover.tagline,
+                  warriorName: pendingWarCard.warriorName,
+                  boardName: pendingWarCard.boardName,
+                  shareState: '',
+                })
+                return
+              }
+            }
           }
 
           // Earned moment? Full takeover replaces the standard war card so
@@ -615,6 +662,8 @@ function AuthenticatedDashboard() {
   return (
     <>
       <div className="stack-lg">
+        <StandardCard standard={standard} />
+
         {ONBOARDING_CONFIG.enabled && firstRun.firstBloodPending ? (
           <FirstMissionCard
             rows={leaderboardQuery.rows}
@@ -622,17 +671,6 @@ function AuthenticatedDashboard() {
             recruiter={REFERRALS_CONFIG.autoRivalry ? recruiter : null}
           />
         ) : null}
-
-        <HeroStatus
-          profile={profileQuery.data}
-          currentUserRow={heroCurrentUserRow}
-          chase={chase}
-          rows={leaderboardQuery.rows}
-          activityType={activityType}
-          streak={streak}
-          level={warriorLevel}
-          combo={combo}
-        />
 
         <LogActivityCard
           quickValues={getActivityQuickValues(activityType)}
@@ -644,6 +682,19 @@ function AuthenticatedDashboard() {
           isSaving={logger.isPending}
           activityType={activityType}
           onActivityTypeChange={setActivityType}
+        />
+
+        {/* Your war status: rank, level, streak — under the log, so the
+            Standard and the log button own the top of the screen. */}
+        <HeroStatus
+          profile={profileQuery.data}
+          currentUserRow={heroCurrentUserRow}
+          chase={chase}
+          rows={leaderboardQuery.rows}
+          activityType={activityType}
+          streak={streak}
+          level={warriorLevel}
+          combo={combo}
         />
 
         <PressureCard

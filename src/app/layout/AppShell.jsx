@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../../features/auth/AuthProvider'
 import { BoardSwitcher } from '../../components/BoardSwitcher'
 import { NotificationBell } from '../../components/NotificationBell'
-import { EffortMark, Wordmark } from '../../components/Brand'
+import { BrandLockup } from '../../components/Brand'
 import { getPermissionState, registerServiceWorker } from '../../utils/pushManager'
 
 const navItems = [
@@ -61,23 +61,25 @@ export function AppShell({ children }) {
       {!isImmersiveRoute ? (
         <>
           <header className={headerClassName}>
-            <div>
-              <div className="app-header__brand">
-                <Wordmark />
-                <EffortMark />
+            <div className="app-header__bar">
+              <span className="app-header__tagline">RUN · LIFT · HYROX · REPEAT</span>
+              <div className="app-header__meta">
+                {status === 'authenticated' ? <NotificationBell /> : null}
+                {showSessionPill ? (
+                  <div className="session-pill" title={session?.user?.email} aria-live="polite">
+                    {status === 'loading' && 'Session loading'}
+                    {status === 'authenticated' && userLabel}
+                    {status === 'setup-error' && (authError || 'Setup error')}
+                  </div>
+                ) : null}
               </div>
-              <h1>{headerTitle}</h1>
             </div>
-            <div className="app-header__meta">
-              {status === 'authenticated' ? <NotificationBell /> : null}
-              {showSessionPill ? (
-                <div className="session-pill" title={session?.user?.email} aria-live="polite">
-                  {status === 'loading' && 'Session loading'}
-                  {status === 'authenticated' && userLabel}
-                  {status === 'setup-error' && (authError || 'Setup error')}
-                </div>
-              ) : null}
+            {/* The primary lockup leads every screen: ONLYGAINS, HYBRID
+                TRAINING CLUB, the effort mark — artwork only, never retyped. */}
+            <div className="app-header__brand">
+              <BrandLockup className="app-header__lockup" />
             </div>
+            <h1>{headerTitle}</h1>
           </header>
           {showBoardSwitcher ? <BoardSwitcher /> : null}
         </>
