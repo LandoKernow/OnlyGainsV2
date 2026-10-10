@@ -76,20 +76,26 @@ function shiftDateKey(dateKey, days) {
   return date.toISOString().slice(0, 10)
 }
 
-// Consecutive London calendar days with at least one log, walking back from
-// today (or yesterday, if today is still empty — the streak is then "at risk").
-// Computed from the current-year submissions the dashboard already fetches.
-export function calculateStreak(rows, userId, now = new Date()) {
-  const loggedDays = new Set()
-
+// London day keys (YYYY-MM-DD) on which this user logged anything.
+export function collectTrainingDays(rows, userId, into = new Set()) {
   for (const row of rows ?? []) {
     if (row.userId !== userId || !row.activityDate) {
       continue
     }
 
-    loggedDays.add(getSubmissionPeriodKeys(row.activityDate).todayKey)
+    into.add(getSubmissionPeriodKeys(row.activityDate).todayKey)
   }
 
+  return into
+}
+
+// Consecutive London calendar days with at least one log, walking back from
+// today (or yesterday, if today is still empty — the streak is then "at risk").
+export function calculateStreak(rows, userId, now = new Date()) {
+  return calculateStreakFromDays(collectTrainingDays(rows, userId), now)
+}
+
+export function calculateStreakFromDays(loggedDays, now = new Date()) {
   const todayKey = getLondonPeriodKeys(now).todayKey
   const activeToday = loggedDays.has(todayKey)
   let cursor = activeToday ? todayKey : shiftDateKey(todayKey, -1)
@@ -106,6 +112,22 @@ export function calculateStreak(rows, userId, now = new Date()) {
     // Streak exists but nothing logged today: it dies at London midnight.
     atRisk: streakDays > 0 && !activeToday,
   }
+}
+
+// The HYBRID streak: a day counts if the warrior trained in ANY discipline,
+// on ANY board — exactly how the Worker's STREAK_AT_RISK sweep counts it, so
+// the number on the hero card is the one the "dies at midnight" push quotes.
+//   rowsByActivity — { pressups: rows[], pullups: rows[], km: rows[] } from the
+//                    board caches (includes a just-logged optimistic row)
+//   extraDayKeys   — the user's own training days across every board
+export function calculateHybridStreak(rowsByActivity, userId, { extraDayKeys = [], now = new Date() } = {}) {
+  const loggedDays = new Set(extraDayKeys)
+
+  for (const rows of Object.values(rowsByActivity ?? {})) {
+    collectTrainingDays(rows, userId, loggedDays)
+  }
+
+  return calculateStreakFromDays(loggedDays, now)
 }
 
 // Milestone line for the war card — the "insane not to post" hook.

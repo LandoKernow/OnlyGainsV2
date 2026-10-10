@@ -1,0 +1,18 @@
+# Cloudflare static-asset response headers (Workers Static Assets reads this
+# file from the asset directory; it is never served publicly).
+#
+# Default for static assets is `max-age=0, must-revalidate`: every app open
+# re-validates every file. Vite's /assets/* files are content-hashed — a new
+# build always gets new names — so they can be cached forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Brand artwork and app icons keep stable names: cache for a day and refresh
+# in the background for a week (a swapped file shows up within a day).
+# /images/* stays on the default on purpose — the macho manifest lives there
+# and must always revalidate (overlapping rules would merge Cache-Control).
+/brand/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

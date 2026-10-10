@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { fetchProfileYear, getProfileYearQueryKey } from '../api/profileYearSetup'
-import { useToast } from './ToastProvider'
+import { useToastCounts } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { getPendingBoardInviteCode } from '../utils/boardInvites'
 import { OPEN_ADD_TO_HOME_SCREEN_EVENT } from '../utils/community'
@@ -46,7 +46,7 @@ function markDismissed(key) {
 export function AddToHomeScreenPrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
-  const { activeToastCount, activeMachoToastCount } = useToast()
+  const { activeToastCount, activeMachoToastCount } = useToastCounts()
   const firstRun = useFirstRun()
   const userId = session?.user?.id ?? ''
   const isAuthenticated = status === 'authenticated' && Boolean(userId)
@@ -177,11 +177,12 @@ export function AddToHomeScreenPrompt() {
     setIsOpen(false)
   }
 
-  // Escape = "show me later", not a permanent dismissal.
-  useEscapeKey(snoozePrompt, isOpen)
-
   // One overlay at a time, lowest priority of the prompts.
   const canShow = useOverlaySlot('addToHomeScreen', OVERLAY_PRIORITY.addToHomeScreen, isOpen)
+
+  // Escape = "show me later", not a permanent dismissal — and only while this
+  // prompt is the overlay actually on screen.
+  useEscapeKey(snoozePrompt, isOpen && canShow)
 
   if (!isOpen || !canShow) {
     return null

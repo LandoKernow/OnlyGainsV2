@@ -3,6 +3,7 @@ import { fetchPublicProfileRecordEntries } from './profileYearSetup'
 import { fetchLeaderboardSubmissions } from './submissions'
 import { fetchVaultAwards } from './vaultAwards'
 import { calculateLeaderboard } from '../logic/leaderboard/calculateLeaderboard'
+import { getLondonDateParts } from '../utils/dates'
 
 const LOWER_IS_BETTER_RECORD_TYPES = new Set(['fastest_5k', 'fastest_10k', 'half_marathon', 'marathon'])
 
@@ -61,14 +62,24 @@ function buildFallbackName({ userId, awards, records, pressupsRow, kmRow }) {
   )
 }
 
-export async function fetchPublicProfileSummary({ userId, circleId, year = 2026 }) {
+// `year` is the profile year (claimed records). The weekly board standing
+// always reads the CURRENT season's rows. loadBoardRows lets callers serve
+// those rows from the shared leaderboard cache instead of re-downloading the
+// whole board for every profile tap.
+export async function fetchPublicProfileSummary({
+  userId,
+  circleId,
+  year = 2026,
+  boardYear = getLondonDateParts(new Date()).year,
+  loadBoardRows = (activityType) => fetchLeaderboardSubmissions({ circleId, year: boardYear, activityType }),
+}) {
   const [profileResult, awardsResult, recordEntriesResult, pressupsResult, pullupsResult, kmResult] = await Promise.allSettled([
     fetchPublicProfileBasics(userId),
     fetchVaultAwards(circleId, { userId, limit: 12 }),
     fetchPublicProfileRecordEntries(year),
-    fetchLeaderboardSubmissions({ circleId, year, activityType: 'pressups' }),
-    fetchLeaderboardSubmissions({ circleId, year, activityType: 'pullups' }),
-    fetchLeaderboardSubmissions({ circleId, year, activityType: 'km' }),
+    loadBoardRows('pressups'),
+    loadBoardRows('pullups'),
+    loadBoardRows('km'),
   ])
 
   const awards = awardsResult.status === 'fulfilled' ? awardsResult.value : []

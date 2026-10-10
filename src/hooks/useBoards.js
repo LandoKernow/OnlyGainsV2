@@ -10,6 +10,10 @@ import {
 } from '../api/boards'
 import { useAuth } from '../features/auth/AuthProvider'
 
+// Stable empty list: a fresh [] per render would bust every memo downstream
+// (BoardProvider re-derives the whole board context from this).
+const NO_BOARDS = []
+
 export function getMyBoardsQueryKey(userId) {
   return ['boards', 'mine', userId ?? 'guest']
 }
@@ -35,7 +39,7 @@ export function useMyBoards(options = {}) {
 
   return {
     ...query,
-    boards: query.data?.boards ?? [],
+    boards: query.data?.boards ?? NO_BOARDS,
     featureReady: query.data?.featureReady ?? false,
   }
 }

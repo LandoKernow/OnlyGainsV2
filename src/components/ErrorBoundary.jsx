@@ -14,6 +14,14 @@ export class ErrorBoundary extends Component {
     console.error('Screen boundary caught an error', error)
   }
 
+  componentDidUpdate(previousProps) {
+    // A new resetKey (e.g. the route) gets a fresh attempt — otherwise one
+    // crashed screen would leave every other route stuck on the fallback.
+    if (this.state.hasError && previousProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false })
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return this.props.fallback

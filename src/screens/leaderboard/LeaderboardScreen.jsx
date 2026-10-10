@@ -27,6 +27,7 @@ function LeaderboardContent() {
             key={type}
             className={activityType === type ? 'pill-button pill-button--active' : 'pill-button'}
             type="button"
+            aria-pressed={activityType === type}
             onClick={() => setActivityType(type)}
           >
             {ACTIVITY_META[type].label}

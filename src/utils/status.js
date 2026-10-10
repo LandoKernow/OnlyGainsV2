@@ -124,29 +124,6 @@ export function getStatusTone(status) {
   }
 }
 
-export function getPressureGap(row, allRows, relationType = null) {
-  if (!relationType) {
-    const gapAhead = getGapAhead(row, allRows)
-    const gapBehind = getGapBehind(row, allRows)
-
-    if (gapAhead !== null && gapBehind !== null) {
-      return gapAhead <= gapBehind ? 'ahead' : 'behind'
-    }
-
-    return gapAhead !== null ? 'ahead' : gapBehind !== null ? 'behind' : null
-  }
-
-  if (relationType === 'ahead') {
-    return getGapAhead(row, allRows)
-  }
-
-  if (relationType === 'behind') {
-    return getGapBehind(row, allRows)
-  }
-
-  return null
-}
-
 export function getMomentumChip(row, allRows = [], activityType = 'pressups') {
   return getRowStatus(row, allRows, activityType)
 }

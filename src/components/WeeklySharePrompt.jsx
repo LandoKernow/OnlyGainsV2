@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 import { fetchProfileYear, getProfileYearQueryKey } from '../api/profileYearSetup'
-import { useToast } from './ToastProvider'
+import { useToast, useToastCounts } from './ToastProvider'
 import { useAuth } from '../features/auth/AuthProvider'
 import { getLondonPeriodKeys } from '../utils/dates'
 import { shareOnlyGains } from '../utils/shareApp'
@@ -52,7 +52,8 @@ function markWeeklySharePromptSeen(key) {
 export function WeeklySharePrompt() {
   const { session, status } = useAuth()
   const location = useLocation()
-  const { showToast, activeToastCount, activeMachoToastCount } = useToast()
+  const { showToast } = useToast()
+  const { activeToastCount, activeMachoToastCount } = useToastCounts()
   const firstRun = useFirstRun()
   const [imageFailed, setImageFailed] = useState(false)
   const userId = session?.user?.id ?? ''
@@ -158,9 +159,6 @@ export function WeeklySharePrompt() {
     setIsOpen(false)
   }
 
-  // Escape behaves like "Not now" — seen for this week.
-  useEscapeKey(dismissPrompt, isOpen)
-
   async function handleShare() {
     try {
       const result = await shareOnlyGains()
@@ -180,6 +178,10 @@ export function WeeklySharePrompt() {
   }
 
   const canShow = useOverlaySlot('weeklyShare', OVERLAY_PRIORITY.weeklyShare, isOpen)
+
+  // Escape behaves like "Not now" — seen for this week — but only while this
+  // prompt is the overlay actually on screen.
+  useEscapeKey(dismissPrompt, isOpen && canShow)
 
   if (!isOpen || !canShow) {
     return null
