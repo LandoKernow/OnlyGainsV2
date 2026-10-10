@@ -37,6 +37,7 @@ export const ONBOARDING_CONFIG = {
       pressups: 1,
       pullups: 1,
       km: 0.5,
+      squats: 1,
       default: 1,
     },
   },

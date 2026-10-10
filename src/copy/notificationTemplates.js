@@ -80,6 +80,52 @@ const TEMPLATES = {
     url: '/profile',
   }),
 
+  // Inactivity consequence system — the countdown to the fall and the fire.
+  INACTIVITY_WARNING: (event) => {
+    const stage = p(event).stage
+
+    if (stage === 1) {
+      return {
+        title: '⚠️ YOU FALL FROM THE BOARDS IN 4 DAYS.',
+        body: 'THE BOARD HAS NOTICED THE SILENCE. ONE LOG SAVES YOU.',
+        url: '/dashboard',
+      }
+    }
+
+    if (stage === 2) {
+      return {
+        title: '⚠️ FINAL WARNING. TOMORROW YOU FALL.',
+        body: 'ONE QUALIFYING LOG BEFORE MIDNIGHT KEEPS YOUR PLACE ON THE BOARDS.',
+        url: '/dashboard',
+      }
+    }
+
+    // stage 4 — the eve of the wipe.
+    return {
+      title: '🔥 TOMORROW EVERYTHING YOU EARNED IS ASH.',
+      body: 'CROWNS. RECORDS. RANK. ALL OF IT BURNS AT MIDNIGHT. ONE LOG SAVES IT ALL.',
+      url: '/dashboard',
+    }
+  },
+
+  FALLEN: () => ({
+    title: '💀 YOU HAVE FALLEN FROM THE BOARDS.',
+    body: 'FOURTEEN DAYS OF SILENCE. YOUR HONOURS BURN IN 7 DAYS. ONE LOG RAISES YOU.',
+    url: '/dashboard',
+  }),
+
+  WIPED: () => ({
+    title: '🔥 IT IS DONE.',
+    body: 'EVERYTHING YOU EARNED IS ASH. THE BOARD REMEMBERS ONLY WARRIORS. START AGAIN — OR DON’T.',
+    url: '/dashboard',
+  }),
+
+  RISEN: () => ({
+    title: '⚔️ RISEN.',
+    body: 'YOU CAME BACK. THE BOARDS TAKE YOU IN. DON’T GO QUIET AGAIN.',
+    url: '/dashboard',
+  }),
+
   // Copy travels in the payload (source of truth is the event's own copy file),
   // so the same template serves any timed-event launch broadcast.
   EVENT_LAUNCH: (event) => ({
