@@ -1,5 +1,5 @@
 {
-  "name": "only-gains-2-0",
+  "name": "onlygainsv2",
   "compatibility_date": "2026-06-11",
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker/index.js",
